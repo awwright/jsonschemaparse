@@ -1,0 +1,12 @@
+[submodule "schema-suite"]
+	path = schema-suite
+	url = https://github.com/json-schema-org/JSON-Schema-Test-Suite.git
+[submodule "json-suite"]
+	path = json-suite
+	url = https://github.com/nst/JSONTestSuite.git
+[submodule "test/syntax-suite"]
+	path = test/syntax-suite
+	url = https://github.com/nst/JSONTestSuite.git
+[submodule "test/schema-suite"]
+	path = test/schema-suite
+	url = git@github.com:json-schema-org/JSON-Schema-Test-Suite.git
