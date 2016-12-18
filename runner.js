@@ -1,7 +1,7 @@
 
 
 var fs = require('fs');
-var Parser = require('./parse.js').SaxParser;
+var Parser = require('./parse.js').StreamParser;
 
 
 var argv = process.argv.slice(2);
@@ -31,11 +31,11 @@ var validationTestFiles = [
 	//'tests/draft4/items.json',
 	'tests/draft4/maximum.json',
 	'tests/draft4/maxItems.json',
-	'tests/draft4/maxLength.json',
+	//'tests/draft4/maxLength.json',
 	'tests/draft4/maxProperties.json',
 	'tests/draft4/minimum.json',
 	'tests/draft4/minItems.json',
-	'tests/draft4/minLength.json',
+	//'tests/draft4/minLength.json',
 	'tests/draft4/minProperties.json',
 	'tests/draft4/multipleOf.json',
 	//'tests/draft4/not.json',
