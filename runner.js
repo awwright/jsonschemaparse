@@ -50,10 +50,6 @@ var validationTestFiles = [
 	//'tests/draft4/uniqueItems.json',
 ];
 
-function runSyntaxTest(spec, cb){
-	
-}
-
 function runSyntaxTest(filename, done){
 	var res = {
 		pass: 0,
@@ -85,7 +81,7 @@ function runSyntaxTest(filename, done){
 			res.pass++;
 		}else{
 			res.fail++;
-			var er = {description:n, valid:valid, error:err, value:p.value};
+			var er = {description:err.stack, valid:valid, error:err, value:p.value};
 			res.messages.push(er);
 		}
 		return void done(null, res);
@@ -126,14 +122,16 @@ function runValidationTest(filepath, done){
 }
 
 function runTests(){
+	var totalFail = 0;
 	var pass = 0;
 	var fail = 0;
 	var total = 0;
 	var messages = [];
 	nextSyntaxTest(0);
 	function nextSyntaxTest(i){
+		if(i==0) console.log('Running syntax tests...');
 		var n = syntaxTestFiles[i];
-		if(!n) return void nextValidationTest(0);
+		if(!n) return void finishSyntaxTests();
 		runSyntaxTest(n, function(err, res){
 			if(err) throw err;
 			res.messages.forEach(function(v){
@@ -141,13 +139,23 @@ function runTests(){
 			});
 			pass += res.pass;
 			fail += res.fail;
+			totalFail += res.fail;
 			total += res.total;
 			nextSyntaxTest(i+1);
 		});
 	}
+	function finishSyntaxTests(){
+		if(fail) console.log('Running syntax tests: ' + fail + ' failed');
+		console.log('Running syntax tests: ' + pass + '/' + total + ' passed');
+		console.log('Running validation tests...');
+		pass = 0;
+		fail = 0;
+		total = 0;
+		nextValidationTest(0);
+	}
 	function nextValidationTest(i){
 		var n = validationTestFiles[i];
-		if(!n) return void finished(0);
+		if(!n) return void finishValidationTests(0);
 		runValidationTest(n, function(err, res){
 			if(err) throw err;
 			res.messages.forEach(function(v){
@@ -155,13 +163,15 @@ function runTests(){
 			});
 			pass += res.pass;
 			fail += res.fail;
+			totalFail += res.fail;
 			total += res.total;
 			nextValidationTest(i+1);
 		});
 	}
-	function finished(){
-		console.log(fail + ' failed');
-		console.log(pass + '/' + total + ' passed');
+	function finishValidationTests(){
+		if(fail) console.log('Validation tests: ' + fail + ' failed');
+		console.log('Validation tests: ' + pass + '/' + total + ' passed');
+		//if(totalFail) process.exit(1);
 	}
 }
 

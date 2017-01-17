@@ -65,6 +65,9 @@ function StreamParser(schema) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 	Transform.call(this, {});
 
+	if(!schema) schema=[];
+	else if(!Array.isArray(schema)) schema=[schema];
+
 	// Configurable parsing options
 	this.keepValue = false;
 	this.trailingComma = false;
@@ -84,6 +87,7 @@ function StreamParser(schema) {
 	this.push();
 	this.layer.path = [];
 	this.layer.schema = schema;
+	this.layer.schema.forEach(function(){});
 
 	// for parsing
 	this.value = undefined;
@@ -126,7 +130,7 @@ StreamParser.prototype.push = function (k) {
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
 		errors: [],
-		schema: this.schema,
+		schema: this.schema || [],
 		//not: {},
 		//allOf: [],
 		//oneOf: [],
@@ -759,20 +763,22 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 };
 
 StreamParser.prototype.validateType = function validateType(instanceType, instanceTypeAlt){
-	var schema = this.layer && this.layer.schema;
-	if(!schema) return;
-	if(!schema.type) return;
-	if(typeof schema.type=='string'){
-		if(schema.type!==instanceType && schema.type!==instanceTypeAlt){
-			this.addError('Invalid type', 'type', instanceType);
+	var self = this;
+	this.layer && this.layer.schema.forEach(function(schema){
+		if(!schema) return;
+		if(!schema.type) return;
+		if(typeof schema.type=='string'){
+			if(schema.type!==instanceType && schema.type!==instanceTypeAlt){
+				self.addError('Invalid type', 'type', instanceType);
+			}
+		}else if(typeof schema.type.some=='function'){
+			if(!schema.type.some(function(v){
+				return v==instanceType || v==instanceTypeAlt;
+			})){
+				self.addError('Invalid type', 'type', instanceType);
+			}
 		}
-	}else if(typeof schema.type.some=='function'){
-		if(!schema.type.some(function(v){
-			return v==instanceType || v==instanceTypeAlt;
-		})){
-			this.addError('Invalid type', 'type', instanceType);
-		}
-	}
+	});
 }
 
 StreamParser.prototype.startObject = function startObject(){
@@ -786,15 +792,17 @@ StreamParser.prototype.endObject = function endObject(){
 	this.pop();
 }
 StreamParser.prototype.validateObject = function validateObject(){
-	var schema = this.layer && this.layer.schema;
-	if(!schema) return;
-	this.validateType('object');
-	if(typeof schema.minProperties=='number' && this.layer.length < schema.minProperties){
-		this.addError('object length under minProperties', 'minProperties', schema.minProperties);
-	}
-	if(typeof schema.maxProperties=='number' && this.layer.length > schema.maxProperties){
-		this.addError('object length over maxProperties', 'maxProperties', schema.maxProperties);
-	}
+	var self = this;
+	this.layer && this.layer.schema.forEach(function(schema){
+		if(!schema) return;
+		self.validateType('object');
+		if(typeof schema.minProperties=='number' && self.layer.length < schema.minProperties){
+			self.addError('object length under minProperties', 'minProperties', schema.minProperties);
+		}
+		if(typeof schema.maxProperties=='number' && self.layer.length > schema.maxProperties){
+			self.addError('object length over maxProperties', 'maxProperties', schema.maxProperties);
+		}
+	});
 }
 
 StreamParser.prototype.startArray = function startArray(){
@@ -808,14 +816,16 @@ StreamParser.prototype.endArray = function endArray(n, s){
 	this.pop();
 }
 StreamParser.prototype.validateArray = function validateArray(n, s){
-	var schema = this.layer && this.layer.schema;
-	if(!schema) return;
-	if(typeof schema.minItems=='number' && this.layer.length < schema.minItems){
-		this.addError('array length under minItems', 'minItems', schema.minItems);
-	}
-	if(typeof schema.maxItems=='number' && this.layer.length > schema.maxItems){
-		this.addError('array length over maxItems', 'maxItems', schema.maxItems);
-	}
+	var self = this;
+	self.layer && self.layer.schema.forEach(function schema(){
+		if(!schema) return;
+		if(typeof schema.minItems=='number' && self.layer.length < schema.minItems){
+			self.addError('array length under minItems', 'minItems', schema.minItems);
+		}
+		if(typeof schema.maxItems=='number' && self.layer.length > schema.maxItems){
+			self.addError('array length over maxItems', 'maxItems', schema.maxItems);
+		}
+	});
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
@@ -875,22 +885,24 @@ StreamParser.prototype.onNumber = function onNumber(n, s){
 }
 
 StreamParser.prototype.validateNumber = function validateNumber(n, s){
-	var schema = this.layer && this.layer.schema;
-	if(!schema) return;
-	this.validateType('number', (n%1)?null:'integer');
-	if(schema.exclusiveMinimum===true && typeof schema.minimum=='number' && n<=schema.minimum){
-		this.addError('under minimumEx value', 'minimumEx', s);
-	}else if(typeof schema.minimum=='number' && n < schema.minimum){
-		this.addError('under minimum value', 'minimum', s);
-	}
-	if(schema.exclusiveMaximum===true && typeof schema.maximum=='number' && n>=schema.maximum){
-		this.addError('over maximumEx value', 'maximumEx', s);
-	}else if(typeof schema.maximum=='number' && n > schema.maximum){
-		this.addError('over maximum value', 'maximum', s);
-	}
-	if(typeof schema.multipleOf=='number' && schema.multipleOf>0 && (n / schema.multipleOf % 1)){
-		this.addError('not intergral multiple of', 'multipleOf', schema.mutipleOf);
-	}
+	var self = this;
+	self.layer && self.layer.schema.forEach(function(schema){
+		if(!schema) return;
+		self.validateType('number', (n%1)?null:'integer');
+		if(schema.exclusiveMinimum===true && typeof schema.minimum=='number' && n<=schema.minimum){
+			self.addError('under minimumEx value', 'minimumEx', s);
+		}else if(typeof schema.minimum=='number' && n < schema.minimum){
+			self.addError('under minimum value', 'minimum', s);
+		}
+		if(schema.exclusiveMaximum===true && typeof schema.maximum=='number' && n>=schema.maximum){
+			self.addError('over maximumEx value', 'maximumEx', s);
+		}else if(typeof schema.maximum=='number' && n > schema.maximum){
+			self.addError('over maximum value', 'maximum', s);
+		}
+		if(typeof schema.multipleOf=='number' && schema.multipleOf>0 && (n / schema.multipleOf % 1)){
+			self.addError('not intergral multiple of', 'multipleOf', schema.mutipleOf);
+		}
+	});
 }
 
 StreamParser.prototype.startString = function startString(){
@@ -904,14 +916,15 @@ StreamParser.prototype.endString = function endString(){
 }
 
 StreamParser.prototype.validateString = function validateString(){
-	var schema = this.layer && this.layer.schema;
-	if(!schema) return;
-	if(typeof schema.minLength=='number' && this.layer.length<schema.minLength){
-		this.addError('string length under minLength', 'minLength', schema.minLength);
-	}
-	if(typeof schema.maxLength=='number' && this.layer.length>schema.maxLength){
-		this.addError('string length over maxLength', 'maxLength', schema.maxLength);
-	}
+	this.layer && this.layer.schema.forEach(function(schema){
+		if(!schema) return;
+		if(typeof schema.minLength=='number' && this.layer.length<schema.minLength){
+			this.addError('string length under minLength', 'minLength', schema.minLength);
+		}
+		if(typeof schema.maxLength=='number' && this.layer.length>schema.maxLength){
+			this.addError('string length over maxLength', 'maxLength', schema.maxLength);
+		}
+	});
 }
 
 StreamParser.prototype.startBoolean = function endBoolean(){
