@@ -14,10 +14,13 @@ function Schema(sch){
 	self.exclusiveMaximum = null;
 	self.minimum = null;
 	self.exclusiveMinimum = null;
-	self.typeConstraints = [];
-	self.itemSchema = null;
-	self.propertyNameSchema = null;
-	self.propertyValueSchema = null;
+	self.anyOf = [];
+	self.oneOf = [];
+	//self.typeConstraints = [];
+	self.items = [];
+	self.additionalItems = null;
+	//self.propertyNameSchema = null;
+	//self.propertyValueSchema = null;
 
 	if(!sch) return;
 
@@ -74,8 +77,17 @@ function Schema(sch){
 				self.exclusiveMaximum = null;
 			}
 		}
+		// Keyword: "multipleOf"
 		if(typeof s.multipleOf=='number'){
 			self.multipleOf = s.multipleOf;
+		}
+		// Keyword: "items"
+		if(Array.isArray(s.items)){
+			self.items = s.items.map(function(v){ return new Schema(v); });
+		}
+		// Keyword: "additionalItems"
+		if(typeof s.additionalItems=='object'){
+			self.additionalItems = new Schema(s.additionalItems);
 		}
 	}
 
@@ -112,7 +124,6 @@ Schema.prototype.testPropertiesCount = function(length){
 }
 
 Schema.prototype.testNumberRange = function(n){
-	//console.log('testNumberRange', n, this);
 	var schema = this;
 	var error = false;
 	if(typeof schema.exclusiveMinimum=='number' && n<=schema.exclusiveMinimum){
@@ -132,12 +143,12 @@ Schema.prototype.testNumberRange = function(n){
 	return new Error('Number out of range');
 }
 
-Schema.prototype.testObjectBegin = function(){
-	var schema = this;
-	// Return a stateful object representing which keywords have been passed or failed
-}
 
-Schema.prototype.testArrayBegin = function(){
+Schema.prototype.testConditionalsBegin = function(){
 	var schema = this;
-	// Return a stateful object representing which keywords have been passed or failed
+	// Return a stateful object representing which schemas have passed/failed
+	var o = {
+		oneOf: schema.oneOf.slice(),
+		anyOf: schema.anyOf.slice(),
+	}
 }

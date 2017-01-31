@@ -20,7 +20,7 @@ var syntaxTestFiles = fs.readdirSync(dirpath).filter(function(n){
 });
 
 var validationTestFiles = [
-	//'tests/draft4/additionalItems.json',
+	'tests/draft4/additionalItems.json',
 	//'tests/draft4/additionalProperties.json',
 	//'tests/draft4/allOf.json',
 	//'tests/draft4/anyOf.json',
@@ -159,7 +159,7 @@ function runTests(){
 		runValidationTest(n, function(err, res){
 			if(err) throw err;
 			res.messages.forEach(function(v){
-				console.log('Error: validationTest('+n+') '+v.description+'#'+v.i);
+				console.log('Error: validationTest('+n+') '+v.description, v);
 			});
 			pass += res.pass;
 			fail += res.fail;
