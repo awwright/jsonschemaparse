@@ -14,6 +14,10 @@ function Schema(sch){
 	self.exclusiveMaximum = null;
 	self.minimum = null;
 	self.exclusiveMinimum = null;
+	self.minItems = null;
+	self.maxItems = null;
+	self.minProperties = null;
+	self.maxProperties = null;
 	self.anyOf = [];
 	self.oneOf = [];
 	//self.typeConstraints = [];
@@ -76,6 +80,22 @@ function Schema(sch){
 				self.maximum = s.maximum;
 				self.exclusiveMaximum = null;
 			}
+		}
+		// Keyword: "minItems"
+		if(typeof s.minItems=='number' && (s.minItems>self.minItems || self.minItems===null)){
+			self.minItems = s.minItems;
+		}
+		// Keyword: "maxItems"
+		if(typeof s.maxItems=='number' && (s.maxItems<self.maxItems || self.maxItems===null)){
+			self.maxItems = s.maxItems;
+		}
+		// Keyword: "minProperties"
+		if(typeof s.minProperties=='number' && (s.minProperties>self.minProperties || self.minProperties===null)){
+			self.minProperties = s.minProperties;
+		}
+		// Keyword: "maxProperties"
+		if(typeof s.maxProperties=='number' && (s.maxProperties<self.maxProperties || self.maxProperties===null)){
+			self.maxProperties = s.maxProperties;
 		}
 		// Keyword: "multipleOf"
 		if(typeof s.multipleOf=='number'){

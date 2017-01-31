@@ -115,7 +115,7 @@ StreamParser.prototype.onError = function (e) {
 	console.error(e.stack);
 };
 
-StreamParser.prototype.push = function (k, schema) {
+StreamParser.prototype.push = function push(k, schema) {
 	this.layer = {
 		state: VALUE,
 		//path: k && this.layer && this.layer.path.concat([k]),
