@@ -110,7 +110,7 @@ function runValidationTest(filepath, done){
 				res.pass++;
 			}else{
 				res.fail++;
-				var er = {description:s.description, i:i, valid:t.valid, errors:p.errors, schema:schema, value:t.data};
+				var er = {description:t.description, i:i, valid:t.valid, errors:p.errors, schema:schema, value:t.data};
 				res.messages.push(er);
 				//console.error('  Error: ('+er.description+') expected '+(er.valid?'valid':'invalid')+' but got '+er.errors.length+' errors');
 				//console.log(er.schema, er.value);

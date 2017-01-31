@@ -3,9 +3,7 @@
 const Transform = require('stream').Transform;
 const util = require('util');
 
-function ValidationSchema(schema){
-
-}
+var Schema = require('./schema.js').Schema;
 
 function ValidationError(message, propertyPath, schema, keyword, arg){
 	this.message = message;
@@ -61,12 +59,11 @@ function toknam(code) {
 	return tokenNames[code] || code;
 }
 
-function StreamParser(schema) {
+function StreamParser(sch) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 	Transform.call(this, {});
 
-	if(!schema) schema=[];
-	else if(!Array.isArray(schema)) schema=[schema];
+	var schema = new Schema(sch);
 
 	// Configurable parsing options
 	this.keepValue = false;
@@ -87,7 +84,6 @@ function StreamParser(schema) {
 	this.push();
 	this.layer.path = [];
 	this.layer.schema = schema;
-	this.layer.schema.forEach(function(){});
 
 	// for parsing
 	this.value = undefined;
@@ -118,7 +114,7 @@ StreamParser.prototype.onError = function (e) {
 	console.error(e.stack);
 };
 
-StreamParser.prototype.push = function (k) {
+StreamParser.prototype.push = function (k, schema) {
 	this.layer = {
 		state: VALUE,
 		//path: k && this.layer && this.layer.path.concat([k]),
@@ -130,7 +126,7 @@ StreamParser.prototype.push = function (k) {
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
 		errors: [],
-		schema: this.schema || [],
+		schema: schema || new Schema,
 		//not: {},
 		//allOf: [],
 		//oneOf: [],
@@ -148,6 +144,13 @@ StreamParser.prototype.pop = function pop(){
 
 StreamParser.prototype.addError = function addError(message, keyword, arg) {
 	this.layer.errors.push(new ValidationError(message, this.layer.path, this.layer.schema, keyword, arg));
+}
+StreamParser.prototype.addErrorList = function addErrorList(errs) {
+	var self = this;
+	if(!Array.isArray(errs)) errs = errs?[errs]:[];
+	errs.forEach(function(error){
+		self.layer.errors.push(new ValidationError(error.message, self.layer.path, self.layer.schema, '', ''));
+	});
 }
 
 StreamParser.prototype._transform = function (buffer, encoding, callback) {
@@ -195,6 +198,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x20:
 				continue; // whitespace, ignore
 			case 0x7b: // `{`
+				this.startObject();
 				this.layer.state = OBJECT1;
 				if(this.layer.keepValue) this.layer.value = {};
 				continue;
@@ -264,7 +268,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.string = "";
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
-				this.push();
+				this.push(null, new Schema);
 				this.layer.state = STRING1;
 				this.layer.keepValue = true;
 				continue;
@@ -291,7 +295,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x3a: // `:`
 				this.layer.state = OBJECT4;
 				// Parse the next characters as a new value
-				this.push(this.layer.key);
+				this.push(this.layer.key, this.layer.schema.propertyValueSchema);
 				continue;
 			}
 			this.charError(buffer, i, ':');
@@ -312,7 +316,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue; // whitespace, ignore
 			case 0x2c: // `,`
 				this.layer.key = this.layer.length;
-				// Begin reading a new value
+				// Begin reading a new key
 				this.layer.state = OBJECT2;
 				this.push();
 				continue;
@@ -344,7 +348,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue;
 			case 0x5b: // `[`
 				this.layer.state = ARRAY2;
-				this.push();
+				this.push(this.layer.length, this.layer.schema.itemSchema);
 				this.startArray();
 				this.layer.state = ARRAY1;
 				if(this.layer.keepValue) this.layer.value = [];
@@ -453,7 +457,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue;
 			case 0x5b: // `[`
 				this.layer.state = ARRAY2;
-				this.push();
+				this.push(this.layer.length, this.layer.schema.itemSchema);
 				this.startArray();
 				this.layer.state = ARRAY1;
 				if(this.layer.keepValue) this.layer.value = [];
@@ -762,27 +766,10 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 	}
 };
 
-StreamParser.prototype.validateType = function validateType(instanceType, instanceTypeAlt){
-	var self = this;
-	this.layer && this.layer.schema.forEach(function(schema){
-		if(!schema) return;
-		if(!schema.type) return;
-		if(typeof schema.type=='string'){
-			if(schema.type!==instanceType && schema.type!==instanceTypeAlt){
-				self.addError('Invalid type', 'type', instanceType);
-			}
-		}else if(typeof schema.type.some=='function'){
-			if(!schema.type.some(function(v){
-				return v==instanceType || v==instanceTypeAlt;
-			})){
-				self.addError('Invalid type', 'type', instanceType);
-			}
-		}
-	});
-}
-
 StreamParser.prototype.startObject = function startObject(){
-	this.validateType('object');
+	if(!this.layer.schema.allowObject){
+		this.addError('Invalid type', 'type', 'object');
+	}
 	this.emit('startObject');
 }
 
@@ -792,21 +779,13 @@ StreamParser.prototype.endObject = function endObject(){
 	this.pop();
 }
 StreamParser.prototype.validateObject = function validateObject(){
-	var self = this;
-	this.layer && this.layer.schema.forEach(function(schema){
-		if(!schema) return;
-		self.validateType('object');
-		if(typeof schema.minProperties=='number' && self.layer.length < schema.minProperties){
-			self.addError('object length under minProperties', 'minProperties', schema.minProperties);
-		}
-		if(typeof schema.maxProperties=='number' && self.layer.length > schema.maxProperties){
-			self.addError('object length over maxProperties', 'maxProperties', schema.maxProperties);
-		}
-	});
+	this.addErrorList(this.layer.schema.testPropertiesCount(this.layer.length));
 }
 
 StreamParser.prototype.startArray = function startArray(){
-	this.validateType('array');
+	if(!this.layer.schema.allowArray){
+		this.addError('Invalid type', 'type', 'array');
+	}
 	this.emit('startArray');
 }
 
@@ -816,21 +795,13 @@ StreamParser.prototype.endArray = function endArray(n, s){
 	this.pop();
 }
 StreamParser.prototype.validateArray = function validateArray(n, s){
-	var self = this;
-	self.layer && self.layer.schema.forEach(function schema(){
-		if(!schema) return;
-		if(typeof schema.minItems=='number' && self.layer.length < schema.minItems){
-			self.addError('array length under minItems', 'minItems', schema.minItems);
-		}
-		if(typeof schema.maxItems=='number' && self.layer.length > schema.maxItems){
-			self.addError('array length over maxItems', 'maxItems', schema.maxItems);
-		}
-	});
+	this.addErrorList(this.layer.schema.testItemsCount(this.layer.length));
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
-	// Number might be an integer, we don't know yet
-	//this.validateType('number', 'integer');
+	if(!this.layer.schema.allowNumber){
+		this.addError('Invalid type', 'type', 'number');
+	}
 }
 
 StreamParser.prototype.endNumber = function endNumber(){
@@ -880,33 +851,14 @@ StreamParser.prototype.endNumber = function endNumber(){
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
 	this.emit('onNumber');
-	this.validateNumber(n, s);
+	this.addErrorList(this.layer.schema.testNumberRange(n));
 	this.pop();
 }
 
-StreamParser.prototype.validateNumber = function validateNumber(n, s){
-	var self = this;
-	self.layer && self.layer.schema.forEach(function(schema){
-		if(!schema) return;
-		self.validateType('number', (n%1)?null:'integer');
-		if(schema.exclusiveMinimum===true && typeof schema.minimum=='number' && n<=schema.minimum){
-			self.addError('under minimumEx value', 'minimumEx', s);
-		}else if(typeof schema.minimum=='number' && n < schema.minimum){
-			self.addError('under minimum value', 'minimum', s);
-		}
-		if(schema.exclusiveMaximum===true && typeof schema.maximum=='number' && n>=schema.maximum){
-			self.addError('over maximumEx value', 'maximumEx', s);
-		}else if(typeof schema.maximum=='number' && n > schema.maximum){
-			self.addError('over maximum value', 'maximum', s);
-		}
-		if(typeof schema.multipleOf=='number' && schema.multipleOf>0 && (n / schema.multipleOf % 1)){
-			self.addError('not intergral multiple of', 'multipleOf', schema.mutipleOf);
-		}
-	});
-}
-
 StreamParser.prototype.startString = function startString(){
-	this.validateType('string');
+	if(!this.layer.schema.allowString){
+		this.addError('Invalid type', 'type', 'string');
+	}
 }
 
 StreamParser.prototype.endString = function endString(){
@@ -916,19 +868,12 @@ StreamParser.prototype.endString = function endString(){
 }
 
 StreamParser.prototype.validateString = function validateString(){
-	this.layer && this.layer.schema.forEach(function(schema){
-		if(!schema) return;
-		if(typeof schema.minLength=='number' && this.layer.length<schema.minLength){
-			this.addError('string length under minLength', 'minLength', schema.minLength);
-		}
-		if(typeof schema.maxLength=='number' && this.layer.length>schema.maxLength){
-			this.addError('string length over maxLength', 'maxLength', schema.maxLength);
-		}
-	});
 }
 
-StreamParser.prototype.startBoolean = function endBoolean(){
-	this.validateType('boolean');
+StreamParser.prototype.startBoolean = function startBoolean(){
+	if(!this.layer.schema.allowBoolean){
+		this.addError('Invalid type', 'type', 'boolean');
+	}
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
@@ -937,7 +882,9 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 }
 
 StreamParser.prototype.startNull = function endNull(){
-	this.validateType('null');
+	if(!this.layer.schema.allowNull){
+		this.addError('Invalid type', 'type', 'null');
+	}
 }
 
 StreamParser.prototype.endNull = function endNull(){
