@@ -5,11 +5,12 @@ const util = require('util');
 
 var Schema = require('./schema.js').Schema;
 
-function ValidationError(message, propertyPath, schema, keyword, arg){
+function ValidationError(message, propertyPath, schema, keyword, expected, actual){
 	this.message = message;
+	this.path = propertyPath;
 	this.keyword = keyword;
-	this.arg = arg;
-	this.property = propertyPath;
+	this.expected = expected;
+	this.actual = actual;
 }
 
 // Named constants with unique integer values
@@ -79,10 +80,11 @@ function StreamParser(sch) {
 	this.stack = [];
 	// Allow trailing whitespace at the end of the document
 	this.push();
+	this.layer.path = '';
 	this.layer.state = VOID;
 	// Start parsing a value
 	this.push();
-	this.layer.path = [];
+	this.layer.path = '';
 	this.layer.schema = schema;
 	this.errors = [];
 
@@ -116,9 +118,11 @@ StreamParser.prototype.onError = function (e) {
 };
 
 StreamParser.prototype.push = function push(k, schema) {
+	var path = this.layer && this.layer.path || '';
 	this.layer = {
 		state: VALUE,
-		//path: k && this.layer && this.layer.path.concat([k]),
+		//path: k ? this.layer.path.concat(k) : (this.layer&&this.layer.path),
+		path: k ? path+'/'+k : path,
 		key: null,
 		keepValue: this.keepValue,
 		value: undefined,
@@ -141,8 +145,8 @@ StreamParser.prototype.pop = function pop(){
 	return layer;
 }
 
-StreamParser.prototype.addError = function addError(message, keyword, arg) {
-	this.errors.push(new ValidationError(message, this.layer.path, this.layer.schema, keyword, arg));
+StreamParser.prototype.addError = function addError(message, keyword, expected, actual) {
+	this.errors.push(new ValidationError(message, this.layer.path, this.layer.schema, keyword, expected, actual));
 }
 StreamParser.prototype.addErrorList = function addErrorList(errs) {
 	var self = this;
@@ -263,7 +267,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x20:
 				continue; // whitespace, ignore
 			case 0x22: // `"`
-				// Start parsing a string
+				// Start parsing a keyword name
 				this.string = "";
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
@@ -326,7 +330,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, ', }');
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
-			var subschema = this.layer.schema.items[this.layer.length] || this.layer.schema.additionalItems;
+			var schema = this.layer.schema;
+			var subschema = (Array.isArray(schema.items)?schema.items[this.layer.length]:schema.items) || schema.additionalItems;
 			switch (n) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -439,7 +444,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, '] ,');
 		case ARRAY4:
 			// Finished reading comma, expecting value
-			var subschema = this.layer.schema.items[this.layer.length] || this.layer.schema.additionalItems;
+			var schema = this.layer.schema;
+			var subschema = (Array.isArray(schema.items)?schema.items[this.layer.length]:schema.items) || schema.additionalItems;
 			switch(n){
 			case 0x0a:
 				this.lineOffset = i;
@@ -487,6 +493,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.push(this.layer.length, subschema);
 				this.string = "";
 				this.layer.state = STRING1;
+				this.startString();
 				continue;
 			case 0x2d: // `-`
 				this.layer.state = ARRAY2;
@@ -769,7 +776,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 
 StreamParser.prototype.startObject = function startObject(){
 	if(!this.layer.schema.allowObject){
-		this.addError('Invalid type', 'type', 'object');
+		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'object');
 	}
 	this.emit('startObject');
 }
@@ -785,7 +792,7 @@ StreamParser.prototype.validateObject = function validateObject(){
 
 StreamParser.prototype.startArray = function startArray(){
 	if(!this.layer.schema.allowArray){
-		this.addError('Invalid type', 'type', 'array');
+		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'array');
 	}
 	this.emit('startArray');
 }
@@ -801,7 +808,7 @@ StreamParser.prototype.validateArray = function validateArray(n, s){
 
 StreamParser.prototype.startNumber = function startNumber(){
 	if(!this.layer.schema.allowNumber){
-		this.addError('Invalid type', 'type', 'number');
+		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'number');
 	}
 }
 
@@ -858,7 +865,7 @@ StreamParser.prototype.onNumber = function onNumber(n, s){
 
 StreamParser.prototype.startString = function startString(){
 	if(!this.layer.schema.allowString){
-		this.addError('Invalid type', 'type', 'string');
+		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'string');
 	}
 }
 
@@ -873,7 +880,7 @@ StreamParser.prototype.validateString = function validateString(){
 
 StreamParser.prototype.startBoolean = function startBoolean(){
 	if(!this.layer.schema.allowBoolean){
-		this.addError('Invalid type', 'type', 'boolean');
+		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'boolean');
 	}
 }
 
@@ -884,7 +891,7 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 
 StreamParser.prototype.startNull = function endNull(){
 	if(!this.layer.schema.allowNull){
-		this.addError('Invalid type', 'type', 'null');
+		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'null');
 	}
 }
 
