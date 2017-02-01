@@ -46,7 +46,10 @@ function Schema(sch){
 	if(!sch) return;
 	self.intersect(sch);
 	if(sch.allOf){
-		sch.allOf(function(sc){ self.intersect(sc); });
+		if(!Array.isArray(sch.allOf)){
+			throw new Error('"allOf" not an array');
+		}
+		sch.allOf.forEach(function(sc){ self.intersect(sc); });
 	}
 	//console.log(self);
 }

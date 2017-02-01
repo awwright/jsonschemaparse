@@ -28,7 +28,7 @@ var validationTestFiles = [
 	//'tests/draft4/definitions.json',
 	//'tests/draft4/dependencies.json',
 	//'tests/draft4/enum.json',
-	//'tests/draft4/items.json',
+	'tests/draft4/items.json',
 	'tests/draft4/maximum.json',
 	'tests/draft4/maxItems.json',
 	//'tests/draft4/maxLength.json',
