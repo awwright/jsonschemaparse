@@ -32,6 +32,7 @@ function Schema(sch){
 		// Keyword: "type"
 		if(typeof s.type=='string'){
 			if(s.type!='number' && s.type!='integer') self.allowNumber=false;
+			if(s.type!='number') self.allowFraction=false;
 			if(s.type!='string') self.allowString=false;
 			if(s.type!='boolean') self.allowBoolean=false;
 			if(s.type!='null') self.allowNull=false;
@@ -39,6 +40,7 @@ function Schema(sch){
 			if(s.type!='array') self.allowArray=false;
 		}else if(Array.isArray(s.type)){
 			if(s.type.indexOf('number')<0 && s.type.indexOf('integer')<0) self.allowNumber=false;
+			if(s.type.indexOf('number')<0) self.allowFraction=false;
 			if(s.type.indexOf('string')<0) self.allowString=false;
 			if(s.type.indexOf('boolean')<0) self.allowBoolean=false;
 			if(s.type.indexOf('null')<0) self.allowNull=false;
@@ -157,6 +159,9 @@ Schema.prototype.testNumberRange = function(n){
 		error = true;
 	}
 	if(typeof schema.multipleOf=='number' && schema.multipleOf>0 && (n / schema.multipleOf % 1)){
+		error = true;
+	}
+	if(schema.allowFraction==false && n%1){
 		error = true;
 	}
 	if(!error) return;
