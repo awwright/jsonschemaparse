@@ -2,7 +2,7 @@
 module.exports.Schema = Schema;
 
 function isSchema(s){
-	return (typeof s=='object' || typeof s=='boolean');
+	return (typeof s=='object' && !Array.isArray(s)) || (typeof s=='boolean');
 }
 
 function SchemaContext(){
@@ -20,7 +20,7 @@ function Schema(sch){
 	self.allowNull = true;
 	self.allowObject = true;
 	self.allowArray = true;
-	var allowedTypes = self.allowedTypes = [];
+	self.allowedTypes = [];
 	self.allowFraction = true;
 	self.maximum = null;
 	self.exclusiveMaximum = null;
@@ -43,27 +43,19 @@ function Schema(sch){
 	self.testsArray = [];
 	self.testsObject = [];
 
-
-
 	if(!sch) return;
-
 	self.intersect(sch);
 	if(sch.allOf){
 		sch.allOf(function(sc){ self.intersect(sc); });
 	}
-
-	if(self.allowNumber) allowedTypes.push('number');
-	if(self.allowString) allowedTypes.push('string');
-	if(self.allowBoolean) allowedTypes.push('boolean');
-	if(self.allowNull) allowedTypes.push('null');
-	if(self.allowObject) allowedTypes.push('object');
-	if(self.allowArray) allowedTypes.push('array');
+	//console.log(self);
 }
 
 Schema.prototype.intersect = function intersect(s){
 	var self = this;
 	if(s===false){
 		self.allowNumber = self.allowString = self.allowBoolean = self.allowNull = self.allowObject = self.allowArray = false;
+		return;
 	}else if(s===true){
 		s = {};
 	}
@@ -143,14 +135,27 @@ Schema.prototype.intersect = function intersect(s){
 	if(typeof s.multipleOf=='number'){
 		self.multipleOf = s.multipleOf;
 	}
-	// Keyword: "items"
+	// Keyword: "items" and "additionalItems"
 	if(Array.isArray(s.items)){
-		self.items = s.items.map(function(v){ return new Schema(v); });
+		s.items.forEach(function(s2, i){
+			self.items[i] = self.items[i] || new Schema;
+			self.items[i].intersect(s2);
+		});
+		if(isSchema(s.additionalItems)){
+			self.additionalItems = self.additionalItems || new Schema();
+			self.additionalItems.intersect(s.additionalItems);
+		}
+	}else if(isSchema(s.items)){
+		self.additionalItems = self.additionalItems || new Schema();
+		self.additionalItems.intersect(s.items);
 	}
-	// Keyword: "additionalItems"
-	if(isSchema(s.additionalItems)){
-		self.additionalItems = new Schema(s.additionalItems);
-	}
+
+	if(self.allowNumber) self.allowedTypes.push('number');
+	if(self.allowString) self.allowedTypes.push('string');
+	if(self.allowBoolean) self.allowedTypes.push('boolean');
+	if(self.allowNull) self.allowedTypes.push('null');
+	if(self.allowObject) self.allowedTypes.push('object');
+	if(self.allowArray) self.allowedTypes.push('array');
 }
 
 function testType(ctx, v){

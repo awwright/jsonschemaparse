@@ -331,7 +331,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
 			var schema = this.layer.schema;
-			var subschema = (Array.isArray(schema.items)?schema.items[this.layer.length]:schema.items) || schema.additionalItems;
+			var subschema = schema.items[this.layer.length] || schema.additionalItems;
 			switch (n) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -445,7 +445,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case ARRAY4:
 			// Finished reading comma, expecting value
 			var schema = this.layer.schema;
-			var subschema = (Array.isArray(schema.items)?schema.items[this.layer.length]:schema.items) || schema.additionalItems;
+			var subschema = schema.items[this.layer.length] || schema.additionalItems;
 			switch(n){
 			case 0x0a:
 				this.lineOffset = i;
