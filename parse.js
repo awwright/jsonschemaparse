@@ -162,6 +162,7 @@ StreamParser.prototype._transform = function (buffer, encoding, callback) {
 		this.parseBlock(buffer);
 	}catch(e){
 		if(callback) return void callback(e);
+		throw e;
 	}
 	if(callback) callback();
 }
@@ -282,6 +283,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, '" }');
 		case OBJECT2:
 			// Finished parsing key
+			this.layer.validator.testPropertyName(this.string);
 			this.layer.key = this.string;
 			this.layer.state = OBJECT3;
 			// pass to OBJECT3
@@ -459,6 +461,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x7b: // `{`
 				this.layer.state = ARRAY2;
 				this.push(this.layer.length, subschema);
+				this.startObject();
 				this.layer.state = OBJECT1;
 				if(this.layer.keepValue) this.layer.value = {};
 				continue;
@@ -778,11 +781,13 @@ StreamParser.prototype.startObject = function startObject(){
 	if(!this.layer.schema.allowObject){
 		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'object');
 	}
+	this.layer.validator = this.layer.schema.testObjectBegin();
 	this.emit('startObject');
 }
 
 StreamParser.prototype.endObject = function endObject(){
 	this.emit('endObject');
+	this.addErrorList(this.layer.validator.finish());
 	this.validateObject();
 	this.pop();
 }

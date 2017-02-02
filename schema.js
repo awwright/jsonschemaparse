@@ -32,6 +32,7 @@ function Schema(sch){
 	self.maxProperties = null;
 	self.anyOf = [];
 	self.oneOf = [];
+	self.required = {};
 	//self.typeConstraints = [];
 	self.items = [];
 	self.additionalItems = null;
@@ -152,7 +153,18 @@ Schema.prototype.intersect = function intersect(s){
 		self.additionalItems = self.additionalItems || new Schema();
 		self.additionalItems.intersect(s.items);
 	}
-
+	// Keyword: "required"
+	if(Array.isArray(s.required)){
+		var required = {};
+		s.required.forEach(function(k){
+			if(required[k]===true){
+				throw new Error('Items in "required" must be unique');
+			}
+			required[k] = true;
+			self.required[k] = true;
+		});
+	}
+	// Update indexes
 	if(self.allowNumber) self.allowedTypes.push('number');
 	if(self.allowString) self.allowedTypes.push('string');
 	if(self.allowBoolean) self.allowedTypes.push('boolean');
@@ -214,12 +226,41 @@ Schema.prototype.testNumberRange = function(n){
 	return new Error('Number out of range');
 }
 
+function ValidateObject(schema){
+	var self = this;
+	self.schema = schema;
+	self.oneOfMap = [];
+	schema.oneOf.forEach(function(v,i){ self.oneOfMap[i] = false; });
+	self.anyOfMap = [];
+	schema.anyOf.forEach(function(v,i){ self.anyOfMap[i] = false; });
+	self.requiredMap = {};
+	self.requiredRemain = 0;
+	for(var k in schema.required){
+		self.requiredMap[k] = false;
+		self.requiredRemain++;
+	}
+}
+ValidateObject.prototype.testPropertyName = function testPropertyName(k){
+	if(this.requiredMap[k]===false){
+		this.requiredMap[k] = true;
+		this.requiredRemain--;
+	}
+	//if(this.schema.propertyName){
+		// ...
+	//}
+}
+ValidateObject.prototype.finish = function finish(){
+	var self = this;
+	if(self.requiredRemain){
+		var missing = Object.keys(self.requiredMap).filter(function(k){
+			return !self.requiredMap[k];
+		});
+		return new Error('Required properties missing: '+JSON.stringify(missing));
+	}
+}
 
-Schema.prototype.testConditionalsBegin = function(){
+Schema.prototype.testObjectBegin = function(){
 	var schema = this;
 	// Return a stateful object representing which schemas have passed/failed
-	var o = {
-		oneOf: schema.oneOf.slice(),
-		anyOf: schema.anyOf.slice(),
-	}
+	return new ValidateObject(schema);
 }
