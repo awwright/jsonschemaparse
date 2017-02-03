@@ -37,7 +37,8 @@ function Schema(sch){
 	self.items = [];
 	self.additionalItems = null;
 	//self.propertyNameSchema = null;
-	//self.propertyValueSchema = null;
+	self.properties = {};
+	self.additionalProperties = null;
 	self.testsType = [];
 	self.testsNumber = [];
 	self.testsString = [];
@@ -152,6 +153,27 @@ Schema.prototype.intersect = function intersect(s){
 	}else if(isSchema(s.items)){
 		self.additionalItems = self.additionalItems || new Schema();
 		self.additionalItems.intersect(s.items);
+	}
+	// Keyword: "properties"
+	if(typeof s.properties==='object'){
+		for(var k in s.properties){
+			if(isSchema(s.properties[k])){
+				self.properties[k] = self.properties[k] || new Schema();
+				self.properties[k].intersect(s.properties[k]);
+			}else if(s.properties[k]!==undefined){
+				throw new Error('Value in "properties" must be a schema');
+			}
+		}
+	}else if(s.properties!==undefined){
+		console.log(s.properties)
+		throw new Error('"properties" must be an object');
+	}
+	// Keyword: "additionalProperties"
+	if(isSchema(s.additionalProperties)){
+		self.additionalProperties = self.additionalProperties || new Schema();
+		self.additionalProperties.intersect(s.additionalProperties);
+	}else if(s.additionalProperties!==undefined){
+		throw new Error('"additionalProperties" must be a schema');
 	}
 	// Keyword: "required"
 	if(Array.isArray(s.required)){

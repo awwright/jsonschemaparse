@@ -42,7 +42,7 @@ var validationTestFiles = [
 	//'tests/draft4/oneOf.json',
 	//'tests/draft4/pattern.json',
 	//'tests/draft4/patternProperties.json',
-	//'tests/draft4/properties.json',
+	'tests/draft4/properties.json',
 	//'tests/draft4/ref.json',
 	//'tests/draft4/refRemote.json',
 	'tests/draft4/required.json',

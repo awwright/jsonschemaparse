@@ -289,6 +289,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// pass to OBJECT3
 		case OBJECT3:
 			// Stored state of key, expecting a colon
+			var schema = this.layer.schema;
+			var subschema = schema.properties[this.layer.key] || schema.additionalProperties;
 			switch (n) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -300,7 +302,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x3a: // `:`
 				this.layer.state = OBJECT4;
 				// Parse the next characters as a new value
-				this.push(this.layer.key, this.layer.schema.propertyValueSchema);
+				this.push(this.layer.key, subschema);
 				continue;
 			}
 			this.charError(buffer, i, ':');
