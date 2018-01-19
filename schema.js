@@ -264,7 +264,19 @@ Schema.prototype.getPropertySchema = function getPropertySchema(k){
 	}
 	if(patterns.length==0) return self.additionalProperties;
 	if(patterns.length==1) return patterns[0];
-	console.log('Multiple matches', patterns);
+	return new SchemaUnion(patterns);
+}
+
+Schema.prototype.getItemSchema = function getItemSchema(k){
+	// var subschema = schema.items[this.layer.length] || schema.additionalItems;
+	var self = this;
+	var patterns = [];
+	if(self.items[k]){
+		patterns.push(self.items[k]);
+	}
+	if(patterns.length==0) return self.additionalItems;
+	if(patterns.length==1) return patterns[0];
+	return new SchemaUnion(patterns);
 }
 
 Schema.prototype.testItemsCount = function(length){
@@ -363,14 +375,37 @@ Schema.prototype.testObjectBegin = function(){
 }
 
 
-function SchemaUnion(){
-	this.set = [];
+function SchemaUnion(arr){
+	if(!Array.isArray(arr)) throw new Error('Expected `arr` to be an Array');
+	this.set = arr;
 }
 
 SchemaUnion.prototype.intersect = function intersect(s){
 	this.set.push(s);
 }
 
-SchemaUnion.prototype.testNumber = function testNumber(n){
+SchemaUnion.prototype.testNumberRange = function testNumberRange(n){
+	for(var i=0; i<this.set.length; i++){
+		var res = this.set[i].testNumberRange(n);
+		if(res) return res;
+	}
+}
+SchemaUnion.prototype.getItemSchema = function getItemSchema(n){
+	var u = new SchemaUnion([]);
+	this.set.forEach(function(v){
+		var vv = v.getItemSchema(n);
+		if(vv) u.intersect(vv);
+	});
+	return u;
+}
+SchemaUnion.prototype.getPropertySchema = function getPropertySchema(n){
+	var u = new SchemaUnion([]);
+	this.set.forEach(function(v){
+		var vv = v.getPropertySchema(n);
+		if(vv) u.intersect(vv);
+	});
+	return u;
+}
+SchemaUnion.prototype.testItemsCount = function testItemsCount(n){
 
 }
