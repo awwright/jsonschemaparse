@@ -50,6 +50,8 @@ function Schema(sch){
 	self.additionalItems = null;
 	//self.propertyNameSchema = null;
 	self.properties = {};
+	self.patternProperties = {};
+	self.patternPropertiesRegExp = {};
 	self.additionalProperties = null;
 	self.testsType = [];
 	self.testsNumber = [];
@@ -85,7 +87,6 @@ Schema.prototype.intersect = function intersect(s){
 		if(s.type!='null') self.allowNull=false;
 		if(s.type!='object') self.allowObject=false;
 		if(s.type!='array') self.allowArray=false;
-		self.testsType.push(testType.bind(s, [s.type]));
 	}else if(Array.isArray(s.type)){
 		if(s.type.indexOf('number')<0 && s.type.indexOf('integer')<0) self.allowNumber=false;
 		if(s.type.indexOf('number')<0) self.allowFraction=false;
@@ -94,7 +95,6 @@ Schema.prototype.intersect = function intersect(s){
 		if(s.type.indexOf('null')<0) self.allowNull=false;
 		if(s.type.indexOf('object')<0) self.allowObject=false;
 		if(s.type.indexOf('array')<0) self.allowArray=false;
-		self.testsType.push(testType.bind(s, s.type));
 	}else if(s.type!==undefined){
 		throw new Error('Invalid "type" keyword');
 	}
@@ -177,8 +177,21 @@ Schema.prototype.intersect = function intersect(s){
 			}
 		}
 	}else if(s.properties!==undefined){
-		console.log(s.properties)
 		throw new Error('"properties" must be an object');
+	}
+	// Keyword: "patternProperties"
+	if(typeof s.patternProperties==='object'){
+		for(var k in s.patternProperties){
+			if(isSchema(s.patternProperties[k])){
+				self.patternPropertiesRegExp[k] = self.patternPropertiesRegExp[k] || new RegExp(k);
+				self.patternProperties[k] = self.patternProperties[k] || new Schema();
+				self.patternProperties[k].intersect(s.patternProperties[k]);
+			}else if(s.patternProperties[k]!==undefined){
+				throw new Error('Value in "patternProperties" must be a schema');
+			}
+		}
+	}else if(s.patternProperties!==undefined){
+		throw new Error('"patternProperties" must be an object');
 	}
 	// Keyword: "additionalProperties"
 	if(isSchema(s.additionalProperties)){
@@ -207,8 +220,51 @@ Schema.prototype.intersect = function intersect(s){
 	if(self.allowArray) self.allowedTypes.push('array');
 }
 
-function testType(ctx, v){
+Schema.prototype.testNumber = function testNumber(){
+	if(this.allowNumber) return;
+	return new Error('Expected a number');
+}
 
+Schema.prototype.testString = function testString(){
+	if(this.allowString) return;
+	return new Error('Expected a string');
+}
+
+Schema.prototype.testBoolean = function testBoolean(){
+	if(this.allowBoolean) return;
+	return new Error('Expected a boolean');
+}
+
+Schema.prototype.testNull = function testNull(){
+	if(this.allowNull) return;
+	return new Error('Expected a null');
+}
+
+Schema.prototype.testObject = function testObject(){
+	if(this.allowObject) return;
+	return new Error('Expected an object');
+}
+
+Schema.prototype.testNumberArray = function testNumberArray(){
+	if(this.allowNumberArray) return;
+	return new Error('Expected an array');
+}
+
+Schema.prototype.getPropertySchema = function getPropertySchema(k){
+	var self = this;
+	var patterns = [];
+	//console.log(k, self);
+	if(self.properties[k]){
+		patterns.push(self.properties[k]);
+	}
+	for(var regexp in self.patternPropertiesRegExp){
+		if(self.patternPropertiesRegExp[regexp].test(k)){
+			patterns.push(self.patternProperties[regexp]);
+		}
+	}
+	if(patterns.length==0) return self.additionalProperties;
+	if(patterns.length==1) return patterns[0];
+	console.log('Multiple matches', patterns);
 }
 
 Schema.prototype.testItemsCount = function(length){
@@ -294,8 +350,27 @@ ValidateObject.prototype.finish = function finish(){
 	}
 }
 
+
+function ValidateArray(schema){
+	if(!schema) throw new Error('`schema` argument is required');
+	self.itemsMap = [];
+}
+
 Schema.prototype.testObjectBegin = function(){
 	var schema = this;
 	// Return a stateful object representing which schemas have passed/failed
 	return new ValidateObject(schema);
+}
+
+
+function SchemaUnion(){
+	this.set = [];
+}
+
+SchemaUnion.prototype.intersect = function intersect(s){
+	this.set.push(s);
+}
+
+SchemaUnion.prototype.testNumber = function testNumber(n){
+
 }

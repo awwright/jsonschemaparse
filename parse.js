@@ -291,7 +291,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case OBJECT3:
 			// Stored state of key, expecting a colon
 			var schema = this.layer.schema;
-			var subschema = schema.properties[this.layer.key] || schema.additionalProperties;
+			var subschema = schema.getPropertySchema(this.layer.key);
 			switch (n) {
 			case 0x0a:
 				this.lineOffset = i;
