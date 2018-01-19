@@ -1,5 +1,16 @@
 
-module.exports.Schema = Schema;
+module.exports.ValidationError = ValidationError;
+function ValidationError(message, propertyPath, schema, keyword, expected, actual){
+	this.message = message;
+	this.path = propertyPath;
+	//this.schema = schema;
+	this.schemaId = schema.id;
+	this.keyword = keyword;
+	this.expected = expected;
+	this.actual = actual;
+}
+
+
 
 function isSchema(s){
 	return (typeof s=='object' && !Array.isArray(s)) || (typeof s=='boolean');
@@ -12,6 +23,7 @@ SchemaContext.prototype.error = function(){
 
 }
 
+module.exports.Schema = Schema;
 function Schema(sch){
 	var self = this;
 	self.allowNumber = true;
@@ -21,7 +33,7 @@ function Schema(sch){
 	self.allowObject = true;
 	self.allowArray = true;
 	self.allowedTypes = [];
-	self.allowFraction = true;
+	self.allowFraction = true; // Allow numbers with a fractional component
 	self.maximum = null;
 	self.exclusiveMaximum = null;
 	self.minimum = null;
@@ -249,6 +261,7 @@ Schema.prototype.testNumberRange = function(n){
 }
 
 function ValidateObject(schema){
+	if(!schema) throw new Error('`schema` argument is required');
 	var self = this;
 	self.schema = schema;
 	self.oneOfMap = [];

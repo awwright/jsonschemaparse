@@ -4,14 +4,7 @@ const Transform = require('stream').Transform;
 const util = require('util');
 
 var Schema = require('./schema.js').Schema;
-
-function ValidationError(message, propertyPath, schema, keyword, expected, actual){
-	this.message = message;
-	this.path = propertyPath;
-	this.keyword = keyword;
-	this.expected = expected;
-	this.actual = actual;
-}
+var ValidationError = require('./schema.js').ValidationError;
 
 // Named constants with unique integer values
 var C = {};
@@ -68,6 +61,7 @@ function StreamParser(sch) {
 
 	// Configurable parsing options
 	this.keepValue = false;
+	this.key = false;
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -104,6 +98,11 @@ function StreamParser(sch) {
 }
 util.inherits(StreamParser, Transform);
 
+StreamParser.prototype.event = function (name, value) {
+	this.emit(name, this.layer, value);
+
+}
+
 StreamParser.prototype.charError = function (buffer, i, expecting) {
 	throw new Error(
 		"Unexpected "
@@ -125,6 +124,7 @@ StreamParser.prototype.push = function push(k, schema) {
 		path: k ? path+'/'+k : path,
 		key: null,
 		keepValue: this.keepValue,
+		key: false,
 		value: undefined,
 		beginChar: this.characters,
 		beginLine: this.lineNumber,
@@ -275,6 +275,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.push(null, new Schema);
 				this.layer.state = STRING1;
 				this.layer.keepValue = true;
+				this.layer.key = true;
 				continue;
 			case 0x7d: // `}`
 				this.endObject();
@@ -733,7 +734,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			switch (n) {
 			case 0x22: // `"`
 				if(this.layer.keepValue) this.layer.value = this.string;
-				this.endString();
+				if(this.layer.key) this.endKey();
+				else this.endString();
 				continue;
 			case 0x5c: // `\`
 				this.layer.state = STRING2;
@@ -784,11 +786,11 @@ StreamParser.prototype.startObject = function startObject(){
 		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'object');
 	}
 	this.layer.validator = this.layer.schema.testObjectBegin();
-	this.emit('startObject');
+	this.event('startObject');
 }
 
 StreamParser.prototype.endObject = function endObject(){
-	this.emit('endObject');
+	this.event('endObject');
 	this.addErrorList(this.layer.validator.finish());
 	this.validateObject();
 	this.pop();
@@ -801,11 +803,11 @@ StreamParser.prototype.startArray = function startArray(){
 	if(!this.layer.schema.allowArray){
 		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'array');
 	}
-	this.emit('startArray');
+	this.event('startArray');
 }
 
 StreamParser.prototype.endArray = function endArray(n, s){
-	this.emit('endArray');
+	this.event('endArray');
 	this.validateArray(n, s);
 	this.pop();
 }
@@ -865,8 +867,17 @@ StreamParser.prototype.endNumber = function endNumber(){
 }
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
-	this.emit('onNumber');
+	this.event('onNumber');
 	this.addErrorList(this.layer.schema.testNumberRange(n));
+	this.pop();
+}
+
+StreamParser.prototype.startKey = function startKey(){
+}
+
+StreamParser.prototype.endKey = function endKey(){
+	this.event('onKey', this.string);
+	this.validateKey();
 	this.pop();
 }
 
@@ -877,9 +888,12 @@ StreamParser.prototype.startString = function startString(){
 }
 
 StreamParser.prototype.endString = function endString(){
-	this.emit('onString', this.string);
+	this.event('onString', this.string);
 	this.validateString();
 	this.pop();
+}
+
+StreamParser.prototype.validateKey = function validateString(){
 }
 
 StreamParser.prototype.validateString = function validateString(){
@@ -892,7 +906,7 @@ StreamParser.prototype.startBoolean = function startBoolean(){
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
-	this.emit('onBoolean', this.value);
+	this.event('onBoolean', this.value);
 	this.pop();
 }
 
@@ -903,7 +917,7 @@ StreamParser.prototype.startNull = function endNull(){
 }
 
 StreamParser.prototype.endNull = function endNull(){
-	this.emit('onNull', this.value);
+	this.event('onNull', this.value);
 	this.pop();
 }
 
