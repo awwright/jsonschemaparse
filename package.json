@@ -1,0 +1,30 @@
+{
+  "name": "jsonschemaparse",
+  "description": "Streaming JSON validation with integrated validation and error reporting tools",
+  "main": "parse.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "nodemon": "^1.11.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awwright/jsonschemaparse.git"
+  },
+  "keywords": [
+    "json",
+    "json",
+    "schema"
+  ],
+  "author": "Austin Wright",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/awwright/jsonschemaparse/issues"
+  },
+  "homepage": "https://github.com/awwright/jsonschemaparse#readme"
+}
