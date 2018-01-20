@@ -12,6 +12,7 @@ Features:
 	- Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate
 
+```ecmascript
 var schema = new JSONSchema();
 var jsonparse = new JSONParser({ validator:schema, parser:foo });
 req.pipe(jsonparse).on('end', function(){
@@ -23,5 +24,5 @@ req.pipe(jsonparse).on('end', function(){
 	}
 	jsonparse.value;
 });
-
+```
 
