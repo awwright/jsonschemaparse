@@ -164,12 +164,6 @@ function Schema(sch, registry){
 
 	if(!sch) return;
 	self.intersect(sch);
-	if(sch.allOf){
-		if(!Array.isArray(sch.allOf)){
-			throw new Error('"allOf" not an array');
-		}
-		sch.allOf.forEach(function(sc){ self.intersect(sc); });
-	}
 	//console.log(self);
 }
 
@@ -182,6 +176,15 @@ Schema.prototype.intersect = function intersect(s){
 	}else if(s===true){
 		s = {};
 	}
+
+	// Keyword: "allOf"
+	if(s.allOf){
+		if(!Array.isArray(s.allOf)){
+			throw new Error('"allOf" not an array');
+		}
+		s.allOf.forEach(function(sc){ self.intersect(sc); });
+	}
+
 	// Keyword: "type"
 	if(typeof s.type=='string'){
 		if(s.type!='number' && s.type!='integer') self.allowNumber=false;
