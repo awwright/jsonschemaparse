@@ -639,7 +639,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue;
 			}
 			this.endNumber();
-			i--, this.characters--; // this character is not a number
+			// FIXME what if we're at the first character of the incoming block?
+			i--, this.characters--; // this character is not a number, rewind
 			continue;
 		case NUMBER6:
 			// After e/E
