@@ -9,6 +9,11 @@ function ValidationError(message, propertyPath, schema, keyword, expected, actua
 	this.expected = expected;
 	this.actual = actual;
 }
+//ValidationError.prototype.toString = function toString(){
+//	return this.message
+//		+ '\n\t' + JSON.stringify(this.schema)
+//		+ '\n\t' + JSON.stringify(this.actual)
+//}
 
 
 
