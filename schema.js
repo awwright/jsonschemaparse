@@ -220,34 +220,34 @@ Schema.prototype.intersect = function intersect(s){
 	if(self.allowArray) self.allowedTypes.push('array');
 }
 
-Schema.prototype.testNumber = function testNumber(){
+Schema.prototype.testTypeNumber = function testNumber(layer, expected){
 	if(this.allowNumber) return;
-	return new Error('Expected a number');
+	return new ValidationError('Expected a number', layer.path, layer.schema, 'type', expected, 'number');
 }
 
-Schema.prototype.testString = function testString(){
+Schema.prototype.testTypeString = function testString(layer, expected){
 	if(this.allowString) return;
-	return new Error('Expected a string');
+	return new ValidationError('Expected a string', layer.path, layer.schema, 'type', expected, 'string');
 }
 
-Schema.prototype.testBoolean = function testBoolean(){
+Schema.prototype.testTypeBoolean = function testBoolean(layer, expected){
 	if(this.allowBoolean) return;
-	return new Error('Expected a boolean');
+	return new ValidationError('Expected a boolean', layer.path, layer.schema, 'type', expected, 'boolean');
 }
 
-Schema.prototype.testNull = function testNull(){
+Schema.prototype.testTypeNull = function testNull(layer, expected){
 	if(this.allowNull) return;
-	return new Error('Expected a null');
+	return new ValidationError('Expected a null', layer.path, layer.schema, 'type', expected, 'null');
 }
 
-Schema.prototype.testObject = function testObject(){
+Schema.prototype.testTypeObject = function testObject(layer, expected){
 	if(this.allowObject) return;
-	return new Error('Expected an object');
+	return new ValidationError('Expected an object', layer.path, layer.schema, 'type', expected, 'object');
 }
 
-Schema.prototype.testNumberArray = function testNumberArray(){
-	if(this.allowNumberArray) return;
-	return new Error('Expected an array');
+Schema.prototype.testTypeArray = function testArray(layer, expected){
+	if(this.allowArray) return;
+	return new ValidationError('Expected an array', layer.path, layer.schema, 'type', expected, 'array');
 }
 
 Schema.prototype.getPropertySchema = function getPropertySchema(k){
@@ -382,6 +382,48 @@ function SchemaUnion(arr){
 
 SchemaUnion.prototype.intersect = function intersect(s){
 	this.set.push(s);
+}
+
+SchemaUnion.prototype.testTypeNumber = function testNumber(layer, expected){
+	for(var i=0; i<this.set.length; i++){
+		if(this.set[i].allowNumber) continue;
+		return new ValidationError('Expected a number', layer.path, this.set[i], 'type', expected, 'number');
+	}
+}
+
+SchemaUnion.prototype.testTypeString = function testString(layer, expected){
+	for(var i=0; i<this.set.length; i++){
+		if(this.set[i].allowString) continue;
+		return new ValidationError('Expected a string', layer.path, this.set[i], 'type', expected, 'string');
+	}
+}
+
+SchemaUnion.prototype.testTypeBoolean = function testBoolean(layer, expected){
+	for(var i=0; i<this.set.length; i++){
+		if(this.set[i].allowBoolean) continue;
+		return new ValidationError('Expected a boolean', layer.path, this.set[i], 'type', expected, 'boolean');
+	}
+}
+
+SchemaUnion.prototype.testTypeNull = function testNull(layer, expected){
+	for(var i=0; i<this.set.length; i++){
+		if(this.set[i].allowNull) continue;
+		return new ValidationError('Expected a null', layer.path, this.set[i], 'type', expected, 'null');
+	}
+}
+
+SchemaUnion.prototype.testTypeObject = function testObject(layer, expected){
+	for(var i=0; i<this.set.length; i++){
+		if(this.set[i].allowObject) continue;
+		return new ValidationError('Expected an object', layer.path, this.set[i], 'type', expected, 'object');
+	}
+}
+
+SchemaUnion.prototype.testTypeArray = function testArray(layer, expected){
+	for(var i=0; i<this.set.length; i++){
+		if(this.set[i].allowArray) continue;
+		return new ValidationError('Expected an array', layer.path, this.set[i], 'type', expected, 'array');
+	}
 }
 
 SchemaUnion.prototype.testNumberRange = function testNumberRange(n){

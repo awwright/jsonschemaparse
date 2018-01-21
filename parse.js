@@ -782,9 +782,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 };
 
 StreamParser.prototype.startObject = function startObject(){
-	if(!this.layer.schema.allowObject){
-		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'object');
-	}
+	this.addErrorList(this.layer.schema.testTypeObject(this.layer));
 	this.layer.validator = this.layer.schema.testObjectBegin();
 	this.event('startObject');
 }
@@ -816,9 +814,7 @@ StreamParser.prototype.validateArray = function validateArray(n, s){
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
-	if(!this.layer.schema.allowNumber){
-		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'number');
-	}
+	this.addErrorList(this.layer.schema.testTypeNumber(this.layer));
 }
 
 StreamParser.prototype.endNumber = function endNumber(){
@@ -882,9 +878,7 @@ StreamParser.prototype.endKey = function endKey(){
 }
 
 StreamParser.prototype.startString = function startString(){
-	if(!this.layer.schema.allowString){
-		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'string');
-	}
+	this.addErrorList(this.layer.schema.testTypeString(this.layer));
 }
 
 StreamParser.prototype.endString = function endString(){
@@ -900,9 +894,7 @@ StreamParser.prototype.validateString = function validateString(){
 }
 
 StreamParser.prototype.startBoolean = function startBoolean(){
-	if(!this.layer.schema.allowBoolean){
-		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'boolean');
-	}
+	this.addErrorList(this.layer.schema.testTypeBoolean(this.layer));
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
@@ -911,9 +903,7 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 }
 
 StreamParser.prototype.startNull = function endNull(){
-	if(!this.layer.schema.allowNull){
-		this.addError('Invalid type', 'type', this.layer.schema.allowedTypes, 'null');
-	}
+	this.addErrorList(this.layer.schema.testTypeNull(this.layer));
 }
 
 StreamParser.prototype.endNull = function endNull(){
