@@ -146,7 +146,7 @@ StreamParser.prototype.pop = function pop(){
 }
 
 StreamParser.prototype.addError = function addError(message, keyword, expected, actual) {
-	console.log('Add error', message, keyword, expected, actual, new Error().stack);
+	//console.log('Add error', message, keyword, expected, actual, new Error().stack);
 	this.errors.push(new ValidationError(message, this.layer.path, this.layer.schema, keyword, expected, actual));
 }
 StreamParser.prototype.addErrorList = function addErrorList(errs) {
