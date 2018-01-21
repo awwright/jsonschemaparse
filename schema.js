@@ -82,7 +82,9 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 			id = base + '#' + path;
 		}
 		if(self.source[id]){
-			throw new Error('Schema already defined');
+			var oldSchema = JSON.stringify(self.source[id]);
+			var newSchema = JSON.stringify(schema);
+			if(oldSchema!==newSchema) throw new Error('Schema already defined');
 		}
 		self.source[id] = schema;
 		self.scan(id, schema.items, path+'/items');
