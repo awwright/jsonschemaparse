@@ -449,5 +449,8 @@ SchemaUnion.prototype.getPropertySchema = function getPropertySchema(n){
 	return u;
 }
 SchemaUnion.prototype.testItemsCount = function testItemsCount(n){
-
+	for(var i=0; i<this.set.length; i++){
+		var res = this.set[i].testItemsCount(n);
+		if(res) return res;
+	}
 }
