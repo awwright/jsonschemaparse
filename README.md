@@ -12,17 +12,14 @@ Features:
 	- Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate
 
-```ecmascript
-var schema = new JSONSchema();
-var jsonparse = new JSONParser({ validator:schema, parser:foo });
-req.pipe(jsonparse).on('end', function(){
-	if(jsonparse.error){
-		console.log('Parse error: ', jsonparse.error);
-	}
-	if(jsonparse.error){
-		console.log('Parse error: ', jsonparse.error);
-	}
-	jsonparse.value;
-});
-```
+```javascript
+var p = new Parser({type:'array'}, {});
+p.keepValue = true;
 
+fs.createReadStream('test/syntax-suite/test_parsing/i_structure_500_nested_arrays.json')
+	.pipe(p)
+	.on('finish', function(err, res){
+		console.log(p.errors);
+		console.log(p.value);
+	});
+```

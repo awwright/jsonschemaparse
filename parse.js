@@ -58,7 +58,6 @@ function StreamParser(sch, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 	Transform.call(this, {});
 
-
 	// Configurable parsing options
 	this.keepValue = false;
 	this.key = false;
