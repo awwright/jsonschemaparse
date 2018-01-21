@@ -113,7 +113,8 @@ function runValidationTest(filepath, done){
 			res.total++;
 			if(throws){
 				res.fail++;
-				res.messages.push(throws);
+				var er = {description:t.description, i:i, valid:t.valid, errors:throws, schema:schema, value:t.data};
+				res.messages.push(er);
 			}else if(t.valid!=!!p.errors.length){
 				res.pass++;
 			}else{
