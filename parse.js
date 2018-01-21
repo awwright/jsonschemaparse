@@ -59,8 +59,11 @@ function StreamParser(sch, options) {
 	Transform.call(this, {});
 
 	// Configurable parsing options
-	this.keepValue = false;
+	// Store parsed value in `this.value`?
+	this.keepValue = 'keepValue' in options ? options.keepValue : false;
+	// dunno what this is
 	this.key = false;
+	// Allow trailing commas/comma terminated properties?
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -131,7 +134,6 @@ StreamParser.prototype.push = function push(k, schema) {
 		path: k ? path+'/'+k : path,
 		key: null,
 		keepValue: this.keepValue,
-		key: false,
 		value: undefined,
 		beginChar: this.characters,
 		beginLine: this.lineNumber,

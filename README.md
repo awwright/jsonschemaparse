@@ -13,8 +13,7 @@ Features:
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate
 
 ```javascript
-var p = new Parser({type:'array'}, {});
-p.keepValue = true;
+var p = new Parser({type:'array'}, {keepValue:true});
 
 fs.createReadStream('test/syntax-suite/test_parsing/i_structure_500_nested_arrays.json')
 	.pipe(p)
