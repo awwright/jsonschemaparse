@@ -21,7 +21,7 @@ var syntaxTestFiles = fs.readdirSync(dirpath).filter(function(n){
 
 var validationTestFiles = [
 	'tests/draft6/additionalItems.json',
-	//'tests/draft6/additionalProperties.json',
+	'tests/draft6/additionalProperties.json',
 	'tests/draft6/allOf.json',
 	//'tests/draft6/anyOf.json',
 	'tests/draft6/default.json',
