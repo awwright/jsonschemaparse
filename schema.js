@@ -1,6 +1,8 @@
 
 "use strict";
 
+var url = require('url');
+
 module.exports.ValidationError = ValidationError;
 function ValidationError(message, propertyPath, schema, keyword, expected, actual){
 	this.message = message;
@@ -18,21 +20,113 @@ function ValidationError(message, propertyPath, schema, keyword, expected, actua
 //}
 
 
-
+module.exports.isSchema = isSchema;
 function isSchema(s){
-	return (typeof s=='object' && !Array.isArray(s)) || (typeof s=='boolean');
+	// Is an object, but not an array, and not a schema reference with $ref
+	// Also a boolean is also a valid schema
+	return (typeof s=='object' && !Array.isArray(s) && !s.$ref) || (typeof s=='boolean');
+}
+function isSchemaResolve(s){
+	// Is an object, but not an array. $ref is OK.
+	// Also a boolean is also a valid schema
+	// Also a string can be used to reference a schema.
+	return (typeof s=='object' && !Array.isArray(s)) || (typeof s=='boolean') || (typeof s=='string');
 }
 
-function SchemaContext(){
-
+module.exports.SchemaRegistry = SchemaRegistry;
+function SchemaRegistry(){
+	this.source = {};
 }
-SchemaContext.prototype.error = function(){
-
-}
-
-module.exports.Schema = Schema;
-function Schema(sch){
+SchemaRegistry.prototype.scanMap = function scan(base, map, path){
 	var self = this;
+	if(map) for(var n in map) if(typeof map[n]=='object') self.scan(base, map[n], path+'/'+n);
+}
+SchemaRegistry.prototype.scan = function scan(base, schema, path){
+	var self = this;
+	if(!schema){
+		return;
+	}
+	if(!base){
+		base = 'http://localhost/';
+	}
+	if(!path){
+		path = '';
+	}
+	if(Array.isArray(schema)){
+		schema.forEach(function(v, i){ self.scan(base, schema[i], path+'/'+i); });
+		return;
+	}
+	if(typeof schema==='string'){
+		var id = url.resolve(base, schema);
+		if(!this.source[id]) this.source[id] = null;
+	}
+	if(typeof schema==='boolean'){
+		// Alias boolean form to an object schema
+		if(schema===true){
+			schema = { id:'_:true' };
+		}else if(schema===false){
+			schema = { id:'_:false', type: [] };
+		}
+		// continue to 'object'
+	}
+	if(typeof schema==='object'){
+		if(schema.$ref){
+			self.scan(schema.$ref)
+			return;
+		}
+		var uriref = schema.$id || schema.id;
+		var id;
+		if(uriref){
+			id = url.resolve(base, uriref);
+		}else {
+			id = base + '#' + path;
+		}
+		if(self.source[id]){
+			throw new Error('Schema already defined');
+		}
+		self.source[id] = schema;
+		self.scan(id, schema.items, path+'/items');
+		self.scan(id, schema.extends, path+'/extends');
+		self.scan(id, schema.additionalItems, path+'/additionalItems');
+		self.scanMap(id, schema.properties, path+'/properties');
+		self.scan(id, schema.additionalProperties, path+'/additionalProperties');
+		self.scanMap(id, schema.definitions, path+'/definitions');
+		self.scanMap(id, schema.patternProperties, path+'/patternProperties');
+		self.scanMap(id, schema.dependencies, path+'/dependencies');
+		self.scan(id, schema.disallow, path+'/disallow');
+		self.scan(id, schema.allOf, path+'/allOf');
+		self.scan(id, schema.anyOf, path+'/anyOf');
+		self.scan(id, schema.oneOf, path+'/oneOf');
+		self.scan(id, schema.not, path+'/not');
+	}
+}
+SchemaRegistry.prototype.resolve = function resolve(base, schema){
+	var self = this;
+	if(typeof base != 'string') throw new Error('`base` must be a string');
+	if(typeof schema==='string'){
+		var uriref = schema;
+		var id = url.resolve(base, uriref);
+		var resolved = self.source[id];
+		if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
+		return new Schema(self.source[id], self);
+	}else if(isSchema(schema)){
+		return new Schema(schema, self);
+	}else if(isSchemaResolve(schema)){
+		// If it's not a schema, but a schema reference
+		return self.resolve(base, schema.$ref);
+	}else if(!schema){
+		return new Schema({}, self);
+	}
+}
+
+// Parse and optimize a schema
+// All referenced schemas must be imported to the registry already
+module.exports.Schema = Schema;
+function Schema(sch, registry){
+	var self = this;
+	if(!registry) throw new Error('Required parameter `registry`');
+	self.registry = registry;
+	self.id = sch.$id || sch.id || 'http://localhost/';
 	self.allowNumber = true;
 	self.allowString = true;
 	self.allowBoolean = true;
@@ -163,22 +257,22 @@ Schema.prototype.intersect = function intersect(s){
 	// Keyword: "items" and "additionalItems"
 	if(Array.isArray(s.items)){
 		s.items.forEach(function(s2, i){
-			self.items[i] = self.items[i] || new Schema;
+			self.items[i] = self.registry.resolve(self.id, s.items[i]);
 			self.items[i].intersect(s2);
 		});
 		if(isSchema(s.additionalItems)){
-			self.additionalItems = self.additionalItems || new Schema();
+			self.additionalItems = self.registry.resolve(self.id, s.additionalItems);
 			self.additionalItems.intersect(s.additionalItems);
 		}
 	}else if(isSchema(s.items)){
-		self.additionalItems = self.additionalItems || new Schema();
+		self.additionalItems = self.registry.resolve(self.id, s.additionalItems);
 		self.additionalItems.intersect(s.items);
 	}
 	// Keyword: "properties"
 	if(typeof s.properties==='object'){
 		for(var k in s.properties){
-			if(isSchema(s.properties[k])){
-				self.properties[k] = self.properties[k] || new Schema();
+			if(isSchemaResolve(s.properties[k])){
+				self.properties[k] = self.registry.resolve(self.id, s.properties[k]);
 				self.properties[k].intersect(s.properties[k]);
 			}else if(s.properties[k]!==undefined){
 				throw new Error('Value in "properties" must be a schema');
@@ -192,7 +286,7 @@ Schema.prototype.intersect = function intersect(s){
 		for(var k in s.patternProperties){
 			if(isSchema(s.patternProperties[k])){
 				self.patternPropertiesRegExp[k] = self.patternPropertiesRegExp[k] || new RegExp(k);
-				self.patternProperties[k] = self.patternProperties[k] || new Schema();
+				self.patternProperties[k] = self.registry.resolve(self.id, s.patternProperties[k]);
 				self.patternProperties[k].intersect(s.patternProperties[k]);
 			}else if(s.patternProperties[k]!==undefined){
 				throw new Error('Value in "patternProperties" must be a schema');
@@ -203,7 +297,7 @@ Schema.prototype.intersect = function intersect(s){
 	}
 	// Keyword: "additionalProperties"
 	if(isSchema(s.additionalProperties)){
-		self.additionalProperties = self.additionalProperties || new Schema();
+		self.additionalProperties = self.registry.resolve(self.id, s.additionalProperties);
 		self.additionalProperties.intersect(s.additionalProperties);
 	}else if(s.additionalProperties!==undefined){
 		throw new Error('"additionalProperties" must be a schema');
@@ -231,6 +325,7 @@ Schema.prototype.intersect = function intersect(s){
 	if(self.allowObject) self.allowedTypes.push('object');
 	if(self.allowArray) self.allowedTypes.push('array');
 }
+
 
 Schema.prototype.testTypeNumber = function testNumber(layer, expected){
 	if(this.allowNumber) return;

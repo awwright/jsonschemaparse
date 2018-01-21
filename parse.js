@@ -4,6 +4,7 @@ const Transform = require('stream').Transform;
 const util = require('util');
 
 var Schema = require('./schema.js').Schema;
+var SchemaRegistry = require('./schema.js').SchemaRegistry;
 var ValidationError = require('./schema.js').ValidationError;
 
 // Named constants with unique integer values
@@ -53,17 +54,24 @@ function toknam(code) {
 	return tokenNames[code] || code;
 }
 
-function StreamParser(sch) {
+function StreamParser(sch, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 	Transform.call(this, {});
 
-	var schema = new Schema(sch);
 
 	// Configurable parsing options
 	this.keepValue = false;
 	this.key = false;
 	this.trailingComma = false;
 	this.multipleValue = false;
+
+	// Configurable validation options
+	this.schemaRegistry = options.registry || new SchemaRegistry;
+	if(sch){
+		this.schemaRegistry.scan(null, sch);
+	}
+
+	var schema = new Schema(sch, this.schemaRegistry);
 
 	// Line number tracking
 	this.characters = 0;
@@ -130,7 +138,7 @@ StreamParser.prototype.push = function push(k, schema) {
 		beginLine: this.lineNumber,
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
-		schema: schema || new Schema,
+		schema: schema || new Schema({}, this.schemaRegistry),
 		//not: {},
 		//allOf: [],
 		//oneOf: [],
@@ -273,7 +281,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.string = "";
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
-				this.push(null, new Schema);
+				this.push(null, new Schema({}, this.schemaRegistry));
 				this.layer.state = STRING1;
 				this.layer.keepValue = true;
 				this.layer.key = true;

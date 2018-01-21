@@ -43,7 +43,7 @@ var validationTestFiles = [
 	'tests/draft6/pattern.json',
 	'tests/draft6/patternProperties.json',
 	'tests/draft6/properties.json',
-	//'tests/draft6/ref.json',
+	'tests/draft6/ref.json',
 	//'tests/draft6/refRemote.json',
 	'tests/draft6/required.json',
 	'tests/draft6/type.json',
@@ -102,11 +102,19 @@ function runValidationTest(filepath, done){
 		var tests = s.tests;
 		tests.forEach(function(t, i){
 			var tjson = JSON.stringify(t.data, null, "\t");
-			var p = new Parser(schema, {});
-			p._transform(tjson);
-			p.eof();
+			var throws = false;
+			try {
+				var p = new Parser(schema, {});
+				p._transform(tjson);
+				p.eof();
+			}catch(e){
+				throws = e;
+			}
 			res.total++;
-			if(t.valid!=!!p.errors.length){
+			if(throws){
+				res.fail++;
+				res.messages.push(throws);
+			}else if(t.valid!=!!p.errors.length){
 				res.pass++;
 			}else{
 				res.fail++;
