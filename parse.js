@@ -886,10 +886,11 @@ StreamParser.prototype.endString = function endString(){
 	this.pop();
 }
 
-StreamParser.prototype.validateKey = function validateString(){
+StreamParser.prototype.validateKey = function validateKey(){
 }
 
 StreamParser.prototype.validateString = function validateString(){
+	this.addErrorList(this.layer.schema.testStringRange(this.layer, this.string));
 }
 
 StreamParser.prototype.startBoolean = function startBoolean(){

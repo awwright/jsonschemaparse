@@ -1,4 +1,6 @@
 
+"use strict";
+
 module.exports.ValidationError = ValidationError;
 function ValidationError(message, propertyPath, schema, keyword, expected, actual){
 	this.message = message;
@@ -78,6 +80,7 @@ function Schema(sch){
 Schema.prototype.intersect = function intersect(s){
 	var self = this;
 	if(s===false){
+		// always fail
 		self.allowNumber = self.allowString = self.allowBoolean = self.allowNull = self.allowObject = self.allowArray = false;
 		return;
 	}else if(s===true){
@@ -216,6 +219,10 @@ Schema.prototype.intersect = function intersect(s){
 			self.required[k] = true;
 		});
 	}
+	// Keyword: "pattern"
+	if(typeof s.pattern=='string'){
+		self.testsString.push(Schema.stringTestPattern.bind(self, s.pattern));
+	}
 	// Update indexes
 	if(self.allowNumber) self.allowedTypes.push('number');
 	if(self.allowString) self.allowedTypes.push('string');
@@ -333,6 +340,21 @@ Schema.prototype.testNumberRange = function(n){
 	return new Error('Number out of range');
 }
 
+Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
+	if (!instance.match(pattern)) {
+		return new ValidationError('String does not match pattern', layer.path , layer.schema, 'pattern', pattern, instance);
+	}
+}
+
+Schema.prototype.testStringRange = function testStringRange(layer, instance){
+	if(typeof instance != 'string') return;
+	var self = this;
+	for(var i=0; i<self.testsString.length; i++){
+		var res = self.testsString[i](layer, instance);
+		if(res) return res;
+	}
+}
+
 function ValidateObject(schema){
 	if(!schema) throw new Error('`schema` argument is required');
 	var self = this;
@@ -389,51 +411,57 @@ SchemaUnion.prototype.intersect = function intersect(s){
 	this.set.push(s);
 }
 
-SchemaUnion.prototype.testTypeNumber = function testNumber(layer, expected){
+SchemaUnion.prototype.testTypeNumber = function testTypeNumber(layer){
 	for(var i=0; i<this.set.length; i++){
 		if(this.set[i].allowNumber) continue;
-		return new ValidationError('Expected a number', layer.path, this.set[i], 'type', expected, 'number');
+		return new ValidationError('Invalid number', layer.path, this.set[i], 'type', this.set[i].type, 'number');
 	}
 }
 
-SchemaUnion.prototype.testTypeString = function testString(layer, expected){
+SchemaUnion.prototype.testTypeString = function testTypeString(layer){
 	for(var i=0; i<this.set.length; i++){
 		if(this.set[i].allowString) continue;
-		return new ValidationError('Expected a string', layer.path, this.set[i], 'type', expected, 'string');
+		return new ValidationError('Invalid string', layer.path, this.set[i], 'type', this.set[i].type, 'string');
 	}
 }
 
-SchemaUnion.prototype.testTypeBoolean = function testBoolean(layer, expected){
+SchemaUnion.prototype.testTypeBoolean = function testTypeBoolean(layer){
 	for(var i=0; i<this.set.length; i++){
 		if(this.set[i].allowBoolean) continue;
-		return new ValidationError('Expected a boolean', layer.path, this.set[i], 'type', expected, 'boolean');
+		return new ValidationError('Invalid boolean', layer.path, this.set[i], 'type', this.set[i].type, 'boolean');
 	}
 }
 
-SchemaUnion.prototype.testTypeNull = function testNull(layer, expected){
+SchemaUnion.prototype.testTypeNull = function testTypeNull(layer){
 	for(var i=0; i<this.set.length; i++){
 		if(this.set[i].allowNull) continue;
-		return new ValidationError('Expected a null', layer.path, this.set[i], 'type', expected, 'null');
+		return new ValidationError('Invalid nuull', layer.path, this.set[i], 'type', this.set[i].type, 'null');
 	}
 }
 
-SchemaUnion.prototype.testTypeObject = function testObject(layer, expected){
+SchemaUnion.prototype.testTypeObject = function testTypeObject(layer){
 	for(var i=0; i<this.set.length; i++){
 		if(this.set[i].allowObject) continue;
-		return new ValidationError('Expected an object', layer.path, this.set[i], 'type', expected, 'object');
+		return new ValidationError('Invalid object', layer.path, this.set[i], 'type', this.set[i].type, 'object');
 	}
 }
 
-SchemaUnion.prototype.testTypeArray = function testArray(layer, expected){
+SchemaUnion.prototype.testTypeArray = function testTypeArray(layer){
 	for(var i=0; i<this.set.length; i++){
 		if(this.set[i].allowArray) continue;
-		return new ValidationError('Expected an array', layer.path, this.set[i], 'type', expected, 'array');
+		return new ValidationError('Invalid array', layer.path, this.set[i], 'type', this.set[i].type, 'array');
 	}
 }
 
 SchemaUnion.prototype.testNumberRange = function testNumberRange(n){
 	for(var i=0; i<this.set.length; i++){
 		var res = this.set[i].testNumberRange(n);
+		if(res) return res;
+	}
+}
+SchemaUnion.prototype.testStringRange = function testStringRange(n){
+	for(var i=0; i<this.set.length; i++){
+		var res = this.set[i].testStringRange(n);
 		if(res) return res;
 	}
 }

@@ -40,7 +40,7 @@ var validationTestFiles = [
 	'tests/draft6/multipleOf.json',
 	//'tests/draft6/not.json',
 	//'tests/draft6/oneOf.json',
-	//'tests/draft6/pattern.json',
+	'tests/draft6/pattern.json',
 	'tests/draft6/patternProperties.json',
 	'tests/draft6/properties.json',
 	//'tests/draft6/ref.json',
