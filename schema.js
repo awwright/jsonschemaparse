@@ -195,7 +195,6 @@ function Schema(sch, registry){
 }
 
 Schema.prototype.createParser = function createParser(options){
-	console.log('StreamParser', require('./parse.js'));
 	return new Parse.StreamParser(this, options);
 }
 

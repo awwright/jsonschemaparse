@@ -66,7 +66,7 @@ function runSyntaxTest(filename, done){
 	else return void done(new Error('Unknown test type'));
 	var testError = null;
 	var t = fs.createReadStream(filepath);
-	var p = new Parser(new Schema, {});
+	var p = new Parser();
 	t.pipe(p);
 	p.on('error', function(err){
 		if(!err) return;
@@ -100,13 +100,13 @@ function runValidationTest(filepath, done){
 	var schemas = require('./test/schema-suite/'+filepath);
 	//console.log(filepath + ' ...');
 	schemas.forEach(function(s){
-		var schema = s.schema;
 		var tests = s.tests;
 		tests.forEach(function(t, i){
 			var tjson = JSON.stringify(t.data, null, "\t");
 			var throws = false;
 			try {
-				var p = new Parser(new Schema(schema), {});
+				var schema = new Schema(s.schema);
+				var p = schema.createParser();
 				p._transform(tjson);
 				p.eof();
 			}catch(e){
