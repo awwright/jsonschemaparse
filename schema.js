@@ -3,6 +3,8 @@
 
 var url = require('url');
 
+var Parse = require('./parse.js');
+
 module.exports.ValidationError = ValidationError;
 function ValidationError(message, propertyPath, schema, keyword, expected, actual){
 	this.message = message;
@@ -190,6 +192,11 @@ function Schema(sch, registry){
 
 	if(sch) self.intersect(sch);
 	//console.log(self);
+}
+
+Schema.prototype.createParser = function createParser(options){
+	console.log('StreamParser', require('./parse.js'));
+	return new Parse.StreamParser(this, options);
 }
 
 Schema.prototype.intersect = function intersect(s){

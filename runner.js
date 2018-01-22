@@ -1,8 +1,8 @@
 
 
 var fs = require('fs');
-var Parser = require('./parse.js').StreamParser;
-var Schema = require('./parse.js').Schema;
+var Parser = require('./index.js').StreamParser;
+var Schema = require('./index.js').Schema;
 
 Error.stackTraceLimit = 25;
 

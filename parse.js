@@ -3,9 +3,7 @@
 const Transform = require('stream').Transform;
 const util = require('util');
 
-var Schema = module.exports.Schema = require('./schema.js').Schema;
-var SchemaRegistry = module.exports.SchemaRegistry = require('./schema.js').SchemaRegistry;
-var ValidationError = require('./schema.js').ValidationError;
+var S = require('./schema.js');
 
 // Named constants with unique integer values
 var C = {};
@@ -54,9 +52,13 @@ function toknam(code) {
 	return tokenNames[code] || code;
 }
 
+
+module.exports.StreamParser = StreamParser;
 function StreamParser(schema, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 	Transform.call(this, {});
+
+	if(!options) options = {};
 
 	// Configurable parsing options
 	// Store parsed value in `this.value`?
@@ -68,7 +70,7 @@ function StreamParser(schema, options) {
 	this.multipleValue = false;
 
 	if(schema){
-		if(!(schema instanceof Schema)) throw new Error('schema must be instance of Schema');
+		if(!(schema instanceof S.Schema)) throw new Error('schema must be instance of Schema');
 	}
 
 	// Line number tracking
@@ -931,5 +933,3 @@ StreamParser.prototype.eof = function eof() {
 		throw new Error('Unexpected end of document');
 	}
 }
-
-exports.StreamParser = StreamParser;
