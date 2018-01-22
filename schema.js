@@ -81,6 +81,11 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 		}else {
 			id = base + '#' + path;
 		}
+		// Strip trailing empty fragment
+		if(id.match(/#$/)){
+			id = id.substring(0, id.length-1);
+		}
+		// Throw error if schema is being re-defined with different definition
 		if(self.source[id]){
 			var oldSchema = JSON.stringify(self.source[id]);
 			var newSchema = JSON.stringify(schema);
@@ -108,9 +113,29 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 	if(typeof schema==='string'){
 		var uriref = schema;
 		var id = url.resolve(base, uriref);
-		var resolved = self.source[id];
-		if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
-		return new Schema(self, self.source[id]);
+		if(self.source[id]){
+			var resolved = self.source[id];
+			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
+			return new Schema(self, self.source[id]);
+		}
+		var parts = id.split('#',2);
+		var id = parts[0];
+		if(self.source[id]){
+			var resolved = self.source[id];
+			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
+			var hier = parts.split('/').slice(1).map(function(v){
+				return v;
+			});
+			id += '#';
+			for(var i=0; i<hier.length; i++){
+				var key = hier[i];
+				id += '/' + encodeURIComponent(key);
+				resolved = resolved[key];
+				if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
+			}
+			return new Schema(self, resolved);
+		}
+		throw new Error('Could not resolve schema '+JSON.stringify(schema)+' (in '+JSON.stringify(base)+')');
 	}else if(isSchema(schema)){
 		return new Schema(self, schema);
 	}else if(isSchemaResolve(schema)){
@@ -276,8 +301,9 @@ Schema.prototype.intersect = function intersect(s){
 	// Keyword: "properties"
 	if(typeof s.properties==='object'){
 		for(var k in s.properties){
-			if(isSchemaResolve(s.properties[k])){
+			if(isSchema(s.properties[k])){
 				self.properties[k] = self.registry.resolve(self.id, s.properties[k]);
+				// FIXME Why is this necessary?!
 				self.properties[k].intersect(s.properties[k]);
 			}else if(s.properties[k]!==undefined){
 				throw new Error('Value in "properties" must be a schema');
