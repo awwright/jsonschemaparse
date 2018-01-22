@@ -3,6 +3,7 @@
 var fs = require('fs');
 var Parser = require('./parse.js').StreamParser;
 
+Error.stackTraceLimit = 25;
 
 var argv = process.argv.slice(2);
 for(var i=0; i<argv.length; i++){
@@ -174,7 +175,7 @@ function runTests(){
 			fail += res.fail;
 			totalFail += res.fail;
 			total += res.total;
-			nextValidationTest(i+1);
+			process.nextTick(nextValidationTest.bind(null, i+1));
 		});
 	}
 	function finishValidationTests(){
