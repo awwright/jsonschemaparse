@@ -13,13 +13,29 @@ Features:
 	- Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate
 
-```javascript
-var p = new Parser({type:'array'}, {keepValue:true});
+## class: Parser
 
-fs.createReadStream('test/syntax-suite/test_parsing/i_structure_500_nested_arrays.json')
-	.pipe(p)
+```javascript
+var parser = new Parser(new Schema({type: 'array'}), {keepValue:true});
+
+fs.createReadStream('file.json')
+	.pipe(parser)
 	.on('finish', function(err, res){
-		console.log(p.errors);
-		console.log(p.value);
+		console.log(parser.errors);
+		console.log(parser.value);
+	});
+```
+
+## class: Schema
+
+```javascript
+var schema = new Schema({ type: 'array' });
+var parser = schema.createParser({keepValue:true});
+
+fs.createReadStream('file.json')
+	.pipe(parser)
+	.on('finish', function(err, res){
+		console.log(parser.errors);
+		console.log(parser.value);
 	});
 ```
