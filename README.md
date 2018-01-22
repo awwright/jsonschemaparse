@@ -8,6 +8,7 @@ Features:
 	- Repeated keys
 	- Syntax errors
 * Validates the JSON document against a JSON Schema
+	- Provides line/character information of error
 * Parse JSON instances into an instance of an arbritrary object - parse dates directly into Date, integers into arbritrary precision object, objects into Immutable Map, etc.
 	- Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate

@@ -128,7 +128,8 @@ function Schema(registry, sch){
 	var self = this;
 	if(!registry) throw new Error('Required parameter `registry`');
 	self.registry = registry;
-	self.id = sch.$id || sch.id || 'http://localhost/';
+	if(sch) var idref = sch.$id || sch.id;
+	self.id = idref || 'http://localhost/';
 	self.allowNumber = true;
 	self.allowString = true;
 	self.allowBoolean = true;
