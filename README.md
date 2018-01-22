@@ -47,7 +47,7 @@ Use SchemaRegistry if one schema references another.
 
 ```javascript
 var registry = new SchemaRegistry();
-var schema = registry.resolve('http://localhost/schema.json', { type: 'array' });
+var schema = registry.import('http://localhost/schema.json', { type: 'array' });
 // Alternatively:
 // var schema = new Schema({ type: 'array' }, registry);
 var parser = schema.createParser({keepValue:true});

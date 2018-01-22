@@ -38,10 +38,15 @@ function isSchemaResolve(s){
 module.exports.SchemaRegistry = SchemaRegistry;
 function SchemaRegistry(){
 	this.source = {};
+	this.seen = {};
 }
-SchemaRegistry.prototype.scanMap = function scan(base, map, path){
+SchemaRegistry.prototype.import = function importSchema(id, schema, path){
+	this.scan(id, schema, '');
+	return this.resolve(id, schema);
+}
+SchemaRegistry.prototype.scanMap = function scan(id, map, path){
 	var self = this;
-	if(map) for(var n in map) if(typeof map[n]=='object') self.scan(base, map[n], path+'/'+n);
+	if(map) for(var n in map) if(typeof map[n]=='object') self.scan(id, map[n], path+'/'+n);
 }
 SchemaRegistry.prototype.scan = function scan(base, schema, path){
 	var self = this;
@@ -61,6 +66,7 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 	if(typeof schema==='string'){
 		var id = url.resolve(base, schema);
 		if(!this.source[id]) this.source[id] = null;
+		this.seen[id] = true;
 	}
 	if(typeof schema==='boolean'){
 		// Alias boolean form to an object schema
@@ -146,6 +152,11 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 	}else if(!schema){
 		return new Schema(null, self);
 	}
+}
+SchemaRegistry.prototype.getUnresolved = function(){
+	var self = this;
+	return Object.keys(self.seen)
+		.filter(function(v){ return !self.source[v]; });
 }
 
 // Parse and optimize a schema
