@@ -3,8 +3,8 @@
 const Transform = require('stream').Transform;
 const util = require('util');
 
-var Schema = require('./schema.js').Schema;
-var SchemaRegistry = require('./schema.js').SchemaRegistry;
+var Schema = module.exports.Schema = require('./schema.js').Schema;
+var SchemaRegistry = module.exports.SchemaRegistry = require('./schema.js').SchemaRegistry;
 var ValidationError = require('./schema.js').ValidationError;
 
 // Named constants with unique integer values
@@ -54,7 +54,7 @@ function toknam(code) {
 	return tokenNames[code] || code;
 }
 
-function StreamParser(sch, options) {
+function StreamParser(schema, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 	Transform.call(this, {});
 
@@ -67,13 +67,9 @@ function StreamParser(sch, options) {
 	this.trailingComma = false;
 	this.multipleValue = false;
 
-	// Configurable validation options
-	this.schemaRegistry = options.registry || new SchemaRegistry;
-	if(sch){
-		this.schemaRegistry.scan('http://localhost/', sch);
+	if(schema){
+		if(!(schema instanceof Schema)) throw new Error('schema must be instance of Schema');
 	}
-
-	var schema = new Schema(this.schemaRegistry, sch);
 
 	// Line number tracking
 	this.characters = 0;

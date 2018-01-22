@@ -124,9 +124,9 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 // Parse and optimize a schema
 // All referenced schemas must be imported to the registry already
 module.exports.Schema = Schema;
-function Schema(registry, sch){
+function Schema(sch, registry){
 	var self = this;
-	if(!registry) throw new Error('Required parameter `registry`');
+	if(!registry) registry = new SchemaRegistry;
 	self.registry = registry;
 	if(sch) var idref = sch.$id || sch.id;
 	self.id = idref || 'http://localhost/';

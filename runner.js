@@ -2,6 +2,7 @@
 
 var fs = require('fs');
 var Parser = require('./parse.js').StreamParser;
+var Schema = require('./parse.js').Schema;
 
 Error.stackTraceLimit = 25;
 
@@ -65,7 +66,7 @@ function runSyntaxTest(filename, done){
 	else return void done(new Error('Unknown test type'));
 	var testError = null;
 	var t = fs.createReadStream(filepath);
-	var p = new Parser({}, {});
+	var p = new Parser(new Schema, {});
 	t.pipe(p);
 	p.on('error', function(err){
 		if(!err) return;
@@ -105,7 +106,7 @@ function runValidationTest(filepath, done){
 			var tjson = JSON.stringify(t.data, null, "\t");
 			var throws = false;
 			try {
-				var p = new Parser(schema, {});
+				var p = new Parser(new Schema(schema), {});
 				p._transform(tjson);
 				p.eof();
 			}catch(e){
