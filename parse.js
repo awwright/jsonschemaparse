@@ -70,7 +70,7 @@ function StreamParser(sch, options) {
 	// Configurable validation options
 	this.schemaRegistry = options.registry || new SchemaRegistry;
 	if(sch){
-		this.schemaRegistry.scan(null, sch);
+		this.schemaRegistry.scan('http://localhost/', sch);
 	}
 
 	var schema = new Schema(sch, this.schemaRegistry);
@@ -139,7 +139,7 @@ StreamParser.prototype.push = function push(k, schema) {
 		beginLine: this.lineNumber,
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
-		schema: schema || new Schema({}, this.schemaRegistry),
+		schema: schema,
 		//not: {},
 		//allOf: [],
 		//oneOf: [],
@@ -154,15 +154,12 @@ StreamParser.prototype.pop = function pop(){
 	return layer;
 }
 
-StreamParser.prototype.addError = function addError(message, keyword, expected, actual) {
-	//console.log('Add error', message, keyword, expected, actual, new Error().stack);
-	this.errors.push(new ValidationError(message, this.layer.path, this.layer.schema, keyword, expected, actual));
-}
 StreamParser.prototype.addErrorList = function addErrorList(errs) {
 	var self = this;
 	if(!Array.isArray(errs)) errs = errs?[errs]:[];
 	errs.forEach(function(error){
-		self.errors.push(new ValidationError(error.message, self.layer.path, self.layer.schema, '', ''));
+		self.errors.push(error);
+		//self.errors.push(new ValidationError(error.message, self.layer.path, self.layer.schema, '', ''));
 	});
 }
 
@@ -282,7 +279,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.string = "";
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
-				this.push(null, new Schema({}, this.schemaRegistry));
+				this.push();
 				this.layer.state = STRING1;
 				this.layer.keepValue = true;
 				this.layer.key = true;
@@ -294,14 +291,14 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, '" }');
 		case OBJECT2:
 			// Finished parsing key
-			this.layer.validator.testPropertyName(this.string);
+			if(this.layer.validator) this.layer.validator.testPropertyName(this.string);
 			this.layer.key = this.string;
 			this.layer.state = OBJECT3;
 			// pass to OBJECT3
 		case OBJECT3:
 			// Stored state of key, expecting a colon
 			var schema = this.layer.schema;
-			var subschema = schema.getPropertySchema(this.layer.key);
+			if(schema) var subschema = schema.getPropertySchema(this.layer.key);
 			switch (n) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -346,7 +343,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
 			var schema = this.layer.schema;
-			var subschema = schema.getItemSchema(this.layer.length);
+			if(schema) var subschema = schema.getItemSchema(this.layer.length);
 			switch (n) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -460,7 +457,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case ARRAY4:
 			// Finished reading comma, expecting value
 			var schema = this.layer.schema;
-			var subschema = schema.getItemSchema(this.layer.length);
+			if(schema) var subschema = schema.getItemSchema(this.layer.length);
 			switch(n){
 			case 0x0a:
 				this.lineOffset = i;
@@ -793,23 +790,23 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 };
 
 StreamParser.prototype.startObject = function startObject(){
-	this.addErrorList(this.layer.schema.testTypeObject(this.layer));
-	this.layer.validator = this.layer.schema.testObjectBegin();
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeObject(this.layer));
+	if(this.layer.schema) this.layer.validator = this.layer.schema.testObjectBegin();
 	this.event('startObject');
 }
 
 StreamParser.prototype.endObject = function endObject(){
 	this.event('endObject');
-	this.addErrorList(this.layer.validator.finish());
+	if(this.layer.validator) this.addErrorList(this.layer.validator.finish());
 	this.validateObject();
 	this.pop();
 }
 StreamParser.prototype.validateObject = function validateObject(){
-	this.addErrorList(this.layer.schema.testPropertiesCount(this.layer.length));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testPropertiesCount(this.layer.length));
 }
 
 StreamParser.prototype.startArray = function startArray(){
-	this.addErrorList(this.layer.schema.testTypeArray(this.layer));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeArray(this.layer));
 	this.event('startArray');
 }
 
@@ -819,11 +816,11 @@ StreamParser.prototype.endArray = function endArray(n, s){
 	this.pop();
 }
 StreamParser.prototype.validateArray = function validateArray(n, s){
-	this.addErrorList(this.layer.schema.testItemsCount(this.layer.length));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testItemsCount(this.layer.length));
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
-	this.addErrorList(this.layer.schema.testTypeNumber(this.layer));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeNumber(this.layer));
 }
 
 StreamParser.prototype.endNumber = function endNumber(){
@@ -873,7 +870,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
 	this.event('onNumber');
-	this.addErrorList(this.layer.schema.testNumberRange(n));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testNumberRange(n));
 	this.pop();
 }
 
@@ -887,7 +884,7 @@ StreamParser.prototype.endKey = function endKey(){
 }
 
 StreamParser.prototype.startString = function startString(){
-	this.addErrorList(this.layer.schema.testTypeString(this.layer));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeString(this.layer));
 }
 
 StreamParser.prototype.endString = function endString(){
@@ -900,11 +897,11 @@ StreamParser.prototype.validateKey = function validateKey(){
 }
 
 StreamParser.prototype.validateString = function validateString(){
-	this.addErrorList(this.layer.schema.testStringRange(this.layer, this.string));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testStringRange(this.layer, this.string));
 }
 
 StreamParser.prototype.startBoolean = function startBoolean(){
-	this.addErrorList(this.layer.schema.testTypeBoolean(this.layer));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeBoolean(this.layer));
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
@@ -913,7 +910,7 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 }
 
 StreamParser.prototype.startNull = function endNull(){
-	this.addErrorList(this.layer.schema.testTypeNull(this.layer));
+	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeNull(this.layer));
 }
 
 StreamParser.prototype.endNull = function endNull(){

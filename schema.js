@@ -47,7 +47,7 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 		return;
 	}
 	if(!base){
-		base = 'http://localhost/';
+		throw new Error('Argument `base` required');
 	}
 	if(!path){
 		path = '';
