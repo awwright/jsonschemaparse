@@ -39,3 +39,23 @@ fs.createReadStream('file.json')
 		console.log(parser.value);
 	});
 ```
+
+
+## class: SchemaRegistry
+
+Use SchemaRegistry if one schema references another.
+
+```javascript
+var registry = new SchemaRegistry();
+var schema = registry.resolve('http://localhost/schema.json', { type: 'array' });
+// Alternatively:
+// var schema = new Schema({ type: 'array' }, registry);
+var parser = schema.createParser({keepValue:true});
+
+fs.createReadStream('file.json')
+	.pipe(parser)
+	.on('finish', function(err, res){
+		console.log(parser.errors);
+		console.log(parser.value);
+	});
+```

@@ -1,8 +1,9 @@
 
 
 var fs = require('fs');
-var Parser = require('./index.js').StreamParser;
+var SchemaRegistry = require('./index.js').SchemaRegistry;
 var Schema = require('./index.js').Schema;
+var Parser = require('./index.js').StreamParser;
 
 Error.stackTraceLimit = 25;
 
@@ -105,7 +106,8 @@ function runValidationTest(filepath, done){
 			var tjson = JSON.stringify(t.data, null, "\t");
 			var throws = false;
 			try {
-				var schema = new Schema(s.schema);
+				var registry = new SchemaRegistry;
+				var schema = registry.resolve('http://localhost/', s.schema);
 				var p = schema.createParser();
 				p._transform(tjson);
 				p.eof();

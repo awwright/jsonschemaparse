@@ -111,14 +111,14 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 }
 SchemaRegistry.prototype.resolve = function resolve(base, schema){
 	var self = this;
-	if(typeof base != 'string') throw new Error('`base` must be a string');
+	if(typeof base!=='string' || base.indexOf(':')===-1) throw new Error('`base` must be a URI string');
 	if(typeof schema==='string'){
 		var uriref = schema;
 		var id = url.resolve(base, uriref);
 		if(self.source[id]){
 			var resolved = self.source[id];
 			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
-			return new Schema(self, self.source[id]);
+			return new Schema(self.source[id], self);
 		}
 		var parts = id.split('#',2);
 		var id = parts[0];
@@ -135,16 +135,16 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 				resolved = resolved[key];
 				if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
 			}
-			return new Schema(self, resolved);
+			return new Schema(resolved, self);
 		}
 		throw new Error('Could not resolve schema '+JSON.stringify(schema)+' (in '+JSON.stringify(base)+')');
 	}else if(isSchema(schema)){
-		return new Schema(self, schema);
+		return new Schema(schema, self);
 	}else if(isSchemaResolve(schema)){
 		// If it's not a schema, but a schema reference
 		return self.resolve(base, schema.$ref);
 	}else if(!schema){
-		return new Schema(self);
+		return new Schema(null, self);
 	}
 }
 
