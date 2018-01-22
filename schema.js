@@ -110,21 +110,21 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 		var id = url.resolve(base, uriref);
 		var resolved = self.source[id];
 		if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
-		return new Schema(self.source[id], self);
+		return new Schema(self, self.source[id]);
 	}else if(isSchema(schema)){
-		return new Schema(schema, self);
+		return new Schema(self, schema);
 	}else if(isSchemaResolve(schema)){
 		// If it's not a schema, but a schema reference
 		return self.resolve(base, schema.$ref);
 	}else if(!schema){
-		return new Schema({}, self);
+		return new Schema(self);
 	}
 }
 
 // Parse and optimize a schema
 // All referenced schemas must be imported to the registry already
 module.exports.Schema = Schema;
-function Schema(sch, registry){
+function Schema(registry, sch){
 	var self = this;
 	if(!registry) throw new Error('Required parameter `registry`');
 	self.registry = registry;
@@ -162,8 +162,7 @@ function Schema(sch, registry){
 	self.testsArray = [];
 	self.testsObject = [];
 
-	if(!sch) return;
-	self.intersect(sch);
+	if(sch) self.intersect(sch);
 	//console.log(self);
 }
 

@@ -73,7 +73,7 @@ function StreamParser(sch, options) {
 		this.schemaRegistry.scan('http://localhost/', sch);
 	}
 
-	var schema = new Schema(sch, this.schemaRegistry);
+	var schema = new Schema(this.schemaRegistry, sch);
 
 	// Line number tracking
 	this.characters = 0;
