@@ -117,13 +117,13 @@ function runValidationTest(filepath, done){
 			res.total++;
 			if(throws){
 				res.fail++;
-				var er = {description:t.description, i:i, valid:t.valid, errors:throws, schema:schema, value:t.data};
+				var er = {description:t.description, i:i, valid:t.valid, errors:throws, schema:s.schema, value:t.data};
 				res.messages.push(er);
 			}else if(t.valid!=!!p.errors.length){
 				res.pass++;
 			}else{
 				res.fail++;
-				var er = {description:t.description, i:i, valid:t.valid, errors:p.errors, schema:schema, value:t.data};
+				var er = {description:t.description, i:i, valid:t.valid, errors:p.errors, schema:s.schema, value:t.data};
 				res.messages.push(er);
 				//console.error('  Error: ('+er.description+') expected '+(er.valid?'valid':'invalid')+' but got '+er.errors.length+' errors');
 				//console.log(er.schema, er.value);
