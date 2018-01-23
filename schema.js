@@ -150,7 +150,7 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 		// If it's not a schema, but a schema reference
 		return self.resolve(base, schema.$ref);
 	}else if(!schema){
-		return new Schema(null, self);
+		return new Schema({}, self);
 	}
 }
 SchemaRegistry.prototype.getUnresolved = function(){
@@ -201,8 +201,7 @@ function Schema(sch, registry){
 	self.testsArray = [];
 	self.testsObject = [];
 
-	if(sch) self.intersect(sch);
-	//console.log(self);
+	if(isSchema(sch)) self.intersect(sch);
 }
 
 Schema.prototype.createParser = function createParser(options){
@@ -304,24 +303,19 @@ Schema.prototype.intersect = function intersect(s){
 	// Keyword: "items" and "additionalItems"
 	if(Array.isArray(s.items)){
 		s.items.forEach(function(s2, i){
-			self.items[i] = self.registry.resolve(self.id, s.items[i]);
-			self.items[i].intersect(s2);
+			self.items[i] = self.registry.resolve(self.id, s2);
 		});
 		if(isSchema(s.additionalItems)){
 			self.additionalItems = self.registry.resolve(self.id, s.additionalItems);
-			self.additionalItems.intersect(s.additionalItems);
 		}
 	}else if(isSchema(s.items)){
-		self.additionalItems = self.registry.resolve(self.id, s.additionalItems);
-		self.additionalItems.intersect(s.items);
+		self.additionalItems = self.registry.resolve(self.id, s.items);
 	}
 	// Keyword: "properties"
 	if(typeof s.properties==='object'){
 		for(var k in s.properties){
 			if(isSchema(s.properties[k])){
 				self.properties[k] = self.registry.resolve(self.id, s.properties[k]);
-				// FIXME Why is this necessary?!
-				self.properties[k].intersect(s.properties[k]);
 			}else if(s.properties[k]!==undefined){
 				throw new Error('Value in "properties" must be a schema');
 			}
@@ -335,7 +329,6 @@ Schema.prototype.intersect = function intersect(s){
 			if(isSchema(s.patternProperties[k])){
 				self.patternPropertiesRegExp[k] = self.patternPropertiesRegExp[k] || new RegExp(k);
 				self.patternProperties[k] = self.registry.resolve(self.id, s.patternProperties[k]);
-				self.patternProperties[k].intersect(s.patternProperties[k]);
 			}else if(s.patternProperties[k]!==undefined){
 				throw new Error('Value in "patternProperties" must be a schema');
 			}
@@ -346,7 +339,6 @@ Schema.prototype.intersect = function intersect(s){
 	// Keyword: "additionalProperties"
 	if(isSchema(s.additionalProperties)){
 		self.additionalProperties = self.registry.resolve(self.id, s.additionalProperties);
-		self.additionalProperties.intersect(s.additionalProperties);
 	}else if(s.additionalProperties!==undefined){
 		throw new Error('"additionalProperties" must be a schema');
 	}
