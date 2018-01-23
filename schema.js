@@ -2,6 +2,7 @@
 "use strict";
 
 var url = require('url');
+var uriResolve = url.resolve;
 
 var Parse = require('./parse.js');
 
@@ -64,7 +65,7 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 		return;
 	}
 	if(typeof schema==='string'){
-		var id = url.resolve(base, schema);
+		var id = uriResolve(base, schema);
 		if(!this.source[id]) this.source[id] = null;
 		this.seen[id] = true;
 	}
@@ -85,7 +86,7 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 		var uriref = schema.$id || schema.id;
 		var id;
 		if(uriref){
-			id = url.resolve(base, uriref);
+			id = uriResolve(base, uriref);
 		}else {
 			id = base + '#' + path;
 		}
@@ -120,7 +121,7 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 	if(typeof base!=='string' || base.indexOf(':')===-1) throw new Error('`base` must be a URI string');
 	if(typeof schema==='string'){
 		var uriref = schema;
-		var id = url.resolve(base, uriref);
+		var id = uriResolve(base, uriref);
 		if(self.source[id]){
 			var resolved = self.source[id];
 			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
