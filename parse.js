@@ -181,6 +181,18 @@ StreamParser.prototype._flush = function _flush(callback) {
 	callback();
 }
 
+StreamParser.parse = function parse(schema, options, buffer){
+	var parser = new StreamParser(schema, options);
+	parser.keepValue = true;
+	parser.parse(buffer);
+	return parser;
+}
+
+StreamParser.prototype.parse = function parse(buffer){
+	this.parseBlock(buffer);
+	this.eof();
+}
+
 StreamParser.prototype.parseBlock = function parseBlock(buffer){
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
 		var n = buffer[i];

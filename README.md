@@ -26,6 +26,13 @@ fs.createReadStream('file.json')
 	});
 ```
 
+```javascript
+var parser = Parser.parse(new Schema({type: 'array'}), {}, fs.readFileSync('file.json'));
+console.log(parser.errors);
+console.log(parser.value);
+
+```
+
 ## class: Schema
 
 ```javascript
