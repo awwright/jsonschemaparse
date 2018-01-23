@@ -163,11 +163,11 @@ SchemaRegistry.prototype.getUnresolved = function(){
 // Parse and optimize a schema
 // All referenced schemas must be imported to the registry already
 module.exports.Schema = Schema;
-function Schema(sch, registry){
+function Schema(schema, registry){
 	var self = this;
 	if(!registry) registry = new SchemaRegistry;
 	self.registry = registry;
-	if(sch) var idref = sch.$id || sch.id;
+	if(schema) var idref = schema.$id || schema.id;
 	self.id = idref || 'http://localhost/';
 	self.allowNumber = true;
 	self.allowString = true;
@@ -202,7 +202,7 @@ function Schema(sch, registry){
 	self.testsArray = [];
 	self.testsObject = [];
 
-	if(isSchema(sch)) self.intersect(sch);
+	if(isSchema(schema)) self.intersect(schema);
 }
 
 Schema.prototype.createParser = function createParser(options){
