@@ -306,16 +306,16 @@ Schema.prototype.intersect = function intersect(s){
 		s.items.forEach(function(s2, i){
 			self.items[i] = self.registry.resolve(self.id, s2);
 		});
-		if(isSchema(s.additionalItems)){
+		if(isSchemaResolve(s.additionalItems)){
 			self.additionalItems = self.registry.resolve(self.id, s.additionalItems);
 		}
-	}else if(isSchema(s.items)){
+	}else if(isSchemaResolve(s.items)){
 		self.additionalItems = self.registry.resolve(self.id, s.items);
 	}
 	// Keyword: "properties"
 	if(typeof s.properties==='object'){
 		for(var k in s.properties){
-			if(isSchema(s.properties[k])){
+			if(isSchemaResolve(s.properties[k])){
 				self.properties[k] = self.registry.resolve(self.id, s.properties[k]);
 			}else if(s.properties[k]!==undefined){
 				throw new Error('Value in "properties" must be a schema');
@@ -327,7 +327,7 @@ Schema.prototype.intersect = function intersect(s){
 	// Keyword: "patternProperties"
 	if(typeof s.patternProperties==='object'){
 		for(var k in s.patternProperties){
-			if(isSchema(s.patternProperties[k])){
+			if(isSchemaResolve(s.patternProperties[k])){
 				self.patternPropertiesRegExp[k] = self.patternPropertiesRegExp[k] || new RegExp(k);
 				self.patternProperties[k] = self.registry.resolve(self.id, s.patternProperties[k]);
 			}else if(s.patternProperties[k]!==undefined){
@@ -338,7 +338,7 @@ Schema.prototype.intersect = function intersect(s){
 		throw new Error('"patternProperties" must be an object');
 	}
 	// Keyword: "additionalProperties"
-	if(isSchema(s.additionalProperties)){
+	if(isSchemaResolve(s.additionalProperties)){
 		self.additionalProperties = self.registry.resolve(self.id, s.additionalProperties);
 	}else if(s.additionalProperties!==undefined){
 		throw new Error('"additionalProperties" must be a schema');
