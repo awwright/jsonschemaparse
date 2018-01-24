@@ -139,12 +139,12 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 			return self.parsed[id];
 		}
 		// Try to decend the property path, if any
-		var parts = id.split('#/',2);
+		var parts = id.split('#',2);
 		var id = parts[0];
-		if(self.source[id]){
+		if(self.source[id] && parts[1]){
 			var resolved = self.source[id];
 			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
-			var hier = parts.split('/').slice(1).map(function(v){
+			var hier = parts[1].split('/').slice(1).map(function(v){
 				return v;
 			});
 			id += '#';

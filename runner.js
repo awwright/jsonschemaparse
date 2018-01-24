@@ -60,7 +60,7 @@ function runSyntaxTest(filename, done){
 		messages: [],
 		total: 0,
 	};
-	var filepath = dirpath + '/' + filename;
+	var filepath = syntaxTestDir + '/' + filename;
 	var valid = null;
 	if(filename[0]=='y') valid = true;
 	else if(filename[0]=='n') valid=false;
@@ -107,7 +107,7 @@ function runValidationTest(filepath, done){
 			var throws = false;
 			try {
 				var registry = new SchemaRegistry;
-				var schema = registry.resolve('http://localhost/'+filepath, s.schema);
+				var schema = registry.import('http://localhost/'+filepath, s.schema);
 				var p = schema.createParser();
 				p.parse(tjson);
 			}catch(e){
