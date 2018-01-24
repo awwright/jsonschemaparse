@@ -17,40 +17,40 @@ for(var i=0; i<argv.length; i++){
 	}
 }
 
-var dirpath = 'test/syntax-suite/test_parsing';
-var syntaxTestFiles = fs.readdirSync(dirpath).filter(function(n){
+var syntaxTestDir = 'test/syntax-suite/test_parsing';
+var syntaxTestFiles = fs.readdirSync(syntaxTestDir).filter(function(n){
 	return n[0]=='y' || n[0]=='n';
 });
 
 var validationTestFiles = [
-	'tests/draft6/additionalItems.json',
-	'tests/draft6/additionalProperties.json',
-	'tests/draft6/allOf.json',
-	//'tests/draft6/anyOf.json',
-	'tests/draft6/default.json',
-	//'tests/draft6/definitions.json',
-	//'tests/draft6/dependencies.json',
-	//'tests/draft6/enum.json',
-	'tests/draft6/items.json',
-	'tests/draft6/maximum.json',
-	'tests/draft6/maxItems.json',
-	//'tests/draft6/maxLength.json',
-	'tests/draft6/maxProperties.json',
-	'tests/draft6/minimum.json',
-	'tests/draft6/minItems.json',
-	//'tests/draft6/minLength.json',
-	'tests/draft6/minProperties.json',
-	'tests/draft6/multipleOf.json',
-	//'tests/draft6/not.json',
-	//'tests/draft6/oneOf.json',
-	'tests/draft6/pattern.json',
-	'tests/draft6/patternProperties.json',
-	'tests/draft6/properties.json',
-	'tests/draft6/ref.json',
-	//'tests/draft6/refRemote.json',
-	'tests/draft6/required.json',
-	'tests/draft6/type.json',
-	//'tests/draft6/uniqueItems.json',
+	'tests/draft7/additionalItems.json',
+	'tests/draft7/additionalProperties.json',
+	'tests/draft7/allOf.json',
+	//'tests/draft7/anyOf.json',
+	'tests/draft7/default.json',
+	//'tests/draft7/definitions.json',
+	//'tests/draft7/dependencies.json',
+	//'tests/draft7/enum.json',
+	'tests/draft7/items.json',
+	'tests/draft7/maximum.json',
+	'tests/draft7/maxItems.json',
+	//'tests/draft7/maxLength.json',
+	'tests/draft7/maxProperties.json',
+	'tests/draft7/minimum.json',
+	'tests/draft7/minItems.json',
+	//'tests/draft7/minLength.json',
+	'tests/draft7/minProperties.json',
+	'tests/draft7/multipleOf.json',
+	//'tests/draft7/not.json',
+	//'tests/draft7/oneOf.json',
+	'tests/draft7/pattern.json',
+	'tests/draft7/patternProperties.json',
+	'tests/draft7/properties.json',
+	'tests/draft7/ref.json',
+	//'tests/draft7/refRemote.json',
+	'tests/draft7/required.json',
+	'tests/draft7/type.json',
+	//'tests/draft7/uniqueItems.json',
 ];
 
 function runSyntaxTest(filename, done){
