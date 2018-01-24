@@ -467,27 +467,25 @@ Schema.prototype.testPropertiesCount = function(length){
 	return new Error('Incorrect number of properties');
 }
 
-Schema.prototype.testNumberRange = function(n){
+Schema.prototype.testNumberRange = function(layer, n){
 	var schema = this;
 	var error = false;
 	if(typeof schema.exclusiveMinimum=='number' && n<=schema.exclusiveMinimum){
-		error = true;
+		return new ValidationError('Number under minimum', layer.path, schema, 'exclusiveMinimum', schema.exclusiveMinimum, n);
 	}else if(typeof schema.minimum=='number' && n < schema.minimum){
-		error = true;
+		return new ValidationError('Number under/equal to minimum', layer.path, schema, 'minimum', schema.minimum, n);
 	}
 	if(typeof schema.exclusiveMaximum=='number' && n>=schema.exclusiveMaximum){
-		error = true;
+		return new ValidationError('Number under maximum', layer.path, schema, 'exclusiveMaximum', schema.exclusiveMaximum, n);
 	}else if(typeof schema.maximum=='number' && n > schema.maximum){
-		error = true;
+		return new ValidationError('Number under/equal to maximum', layer.path, schema, 'maximum', schema.maximum, n);
 	}
 	if(typeof schema.multipleOf=='number' && schema.multipleOf>0 && (n / schema.multipleOf % 1)){
-		error = true;
+		return new ValidationError('Number not multiple of', layer.path, schema, 'multipleOf', schema.multipleOf, n);
 	}
 	if(schema.allowFraction==false && n%1){
-		error = true;
+		return new ValidationError('Expected an integer', layer.path, schema, 'type', schema.type, 'number');
 	}
-	if(!error) return;
-	return new Error('Number out of range');
 }
 
 Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
@@ -603,9 +601,9 @@ SchemaUnion.prototype.testTypeArray = function testTypeArray(layer){
 	}
 }
 
-SchemaUnion.prototype.testNumberRange = function testNumberRange(n){
+SchemaUnion.prototype.testNumberRange = function testNumberRange(layer, n){
 	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].testNumberRange(n);
+		var res = this.set[i].testNumberRange(layer, n);
 		if(res) return res;
 	}
 }
