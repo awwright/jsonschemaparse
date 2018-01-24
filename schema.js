@@ -131,7 +131,6 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 		if(self.parsed[id]){
 			return self.parsed[id];
 		}
-		console.log(self.source);
 		// Try to parse the Schema at its defined URI
 		if(self.source[id]){
 			// Do this in two steps so that self.parsed[id] exists prior to evaluating Schema#intersect
@@ -155,17 +154,17 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 				resolved = resolved[key];
 				if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
 			}
-			self.parsed[id] = new Schema(resolved, self);
+			self.parsed[id] = new Schema(id, resolved, self);
 			return self.parsed[id];
 		}
 		throw new Error('Could not resolve schema '+JSON.stringify(id)+' (in '+JSON.stringify(base)+')');
 	}else if(isSchema(schema)){
-		return new Schema(schema, self);
+		return new Schema(base, schema, self);
 	}else if(isSchemaResolve(schema)){
 		// If it's not a schema, but a schema reference
 		return self.resolve(base, schema.$ref);
 	}else if(!schema){
-		return new Schema({}, self);
+		return new Schema(base, {}, self);
 	}
 }
 SchemaRegistry.prototype.getUnresolved = function(){
@@ -177,12 +176,13 @@ SchemaRegistry.prototype.getUnresolved = function(){
 // Parse and optimize a schema
 // All referenced schemas must be imported to the registry already
 module.exports.Schema = Schema;
-function Schema(schema, registry){
+function Schema(id, schema, registry){
 	var self = this;
 	if(!registry) registry = new SchemaRegistry;
 	self.registry = registry;
+	self.id = id;
 	if(schema) var idref = schema.$id || schema.id;
-	self.id = idref || 'http://localhost/';
+	if(idref) self.id = idref || 'http://localhost/';
 	self.allowNumber = true;
 	self.allowString = true;
 	self.allowBoolean = true;

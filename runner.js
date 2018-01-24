@@ -107,10 +107,9 @@ function runValidationTest(filepath, done){
 			var throws = false;
 			try {
 				var registry = new SchemaRegistry;
-				var schema = registry.resolve('http://localhost/', s.schema);
+				var schema = registry.resolve('http://localhost/'+filepath, s.schema);
 				var p = schema.createParser();
-				p._transform(tjson);
-				p.eof();
+				p.parse(tjson);
 			}catch(e){
 				throws = e;
 			}
@@ -172,7 +171,9 @@ function runTests(){
 		runValidationTest(n, function(err, res){
 			if(err) throw err;
 			res.messages.forEach(function(v){
-				console.log('Error: validationTest('+n+') '+v.description, v);
+				//console.log('Error: validationTest('+n+') '+v.description, v);
+				console.log('Error: validationTest('+n+') '+v.description);
+				console.dir(v, {depth:10});
 			});
 			pass += res.pass;
 			fail += res.fail;

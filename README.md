@@ -16,7 +16,7 @@ Features:
 ## class: Parser
 
 ```javascript
-var parser = new Parser(new Schema({type: 'array'}), {keepValue:true});
+var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {keepValue:true});
 
 fs.createReadStream('file.json')
 	.pipe(parser)
@@ -27,7 +27,7 @@ fs.createReadStream('file.json')
 ```
 
 ```javascript
-var parser = Parser.parse(new Schema({type: 'array'}), {}, fs.readFileSync('file.json'));
+var parser = Parser.parse(new Schema('http://localhost/schema.json', {type: 'array'}), {}, fs.readFileSync('file.json'));
 console.log(parser.errors);
 console.log(parser.value);
 
@@ -36,7 +36,7 @@ console.log(parser.value);
 ## class: Schema
 
 ```javascript
-var schema = new Schema({ type: 'array' });
+var schema = new Schema('http://localhost/schema.json', { type: 'array' });
 var parser = schema.createParser({keepValue:true});
 
 fs.createReadStream('file.json')
@@ -56,7 +56,7 @@ Use SchemaRegistry if one schema references another.
 var registry = new SchemaRegistry();
 var schema = registry.import('http://localhost/schema.json', { type: 'array' });
 // Alternatively:
-// var schema = new Schema({ type: 'array' }, registry);
+// var schema = new Schema('http://localhost/schema.json', { type: 'array' }, registry);
 var parser = schema.createParser({keepValue:true});
 
 fs.createReadStream('file.json')
