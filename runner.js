@@ -67,21 +67,35 @@ function runSyntaxTest(filename, done){
 	else return void done(new Error('Unknown test type'));
 	var testError = null;
 	var t = fs.createReadStream(filepath);
-	var p = new Parser();
+	var p = new Parser(null, {keepValue:true});
 	t.pipe(p);
 	p.on('error', function(err){
 		if(!err) return;
 		testError = err;
 		result(err);
 	});
-	t.on('end', function(){
+	p.on('finish', function(){
 		if(testError) return;
-		result();
+		fs.readFile(filepath, fileContent);
 	});
-	function result(err){
+	function fileContent(err, content){
+		if(err) throw err;
+		result(null, content);
+	}
+	function result(err, content){
+		try{
+			var ecmaJSON = JSON.stringify(JSON.parse(content));
+			var localJSON = JSON.stringify(p.value);
+		}catch(e){}
 		res.total++;
 		if((valid==false && err) || (valid==true && !err)){
-			res.pass++;
+			if(ecmaJSON!==localJSON){
+				res.fail++;
+				var er = {description:'JSON parse mismatch', valid:valid, error:null, value:p.value, ecmaJSON:ecmaJSON, localJSON:localJSON};
+				res.messages.push(er);
+			}else{
+				res.pass++;
+			}
 		}else{
 			res.fail++;
 			var er = {description:err.stack, valid:valid, error:err, value:p.value};
@@ -148,6 +162,8 @@ function runTests(){
 			if(err) throw err;
 			res.messages.forEach(function(v){
 				console.log('Error: syntaxTest('+n+') '+v.description);
+				console.log(v.ecmaJSON);
+				console.log(v.localJSON);
 			});
 			pass += res.pass;
 			fail += res.fail;
