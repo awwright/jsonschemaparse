@@ -881,6 +881,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 }
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
+	if(this.layer.keepValue) this.layer.value = n;
 	this.event('onNumber', n);
 	if(this.layer.schema) this.addErrorList(this.layer.schema.testNumberRange(this.layer, n));
 	this.pop();
