@@ -887,11 +887,12 @@ StreamParser.prototype.onNumber = function onNumber(n, s){
 }
 
 StreamParser.prototype.startKey = function startKey(){
+	// Not much to do here
 }
 
 StreamParser.prototype.endKey = function endKey(){
 	this.event('onKey', this.string);
-	this.validateKey();
+	// TODO validate against propertyNames here
 	this.pop();
 }
 
@@ -901,15 +902,8 @@ StreamParser.prototype.startString = function startString(){
 
 StreamParser.prototype.endString = function endString(){
 	this.event('onString', this.string);
-	this.validateString();
-	this.pop();
-}
-
-StreamParser.prototype.validateKey = function validateKey(){
-}
-
-StreamParser.prototype.validateString = function validateString(){
 	if(this.layer.schema) this.addErrorList(this.layer.schema.testStringRange(this.layer, this.string));
+	this.pop();
 }
 
 StreamParser.prototype.startBoolean = function startBoolean(){
