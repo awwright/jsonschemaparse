@@ -189,11 +189,13 @@ StreamParser.parse = function parse(schema, options, buffer){
 }
 
 StreamParser.prototype.parse = function parse(buffer){
+	if (typeof buffer === "string") buffer = new Buffer(buffer);
 	this.parseBlock(buffer);
 	this.eof();
 }
 
 StreamParser.prototype.parseBlock = function parseBlock(buffer){
+	if(!Buffer.isBuffer(buffer)) throw new Error('`buffer` argument required');
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
 		var n = buffer[i];
 		switch (this.layer.state) {
