@@ -157,7 +157,7 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 			self.parsed[id] = new Schema(id, resolved, self);
 			return self.parsed[id];
 		}
-		throw new Error('Could not resolve schema '+JSON.stringify(id)+' (in '+JSON.stringify(base)+')');
+		throw new Error('Could not resolve schema '+JSON.stringify(id)+' ('+uriref+' in '+JSON.stringify(base)+')');
 	}else if(isSchema(schema)){
 		return new Schema(base, schema, self);
 	}else if(isSchemaResolve(schema)){
