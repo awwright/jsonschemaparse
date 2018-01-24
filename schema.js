@@ -38,8 +38,9 @@ function isSchemaResolve(s){
 
 module.exports.SchemaRegistry = SchemaRegistry;
 function SchemaRegistry(){
-	this.source = {};
 	this.seen = {};
+	this.source = {};
+	this.parsed = {};
 }
 SchemaRegistry.prototype.import = function importSchema(id, schema, path){
 	this.scan(id, schema, '');
@@ -99,6 +100,8 @@ SchemaRegistry.prototype.scan = function scan(base, schema, path){
 			var oldSchema = JSON.stringify(self.source[id]);
 			var newSchema = JSON.stringify(schema);
 			if(oldSchema!==newSchema) throw new Error('Schema already defined');
+			// This schema is, presumably, already imported with an identical definition
+			return;
 		}
 		self.source[id] = schema;
 		self.scan(id, schema.items, path+'/items');
@@ -122,12 +125,22 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 	if(typeof schema==='string'){
 		var uriref = schema;
 		var id = uriResolve(base, uriref);
-		if(self.source[id]){
-			var resolved = self.source[id];
-			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
-			return new Schema(self.source[id], self);
+		// Strip empty trailing fragment
+		if(id.match(/#$/)) id = id.substring(0, id.length-1);
+		// Return an already existing Schema
+		if(self.parsed[id]){
+			return self.parsed[id];
 		}
-		var parts = id.split('#',2);
+		console.log(self.source);
+		// Try to parse the Schema at its defined URI
+		if(self.source[id]){
+			// Do this in two steps so that self.parsed[id] exists prior to evaluating Schema#intersect
+			self.parsed[id] = new Schema(id, {}, self);
+			self.parsed[id].intersect(self.source[id]);
+			return self.parsed[id];
+		}
+		// Try to decend the property path, if any
+		var parts = id.split('#/',2);
 		var id = parts[0];
 		if(self.source[id]){
 			var resolved = self.source[id];
@@ -142,9 +155,10 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 				resolved = resolved[key];
 				if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
 			}
-			return new Schema(resolved, self);
+			self.parsed[id] = new Schema(resolved, self);
+			return self.parsed[id];
 		}
-		throw new Error('Could not resolve schema '+JSON.stringify(schema)+' (in '+JSON.stringify(base)+')');
+		throw new Error('Could not resolve schema '+JSON.stringify(id)+' (in '+JSON.stringify(base)+')');
 	}else if(isSchema(schema)){
 		return new Schema(schema, self);
 	}else if(isSchemaResolve(schema)){
