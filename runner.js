@@ -84,14 +84,14 @@ function runSyntaxTest(filename, done){
 	}
 	function result(err, content){
 		try{
-			var ecmaJSON = JSON.stringify(JSON.parse(content));
+			var ecmaJSON = JSON.stringify(JSON.parse(content.toString()));
 			var localJSON = JSON.stringify(p.value);
 		}catch(e){}
 		res.total++;
 		if((valid==false && err) || (valid==true && !err)){
 			if(ecmaJSON!==localJSON){
 				res.fail++;
-				var er = {description:'JSON parse mismatch', valid:valid, error:null, value:p.value, ecmaJSON:ecmaJSON, localJSON:localJSON};
+				var er = {description:'JSON parse mismatch', valid:valid, error:null, value:p.value, json:content.toString(), ecmaJSON:ecmaJSON, localJSON:localJSON};
 				res.messages.push(er);
 			}else{
 				res.pass++;
@@ -162,6 +162,7 @@ function runTests(){
 			if(err) throw err;
 			res.messages.forEach(function(v){
 				console.log('Error: syntaxTest('+n+') '+v.description);
+				console.log(v.json);
 				console.log(v.ecmaJSON);
 				console.log(v.localJSON);
 			});
