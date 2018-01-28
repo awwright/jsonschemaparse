@@ -74,9 +74,11 @@ function StreamParser(schema, options) {
 	}
 
 	// Line number tracking
+	this.encoding = 'encoding' in options ? options.encoding : 'ASCII';
 	this.characters = 0;
 	this.lineNumber = 0;
 	this.lineOffset = 0;
+	this.codepointOffset = 0;
 
 	// Object stack stuff
 	this.stack = [];
@@ -162,7 +164,6 @@ StreamParser.prototype.addErrorList = function addErrorList(errs) {
 }
 
 StreamParser.prototype._transform = function (buffer, encoding, callback) {
-	if (typeof buffer === "string") buffer = new Buffer(buffer);
 	try {
 		this.parseBlock(buffer);
 	}catch(e){
@@ -189,15 +190,23 @@ StreamParser.parse = function parse(schema, options, buffer){
 }
 
 StreamParser.prototype.parse = function parse(buffer){
-	if (typeof buffer === "string") buffer = new Buffer(buffer);
 	this.parseBlock(buffer);
 	this.eof();
 }
 
 StreamParser.prototype.parseBlock = function parseBlock(buffer){
-	if(!Buffer.isBuffer(buffer)) throw new Error('`buffer` argument required');
+	if(this.encoding==='string'){
+		if(typeof buffer!=='string') throw new Error('string `buffer` argument required');
+	}else if(this.encoding==='ASCII'){
+		if(!Buffer.isBuffer(buffer)) throw new Error('ASCII Buffer `buffer` argument required');
+	}else if(this.encoding==='UTF-8'){
+		// TODO UTF-8 isn't actually supported yet
+		if(!Buffer.isBuffer(buffer)) throw new Error('UTF-8 Buffer `buffer` argument required');
+	}
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
+		this.codepointOffset = i;
 		var n = buffer[i];
+		if(this.encoding==='ASCII' && n>=0x80) throw new Error('Unexpected high-byte character');
 		switch (this.layer.state) {
 		case VOID:
 			// For end of document where only whitespace is allowed
