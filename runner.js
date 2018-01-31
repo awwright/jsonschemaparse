@@ -153,10 +153,11 @@ function runTests(){
 	var fail = 0;
 	var total = 0;
 	var messages = [];
+	console.log('Running syntax tests...');
 	nextSyntaxTest(0);
 	function nextSyntaxTest(i){
-		if(i==0) console.log('Running syntax tests...');
 		var n = syntaxTestFiles[i];
+		console.log('Running syntax test:', n);
 		if(!n) return void finishSyntaxTests();
 		runSyntaxTest(n, function(err, res){
 			if(err) throw err;
