@@ -205,13 +205,13 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 	}
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
 		this.codepointOffset = i;
-		var n = (typeof buffer==='string') ? buffer.charCodeAt(i) : buffer[i] ;
-		if(typeof n !== 'number') throw new Error('Expected numeric codepoint value');
-		if(this.charset==='ASCII' && n>=0x80) throw new Error('Unexpected high-byte character');
+		var chrcode = (typeof buffer==='string') ? buffer.charCodeAt(i) : buffer[i] ;
+		if(typeof chrcode !== 'number') throw new Error('Expected numeric codepoint value');
+		if(this.charset==='ASCII' && chrcode>=0x80) throw new Error('Unexpected high-byte character');
 		switch (this.layer.state) {
 		case VOID:
 			// For end of document where only whitespace is allowed
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = this.characters;
 				this.lineNumber++;
@@ -222,7 +222,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			}
 			this.charError(buffer, i, "\\s");
 		case VALUE:
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -279,16 +279,16 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.magnatude = n - 0x30;
+				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
-				this.string = String.fromCharCode(n);
+				this.string = String.fromCharCode(chrcode);
 				this.startNumber();
 				continue;
 			}
 			this.charError(buffer, i, '[ { true false null " - 0-9');
 		case OBJECT1:
 			// Opened a curly brace, expecting a closing curly brace or a key
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -321,7 +321,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// Stored state of key, expecting a colon
 			var schema = this.layer.schema;
 			if(schema) var subschema = schema.getPropertySchema(this.layer.key);
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -343,7 +343,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.layer.state = OBJECT5;
 			// pass to OBJECT5
 		case OBJECT5:
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -366,7 +366,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// Finished reading open-array, expecting close-array or value
 			var schema = this.layer.schema;
 			if(schema) var subschema = schema.getItemSchema(this.layer.length);
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -445,9 +445,9 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x39: // `9`
 				this.layer.state = ARRAY2;
 				this.push();
-				this.magnatude = n - 0x30;
+				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
-				this.string = String.fromCharCode(n);
+				this.string = String.fromCharCode(chrcode);
 				this.startNumber();
 				continue;
 			}
@@ -460,7 +460,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// fall to next state
 		case ARRAY3:
 			// Finished reading an array item, now expecting a close array or comma
-			switch (n) {
+			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -480,7 +480,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// Finished reading comma, expecting value
 			var schema = this.layer.schema;
 			if(schema) var subschema = schema.getItemSchema(this.layer.length);
-			switch(n){
+			switch(chrcode){
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
@@ -557,9 +557,9 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x39: // `9`
 				this.layer.state = ARRAY2;
 				this.push(this.layer.length, subschema);
-				this.magnatude = n - 0x30;
+				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
-				this.string = String.fromCharCode(n);
+				this.string = String.fromCharCode(chrcode);
 				this.startNumber();
 				continue;
 			}
@@ -567,8 +567,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case NUMBER1:
 			// after minus
 			// expecting a digit
-			this.string += String.fromCharCode(n);
-			switch(n){
+			this.string += String.fromCharCode(chrcode);
+			switch(chrcode){
 			case 0x30: // `0`
 				this.string += "0";
 				this.magnatude = 0;
@@ -583,8 +583,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.string += String.fromCharCode(n);
-				this.magnatude = n - 0x30;
+				this.string += String.fromCharCode(chrcode);
+				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				continue;
 			}
@@ -592,15 +592,15 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case NUMBER2:
 			// after initial zero
 			// expecting a decimal or exponent
-			switch (n) {
+			switch (chrcode) {
 			case 0x2e: // `.`
-				this.string += String.fromCharCode(n);
+				this.string += String.fromCharCode(chrcode);
 				this.position = 0.1;
 				this.layer.state = NUMBER4;
 				continue;
 			case 0x65: // `e`
 			case 0x45: // `E`
-				this.string += String.fromCharCode(n);
+				this.string += String.fromCharCode(chrcode);
 				this.exponent = 0;
 				this.layer.state = NUMBER6;
 				continue;
@@ -609,8 +609,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			i--, this.characters--; // this character is not a number
 			continue;
 		case NUMBER3: // * After digit (before period)
-			this.string += String.fromCharCode(n);
-			switch (n) {
+			this.string += String.fromCharCode(chrcode);
+			switch (chrcode) {
 			case 0x2e: // .
 				this.position = 0.1;
 				this.layer.state = NUMBER4;
@@ -630,29 +630,29 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.magnatude = this.magnatude * 10 + (n - 0x30);
+				this.magnatude = this.magnatude * 10 + (chrcode - 0x30);
 				continue;
 			}
 			this.endNumber();
 			i--, this.characters--; // this character is not a number
 			continue;
 		case NUMBER4: // After period
-			this.string += String.fromCharCode(n);
-			if (n>=0x30 && n<=0x39) { // 0-9
-				this.magnatude += this.position * (n - 0x30);
+			this.string += String.fromCharCode(chrcode);
+			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
+				this.magnatude += this.position * (chrcode - 0x30);
 				this.position /= 10;
 				this.layer.state = NUMBER5;
 				continue;
 			}
 			this.charError(buffer, i, '0-9');
 		case NUMBER5: // * After digit (after period)
-			this.string += String.fromCharCode(n);
-			if (n>=0x30 && n<=0x39) { // 0-9
-				this.magnatude += this.position * (n - 0x30);
+			this.string += String.fromCharCode(chrcode);
+			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
+				this.magnatude += this.position * (chrcode - 0x30);
 				this.position /= 10;
 				continue;
 			}
-			if (n === 0x65 || n === 0x45) { // E/e
+			if (chrcode === 0x65 || chrcode === 0x45) { // E/e
 				this.exponent = 0;
 				this.layer.state = NUMBER6;
 				continue;
@@ -663,50 +663,50 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			continue;
 		case NUMBER6:
 			// After e/E
-			this.string += String.fromCharCode(n);
-			if (n === 0x2b || n === 0x2d) { // +/-
-				if (n === 0x2d) { this.negativeExponent = true; }
+			this.string += String.fromCharCode(chrcode);
+			if (chrcode === 0x2b || chrcode === 0x2d) { // +/-
+				if (chrcode === 0x2d) { this.negativeExponent = true; }
 				this.layer.state = NUMBER7;
 				continue;
 			}
-			if (n>=0x30 && n<=0x39) {
-				this.exponent = this.exponent * 10 + (n - 0x30);
+			if (chrcode>=0x30 && chrcode<=0x39) {
+				this.exponent = this.exponent * 10 + (chrcode - 0x30);
 				this.layer.state = NUMBER8;
 				continue;
 			}
 			this.charError(buffer, i, '+ - 0-9');
 		case NUMBER7: // After +/-
-			this.string += String.fromCharCode(n);
-			if (n>=0x30 && n<=0x39) { // 0-9
-				this.exponent = this.exponent * 10 + (n - 0x30);
+			this.string += String.fromCharCode(chrcode);
+			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
+				this.exponent = this.exponent * 10 + (chrcode - 0x30);
 				this.layer.state = NUMBER8;
 				continue;
 			}
 			this.charError(buffer, i, '0-9');
 		case NUMBER8:
 			// * After digit (after +/-)
-			this.string += String.fromCharCode(n);
-			if (n>=0x30 && n<=0x39) { // 0-9
-				this.exponent = this.exponent * 10 + (n - 0x30);
+			this.string += String.fromCharCode(chrcode);
+			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
+				this.exponent = this.exponent * 10 + (chrcode - 0x30);
 				continue;
 			}
 			this.endNumber();
 			i--, this.characters--; // this character is not a number
 			continue;
 		case TRUE1: // r
-			if (buffer[i] === 0x72) {
+			if (chrcode === 0x72) {
 				this.layer.state = TRUE2;
 				continue;
 			}
 			this.charError(buffer, i);
 		case TRUE2: // u
-			if (buffer[i] === 0x75) {
+			if (chrcode === 0x75) {
 				this.layer.state = TRUE3;
 				continue;
 			}
 			this.charError(buffer, i);
 		case TRUE3: // e
-			if (buffer[i] === 0x65) {
+			if (chrcode === 0x65) {
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = true;
 				this.endBoolean();
@@ -714,25 +714,25 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			}
 			this.charError(buffer, i);
 		case FALSE1: // a
-			if (buffer[i] === 0x61) {
+			if (chrcode === 0x61) {
 				this.layer.state = FALSE2;
 				continue;
 			}
 			this.charError(buffer, i);
 		case FALSE2: // l
-			if (buffer[i] === 0x6c) {
+			if (chrcode === 0x6c) {
 				this.layer.state = FALSE3;
 				continue;
 			}
 			this.charError(buffer, i);
 		case FALSE3: // s
-			if (buffer[i] === 0x73) {
+			if (chrcode === 0x73) {
 				this.layer.state = FALSE4;
 				continue;
 			}
 			this.charError(buffer, i);
 		case FALSE4: // e
-			if (buffer[i] === 0x65) {
+			if (chrcode === 0x65) {
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = false;
 				this.endBoolean();
@@ -740,19 +740,19 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			}
 			this.charError(buffer, i);
 		case NULL1: // u
-			if (buffer[i] === 0x75) {
+			if (chrcode === 0x75) {
 				this.layer.state = NULL2;
 				continue;
 			}
 			this.charError(buffer, i);
 		case NULL2: // l
-			if (buffer[i] === 0x6c) {
+			if (chrcode === 0x6c) {
 				this.layer.state = NULL3;
 				continue;
 			}
 			this.charError(buffer, i);
 		case NULL3: // l
-			if (buffer[i] === 0x6c) {
+			if (chrcode === 0x6c) {
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = null;
 				this.startNull();
@@ -761,7 +761,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			}
 			this.charError(buffer, i);
 		case STRING1: // After open quote
-			switch (n) {
+			switch (chrcode) {
 			case 0x22: // `"`
 				if(this.layer.keepValue) this.layer.value = this.string;
 				if(this.layer.key) this.endKey();
@@ -771,14 +771,14 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.layer.state = STRING2;
 				continue;
 			}
-			if (n >= 0x20) {
-				this.string += String.fromCharCode(n);
+			if (chrcode >= 0x20) {
+				this.string += String.fromCharCode(chrcode);
 				this.layer.length++;
 				continue;
 			}
 			this.charError(buffer, i);
 		case STRING2: // After backslash
-			switch (n) {
+			switch (chrcode) {
 			case 0x22: this.string += "\""; this.layer.length++; this.layer.state = STRING1; continue;
 			case 0x5c: this.string += "\\"; this.layer.length++; this.layer.state = STRING1; continue;
 			case 0x2f: this.string += "\/"; this.layer.length++; this.layer.state = STRING1; continue;
@@ -796,8 +796,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		case STRING6:
 			// unicode hex codes
 			// 0-9 A-F a-f
-			if ((n>=0x30 && n<=0x39) || (n>=0x41 && n <= 0x46) || (n>=0x61 && n<=0x66)) {
-				this.unicode += String.fromCharCode(n);
+			if ((chrcode>=0x30 && chrcode<=0x39) || (chrcode>=0x41 && chrcode <= 0x46) || (chrcode>=0x61 && chrcode<=0x66)) {
+				this.unicode += String.fromCharCode(chrcode);
 				if (this.layer.state++ === STRING6) {
 					this.layer.length++;
 					this.string += String.fromCharCode(parseInt(this.unicode, 16));
