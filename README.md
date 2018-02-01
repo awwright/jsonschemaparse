@@ -81,7 +81,10 @@ Emitted when a null is parsed.
 Emitted when the incoming stream has ended and has been processed. Guarenteed to be called once. Indicates end of processing.
 
 
-## class: Schema
+## class: Schema(baseURI, schemaObject)
+
+* baseURI: The URI the schema was downloaded at, if any.
+* schemaObject: A parsed JSON schema. Must be an object, JSON Schema documents can simply be run through `JSON.parse` to generate a compatible object.
 
 ```javascript
 var schema = new Schema('http://localhost/schema.json', { type: 'array' });
@@ -95,17 +98,26 @@ fs.createReadStream('file.json')
 	});
 ```
 
+### Schema#createParser(options)
+Create a `Parser` instance with the given options.
+The parser will validate the incoming stream against the Schema.
+
 
 ## class: SchemaRegistry
 
 Use SchemaRegistry if one schema references another.
 
+### SchemaRegistry#import
+
+Import a schema so that it's referencable by its given URI by other schemas.
+
 ```javascript
 var registry = new SchemaRegistry();
-var schema = registry.import('http://localhost/schema.json', { type: 'array' });
+var baseSchema = registry.import('http://localhost/schema.json', { type: 'array', items:{$ref:'http://localhost/item.json'} });
+var stringSchema = registry.import('http://localhost/item.json', { type: 'string' });
 // Alternatively:
 // var schema = new Schema('http://localhost/schema.json', { type: 'array' }, registry);
-var parser = schema.createParser({keepValue:true});
+var parser = baseSchema.createParser({keepValue:true});
 
 fs.createReadStream('file.json')
 	.pipe(parser)
