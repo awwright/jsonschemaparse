@@ -28,8 +28,20 @@ fs.createReadStream('file.json')
 	});
 ```
 
+### Parser.parse(schema, options, document)
+
+Shortcut for parsing a one-off block of JSON.
+
+* schema: Schema instance to be validated against
+* options: additional options for validating/parsing the JSON document
+** charset: Specifies how the document is encoded: "ASCII" for Buffer or Uint8Array of 7-bit characters, "UTF-8" for a UTF-8 encoded Buffer/Uint8Array, or "string" for a native (UTF-16) string.
+* document: The entire JSON document to parse, provided as a string, Buffer, or Uint8Array.
+
 ```javascript
-var parser = Parser.parse(new Schema('http://localhost/schema.json', {type: 'array'}), {}, fs.readFileSync('file.json'));
+var parser = Parser.parse(
+	new Schema('http://localhost/schema.json', {type: 'array'}),
+	{},
+	fs.readFileSync('file.json') );
 console.log(parser.errors);
 console.log(parser.value);
 
@@ -40,10 +52,10 @@ console.log(parser.value);
 An Array of ValidationError instances representing accumulated validation errors.
 Parsing will end when an error is detected, not all errors in the document may be listed.
 
+
 ### Parser#value
 
 If `keepValue: true` was passed in `options`, the parsed value will be available here.
-
 
 ### Parser#on('startObject', function() )
 Emitted when an object is opened (when `{` is observed).
