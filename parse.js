@@ -835,11 +835,22 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			if (chrcode>=0x80 && chrcode<=0xC0) {
 				this.unicode.push(chrcode);
 				if (this.layer.state++ === UTF8_4) {
+					var utf32 = 0;
 					switch(this.unicode.length){
-						case 2: this.appendCodepoint( ((this.unicode[0]&0b11111)<<6) | (this.unicode[1]&0x3f) ); break;
-						case 3: this.appendCodepoint( ((this.unicode[0]&0b1111)<<12) | ((this.unicode[1]&0x3f)<<6) | (this.unicode[2]&0x3f) ); break;
-						case 4: this.appendCodepoint( ((this.unicode[0]&0b111)<<18) | ((this.unicode[1]&0x3f)<<12) | ((this.unicode[2]&0x3f)<<6) | (this.unicode[3]&0x3f) ); break;
+						case 2:
+							utf32 = ((this.unicode[0]&0b11111)<<6) | (this.unicode[1]&0x3f);
+							if(utf32 < 0x0080) this.charError(buffer, i); // Overlong codepoint
+							break;
+						case 3:
+							utf32 = ((this.unicode[0]&0b1111)<<12) | ((this.unicode[1]&0x3f)<<6) | (this.unicode[2]&0x3f);
+							if(utf32 < 0x0800) this.charError(buffer, i); // Overlong codepoint
+							break;
+						case 4:
+							utf32 = ((this.unicode[0]&0b111)<<18) | ((this.unicode[1]&0x3f)<<12) | ((this.unicode[2]&0x3f)<<6) | (this.unicode[3]&0x3f);
+							if(utf32 < 0x10000) this.charError(buffer, i); // Overlong codepoint
+							break;
 					}
+					this.appendCodepoint(utf32);
 					this.unicode = undefined;
 					this.layer.state = STRING1;
 				}
