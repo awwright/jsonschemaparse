@@ -772,8 +772,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue;
 			}
 			if (chrcode >= 0x20) {
-				this.string += String.fromCharCode(chrcode);
-				this.layer.length++;
+				this.appendCodepoint(chrcode);
 				continue;
 			}
 			this.charError(buffer, i);
@@ -799,8 +798,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			if ((chrcode>=0x30 && chrcode<=0x39) || (chrcode>=0x41 && chrcode <= 0x46) || (chrcode>=0x61 && chrcode<=0x66)) {
 				this.unicode += String.fromCharCode(chrcode);
 				if (this.layer.state++ === STRING6) {
-					this.layer.length++;
-					this.string += String.fromCharCode(parseInt(this.unicode, 16));
+					this.appendCodepoint(parseInt(this.unicode, 16));
 					this.unicode = undefined;
 					this.layer.state = STRING1;
 				}
@@ -909,6 +907,22 @@ StreamParser.prototype.endKey = function endKey(){
 
 StreamParser.prototype.startString = function startString(){
 	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeString(this.layer));
+}
+
+StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
+	if(chrcode>=0x10000){
+		// Compute and append UTF-16 surrogate pair
+		this.string +=
+			String.fromCharCode(((chrcode-0x10000)>>10) + 0xD800)
+			+ String.fromCharCode(((chrcode-0x10000)&0x3ff) + 0xDC00);
+		this.layer.length++;
+	}else{
+		this.string += String.fromCharCode(chrcode);
+		// Only increment if the character completes a code point
+		// i.e. exclude high surrogates
+		//console.log(chrcode.toString(16));
+		if(chrcode<0xD800 || chrcode>0xDBFF) this.layer.length++;
+	}
 }
 
 StreamParser.prototype.endString = function endString(){

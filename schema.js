@@ -199,6 +199,8 @@ function Schema(id, schema, registry){
 	self.maxItems = null;
 	self.minProperties = null;
 	self.maxProperties = null;
+	self.minLength = null;
+	self.maxLength = null;
 	self.anyOf = [];
 	self.oneOf = [];
 	self.required = {};
@@ -294,6 +296,14 @@ Schema.prototype.intersect = function intersect(s){
 			self.maximum = s.maximum;
 			self.exclusiveMaximum = null;
 		}
+	}
+	// Keyword: "minLength"
+	if(typeof s.minLength=='number' && (s.minLength>self.minLength || self.minLength===null)){
+		self.minLength = s.minLength;
+	}
+	// Keyword: "maxLength"
+	if(typeof s.maxLength=='number' && (s.maxLength<self.maxLength || self.maxLength===null)){
+		self.maxLength = s.maxLength;
 	}
 	// Keyword: "minItems"
 	if(typeof s.minItems=='number' && (s.minItems>self.minItems || self.minItems===null)){
@@ -495,8 +505,14 @@ Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
 }
 
 Schema.prototype.testStringRange = function testStringRange(layer, instance){
-	if(typeof instance != 'string') return;
 	var self = this;
+	if(typeof instance != 'string') return;
+	if(typeof self.minLength=='number' && layer.length < self.minLength){
+		return new ValidationError('String too short', layer.path, self, 'minLength', self.minLength, layer.length);
+	}
+	if(typeof self.maxLength=='number' && layer.length > self.maxLength){
+		return new ValidationError('String too long', layer.path, self, 'maxLength', self.maxLength, layer.length);
+	}
 	for(var i=0; i<self.testsString.length; i++){
 		var res = self.testsString[i](layer, instance);
 		if(res) return res;

@@ -52,11 +52,11 @@ var validationTestFiles = [
 	'tests/draft7/items.json',
 	'tests/draft7/maximum.json',
 	'tests/draft7/maxItems.json',
-	//'tests/draft7/maxLength.json',
+	'tests/draft7/maxLength.json',
 	'tests/draft7/maxProperties.json',
 	'tests/draft7/minimum.json',
 	'tests/draft7/minItems.json',
-	//'tests/draft7/minLength.json',
+	'tests/draft7/minLength.json',
 	'tests/draft7/minProperties.json',
 	'tests/draft7/multipleOf.json',
 	//'tests/draft7/not.json',
@@ -85,7 +85,7 @@ function runSyntaxTest(filename, done){
 	else return void done(new Error('Unknown test type'));
 	var testError = null;
 	var t = fs.createReadStream(filepath);
-	var p = new Parser(null, {keepValue:true});
+	var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
 	t.pipe(p);
 	p.on('error', function(err){
 		if(!err) return;
