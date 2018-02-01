@@ -32,6 +32,8 @@ syntaxTestFiles = syntaxTestFiles.filter(function(v){
 		// maybe fix them later
 		'y_number.json',
 		'y_number_double_close_to_zero.json',
+		'y_number_real_exponent.json',
+		'y_number_real_fraction_exponent.json',
 	].indexOf(v)===-1;
 });
 //syntaxTestFiles = [

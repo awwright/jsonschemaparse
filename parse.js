@@ -43,6 +43,9 @@ var STRING3 = C.STRING3 = 83;
 var STRING4 = C.STRING4 = 84;
 var STRING5 = C.STRING5 = 85;
 var STRING6 = C.STRING6 = 86;
+var UTF8_2 = C.UTF8_2 = 92;
+var UTF8_3 = C.UTF8_3 = 93;
+var UTF8_4 = C.UTF8_4 = 94;
 
 var tokenNames = [];
 Object.keys(C).forEach(function(name){
@@ -78,7 +81,7 @@ function StreamParser(schema, options) {
 	this.characters = 0;
 	this.lineNumber = 0;
 	this.lineOffset = 0;
-	this.codepointOffset = 0;
+	this.codepointStart = 0;
 
 	// Object stack stuff
 	this.stack = [];
@@ -204,10 +207,23 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 		if(!Buffer.isBuffer(buffer)) throw new Error('UTF-8 Buffer `buffer` argument required');
 	}
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
-		this.codepointOffset = i;
 		var chrcode = (typeof buffer==='string') ? buffer.charCodeAt(i) : buffer[i] ;
 		if(typeof chrcode !== 'number') throw new Error('Expected numeric codepoint value');
 		if(this.charset==='ASCII' && chrcode>=0x80) throw new Error('Unexpected high-byte character');
+		// Verify UTF-16 surrogate pairs
+		if(this.charset==='string' && chrcode>=0xD800 && chrcode<=0xDFFF){
+			if(chrcode<0xDC00){
+				// This is a UTF-16 high (first) surrogate
+				if(this.utf16_high) this.charError(buffer, i, 'UTF-16-low-surrogate');
+				this.utf16_high = chrcode;
+				// continue execution since we're decoding to UTF-16 anyways
+			}else{
+				// This is a UTF-16 low (second) surrogate
+				var utf16_high = this.utf16_high;
+				this.utf16_high = null;
+			}
+		}
+		this.codepointStart = i;
 		switch (this.layer.state) {
 		case VOID:
 			// For end of document where only whitespace is allowed
@@ -771,6 +787,14 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.layer.state = STRING2;
 				continue;
 			}
+			// UTF-8 decoding
+			if (this.charset==='UTF-8' && chrcode>=0b11000000 && chrcode<=0b11110111) {
+				this.unicode = [chrcode];
+				if(chrcode>=0b11110000) this.layer.state = UTF8_2;
+				else if(chrcode>=0b11100000) this.layer.state = UTF8_3;
+				else this.layer.state = UTF8_4;
+				continue;
+			}
 			if (chrcode >= 0x20) {
 				this.appendCodepoint(chrcode);
 				continue;
@@ -804,7 +828,24 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				}
 				continue;
 			}
-			this.charError(buffer, i);
+			this.charError(buffer, i, '0-9 A-F a-f');
+		case UTF8_2:
+		case UTF8_3:
+		case UTF8_4:
+			if (chrcode>=0x80 && chrcode<=0xC0) {
+				this.unicode.push(chrcode);
+				if (this.layer.state++ === UTF8_4) {
+					switch(this.unicode.length){
+						case 2: this.appendCodepoint( ((this.unicode[0]&0b11111)<<6) | (this.unicode[1]&0x3f) ); break;
+						case 3: this.appendCodepoint( ((this.unicode[0]&0b1111)<<12) | ((this.unicode[1]&0x3f)<<6) | (this.unicode[2]&0x3f) ); break;
+						case 4: this.appendCodepoint( ((this.unicode[0]&0b111)<<18) | ((this.unicode[1]&0x3f)<<12) | ((this.unicode[2]&0x3f)<<6) | (this.unicode[3]&0x3f) ); break;
+					}
+					this.unicode = undefined;
+					this.layer.state = STRING1;
+				}
+				continue;
+			}
+			this.charError(buffer, i, 'UTF-8 continuation character');
 		}
 	}
 };
@@ -920,7 +961,6 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 		this.string += String.fromCharCode(chrcode);
 		// Only increment if the character completes a code point
 		// i.e. exclude high surrogates
-		//console.log(chrcode.toString(16));
 		if(chrcode<0xD800 || chrcode>0xDBFF) this.layer.length++;
 	}
 }
