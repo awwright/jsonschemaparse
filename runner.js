@@ -176,7 +176,7 @@ function runTests(){
 	nextSyntaxTest(0);
 	function nextSyntaxTest(i){
 		var n = syntaxTestFiles[i];
-		console.log('Running syntax test:', n);
+		//console.log('Running syntax test:', n);
 		if(!n) return void finishSyntaxTests();
 		runSyntaxTest(n, function(err, res){
 			if(err) throw err;

@@ -15,6 +15,8 @@ Features:
 
 ## class: Parser
 
+Parser is a transforming stream that accepts a byte stream or string stream, and outputs events.
+
 ```javascript
 var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {keepValue:true});
 
@@ -32,6 +34,52 @@ console.log(parser.errors);
 console.log(parser.value);
 
 ```
+
+### Parser#errors
+
+An Array of ValidationError instances representing accumulated validation errors.
+Parsing will end when an error is detected, not all errors in the document may be listed.
+
+### Parser#value
+
+If `keepValue: true` was passed in `options`, the parsed value will be available here.
+
+
+### Parser#on('startObject', function() )
+Emitted when an object is opened (when `{` is observed).
+
+
+### Parser#on('endObject', function() )
+Emitted when an object is closed (when `}` is observed).
+
+
+### Parser#on('startArray', function() )
+Emitted when an array is opened (when `[` is observed).
+
+
+### Parser#on('endArray', function() )
+Emitted when an array is closed (when `]` is observed).
+
+
+### Parser#on('key', function(name) )
+Emitted inside an object when a key is fully parsed.
+
+
+### Parser#on('string', function(value) )
+Emitted when a string value is parsed.
+
+
+### Parser#on('boolean', function(value) )
+Emitted when a boolean value is parsed.
+
+
+### Parser#on('null', function(value) )
+Emitted when a null is parsed.
+
+
+### Parser#on('finish', function() )
+Emitted when the incoming stream has ended and has been processed. Guarenteed to be called once. Indicates end of processing.
+
 
 ## class: Schema
 

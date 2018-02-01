@@ -942,7 +942,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
 	if(this.layer.keepValue) this.layer.value = n;
-	this.event('onNumber', n);
+	this.event('number', n);
 	if(this.layer.schema) this.addErrorList(this.layer.schema.testNumberRange(this.layer, n));
 	this.pop();
 }
@@ -952,7 +952,7 @@ StreamParser.prototype.startKey = function startKey(){
 }
 
 StreamParser.prototype.endKey = function endKey(){
-	this.event('onKey', this.string);
+	this.event('key', this.string);
 	// TODO validate against propertyNames here
 	this.pop();
 }
@@ -977,7 +977,7 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 }
 
 StreamParser.prototype.endString = function endString(){
-	this.event('onString', this.string);
+	this.event('string', this.string);
 	if(this.layer.schema) this.addErrorList(this.layer.schema.testStringRange(this.layer, this.string));
 	this.pop();
 }
@@ -987,7 +987,7 @@ StreamParser.prototype.startBoolean = function startBoolean(){
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
-	this.event('onBoolean', this.value);
+	this.event('boolean', this.value);
 	this.pop();
 }
 
@@ -996,7 +996,7 @@ StreamParser.prototype.startNull = function endNull(){
 }
 
 StreamParser.prototype.endNull = function endNull(){
-	this.event('onNull', this.value);
+	this.event('null', this.value);
 	this.pop();
 }
 
