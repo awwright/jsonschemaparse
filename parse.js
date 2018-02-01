@@ -205,7 +205,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 	}
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
 		this.codepointOffset = i;
-		var n = buffer[i];
+		var n = (typeof buffer==='string') ? buffer.charCodeAt(i) : buffer[i] ;
+		if(typeof n !== 'number') throw new Error('Expected numeric codepoint value');
 		if(this.charset==='ASCII' && n>=0x80) throw new Error('Unexpected high-byte character');
 		switch (this.layer.state) {
 		case VOID:

@@ -122,7 +122,7 @@ function runValidationTest(filepath, done){
 			try {
 				var registry = new SchemaRegistry;
 				var schema = registry.import('http://localhost/'+filepath, s.schema);
-				var p = schema.createParser();
+				var p = schema.createParser({charset:'string'});
 				p.parse(tjson);
 			}catch(e){
 				throws = e;
