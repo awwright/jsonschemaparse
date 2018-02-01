@@ -24,10 +24,9 @@ var syntaxTestFiles = fs.readdirSync(syntaxTestDir).filter(function(n){
 // Remove some problematic tests
 syntaxTestFiles = syntaxTestFiles.filter(function(v){
 	return [
-		// These tests break Node.js's UTF-8 parsing
-		// Maybe implement own UTF-8 parser later
-		'n_structure_lone-invalid-utf-8.json',
-		'n_structure_single_eacute.json',
+		// These tests break Node.js's UTF-8 parsing.
+		//'n_structure_lone-invalid-utf-8.json',
+		//'n_structure_single_eacute.json',
 		// These excessively test floating point number precision
 		// maybe fix them later
 		'y_number.json',
