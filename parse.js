@@ -74,7 +74,7 @@ function StreamParser(schema, options) {
 	}
 
 	// Line number tracking
-	this.encoding = 'encoding' in options ? options.encoding : 'ASCII';
+	this.charset = 'charset' in options ? options.charset : 'ASCII';
 	this.characters = 0;
 	this.lineNumber = 0;
 	this.lineOffset = 0;
@@ -195,18 +195,18 @@ StreamParser.prototype.parse = function parse(buffer){
 }
 
 StreamParser.prototype.parseBlock = function parseBlock(buffer){
-	if(this.encoding==='string'){
+	if(this.charset==='string'){
 		if(typeof buffer!=='string') throw new Error('string `buffer` argument required');
-	}else if(this.encoding==='ASCII'){
+	}else if(this.charset==='ASCII'){
 		if(!Buffer.isBuffer(buffer)) throw new Error('ASCII Buffer `buffer` argument required');
-	}else if(this.encoding==='UTF-8'){
+	}else if(this.charset==='UTF-8'){
 		// TODO UTF-8 isn't actually supported yet
 		if(!Buffer.isBuffer(buffer)) throw new Error('UTF-8 Buffer `buffer` argument required');
 	}
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
 		this.codepointOffset = i;
 		var n = buffer[i];
-		if(this.encoding==='ASCII' && n>=0x80) throw new Error('Unexpected high-byte character');
+		if(this.charset==='ASCII' && n>=0x80) throw new Error('Unexpected high-byte character');
 		switch (this.layer.state) {
 		case VOID:
 			// For end of document where only whitespace is allowed
