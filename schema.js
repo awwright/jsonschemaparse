@@ -182,7 +182,7 @@ function Schema(id, schema, registry){
 	self.registry = registry;
 	self.id = id;
 	if(schema) var idref = schema.$id || schema.id;
-	if(idref) self.id = idref || 'http://localhost/';
+	if(idref) self.id = uriResolve(self.id, idref) || '_:';
 	self.allowNumber = true;
 	self.allowString = true;
 	self.allowBoolean = true;
@@ -201,6 +201,7 @@ function Schema(id, schema, registry){
 	self.maxProperties = null;
 	self.minLength = null;
 	self.maxLength = null;
+	self.not = [];
 	self.anyOf = [];
 	self.oneOf = [];
 	self.required = {};
@@ -212,11 +213,7 @@ function Schema(id, schema, registry){
 	self.patternProperties = {};
 	self.patternPropertiesRegExp = {};
 	self.additionalProperties = null;
-	self.testsType = [];
-	self.testsNumber = [];
 	self.testsString = [];
-	self.testsArray = [];
-	self.testsObject = [];
 
 	if(isSchema(schema)) self.intersect(schema);
 }
@@ -241,6 +238,32 @@ Schema.prototype.intersect = function intersect(s){
 			throw new Error('"allOf" not an array');
 		}
 		s.allOf.forEach(function(sc){ self.intersect(sc); });
+	}
+
+	// Keyword: "not"
+	if(s.not){
+		// FIXME allow schema references, too
+		if(!isSchema(s.not)){
+			throw new Error('"not" not a schema');
+		}
+		self.not.push(s);
+	}
+
+	// Keyword: "oneOf"
+	if(s.oneOf){
+		// FIXME allow schema references, too
+		if(!Array.isArray(s.oneOf)){
+			throw new Error('"allOf" not an array');
+		}
+		s.oneOf.forEach(function(sc){ self.oneOf.push(sc); });
+	}
+
+	// Keyword: "anyOf"
+	if(s.anyOf){
+		if(!Array.isArray(s.anyOf)){
+			throw new Error('"anyOf" not an array');
+		}
+		s.anyOf.forEach(function(sc){ self.anyOf.push(sc); });
 	}
 
 	// Keyword: "type"
