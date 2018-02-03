@@ -205,7 +205,6 @@ function Schema(id, schema, registry){
 	self.anyOf = [];
 	self.oneOf = [];
 	self.required = {};
-	//self.typeConstraints = [];
 	self.items = [];
 	self.additionalItems = null;
 	//self.propertyNameSchema = null;

@@ -166,7 +166,7 @@ StreamParser.prototype.addErrorList = function addErrorList(errs) {
 	});
 }
 
-StreamParser.prototype.validateValue = function validateValue(cb) {
+StreamParser.prototype.validateInstance = function validateInstance(cb) {
 	if(this.layer.schema) this.addErrorList(cb(this.layer.schema));
 }
 
@@ -867,9 +867,9 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 
 StreamParser.prototype.startObject = function startObject(){
 	var self = this;
-	self.validateValue(function(s){ return s.testTypeObject(self.layer); });
-	if(this.layer.schema) this.layer.validator = this.layer.schema.testObjectBegin();
-	this.event('startObject');
+	self.validateInstance(function(s){ return s.testTypeObject(self.layer); });
+	if(self.layer.schema) self.layer.validator = self.layer.schema.testObjectBegin();
+	self.event('startObject');
 }
 
 StreamParser.prototype.endObject = function endObject(){
@@ -880,13 +880,13 @@ StreamParser.prototype.endObject = function endObject(){
 }
 StreamParser.prototype.validateObject = function validateObject(){
 	var self = this;
-	self.validateValue(function(s){ return s.testPropertiesCount(self.layer.length); });
+	self.validateInstance(function(s){ return s.testPropertiesCount(self.layer.length); });
 }
 
 StreamParser.prototype.startArray = function startArray(){
 	var self = this;
-	self.validateValue(function(s){ return s.testTypeArray(self.layer); });
-	this.event('startArray');
+	self.validateInstance(function(s){ return s.testTypeArray(self.layer); });
+	self.event('startArray');
 }
 
 StreamParser.prototype.endArray = function endArray(n, s){
@@ -896,12 +896,12 @@ StreamParser.prototype.endArray = function endArray(n, s){
 }
 StreamParser.prototype.validateArray = function validateArray(n, s){
 	var self = this;
-	self.validateValue(function(s){ return s.testItemsCount(self.layer.length); });
+	self.validateInstance(function(s){ return s.testItemsCount(self.layer.length); });
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
 	var self = this;
-	self.validateValue(function(s){ return s.testTypeNumber(self.layer); });
+	self.validateInstance(function(s){ return s.testTypeNumber(self.layer); });
 }
 
 StreamParser.prototype.endNumber = function endNumber(){
@@ -950,11 +950,11 @@ StreamParser.prototype.endNumber = function endNumber(){
 }
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
-	if(this.layer.keepValue) this.layer.value = n;
 	var self = this;
-	this.event('number', n);
-	self.validateValue(function(s){ return s.testNumberRange(self.layer, n); });
-	this.pop();
+	if(self.layer.keepValue) this.layer.value = n;
+	self.event('number', n);
+	self.validateInstance(function(s){ return s.testNumberRange(self.layer, n); });
+	self.pop();
 }
 
 StreamParser.prototype.startKey = function startKey(){
@@ -969,7 +969,7 @@ StreamParser.prototype.endKey = function endKey(){
 
 StreamParser.prototype.startString = function startString(){
 	var self = this;
-	self.validateValue(function(s){ return s.testTypeString(self.layer); });
+	self.validateInstance(function(s){ return s.testTypeString(self.layer); });
 }
 
 StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
@@ -990,13 +990,13 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 StreamParser.prototype.endString = function endString(){
 	this.event('string', this.string);
 	var self = this;
-	self.validateValue(function(s){ return s.testStringRange(self.layer, self.string); });
+	self.validateInstance(function(s){ return s.testStringRange(self.layer, self.string); });
 	this.pop();
 }
 
 StreamParser.prototype.startBoolean = function startBoolean(){
 	var self = this;
-	self.validateValue(function(s){ return s.testTypeBoolean(self.layer); });
+	self.validateInstance(function(s){ return s.testTypeBoolean(self.layer); });
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
@@ -1006,7 +1006,7 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 
 StreamParser.prototype.startNull = function endNull(){
 	var self = this;
-	self.validateValue(function(s){ return s.testTypeNull(self.layer); });
+	self.validateInstance(function(s){ return s.testTypeNull(self.layer); });
 }
 
 StreamParser.prototype.endNull = function endNull(){
