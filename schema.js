@@ -570,11 +570,6 @@ ValidateObject.prototype.finish = function finish(){
 }
 
 
-function ValidateArray(schema){
-	if(!schema) throw new Error('`schema` argument is required');
-	self.itemsMap = [];
-}
-
 Schema.prototype.testObjectBegin = function(){
 	var schema = this;
 	// Return a stateful object representing which schemas have passed/failed
