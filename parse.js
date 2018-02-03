@@ -166,6 +166,10 @@ StreamParser.prototype.addErrorList = function addErrorList(errs) {
 	});
 }
 
+StreamParser.prototype.validateValue = function validateValue(cb) {
+	if(this.layer.schema) this.addErrorList(cb(this.layer.schema));
+}
+
 StreamParser.prototype._transform = function (buffer, encoding, callback) {
 	try {
 		this.parseBlock(buffer);
@@ -862,7 +866,8 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 };
 
 StreamParser.prototype.startObject = function startObject(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeObject(this.layer));
+	var self = this;
+	self.validateValue(function(s){ return s.testTypeObject(self.layer); });
 	if(this.layer.schema) this.layer.validator = this.layer.schema.testObjectBegin();
 	this.event('startObject');
 }
@@ -874,11 +879,13 @@ StreamParser.prototype.endObject = function endObject(){
 	this.pop();
 }
 StreamParser.prototype.validateObject = function validateObject(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testPropertiesCount(this.layer.length));
+	var self = this;
+	self.validateValue(function(s){ return s.testPropertiesCount(self.layer.length); });
 }
 
 StreamParser.prototype.startArray = function startArray(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeArray(this.layer));
+	var self = this;
+	self.validateValue(function(s){ return s.testTypeArray(self.layer); });
 	this.event('startArray');
 }
 
@@ -888,11 +895,13 @@ StreamParser.prototype.endArray = function endArray(n, s){
 	this.pop();
 }
 StreamParser.prototype.validateArray = function validateArray(n, s){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testItemsCount(this.layer.length));
+	var self = this;
+	self.validateValue(function(s){ return s.testItemsCount(self.layer.length); });
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeNumber(this.layer));
+	var self = this;
+	self.validateValue(function(s){ return s.testTypeNumber(self.layer); });
 }
 
 StreamParser.prototype.endNumber = function endNumber(){
@@ -942,8 +951,9 @@ StreamParser.prototype.endNumber = function endNumber(){
 
 StreamParser.prototype.onNumber = function onNumber(n, s){
 	if(this.layer.keepValue) this.layer.value = n;
+	var self = this;
 	this.event('number', n);
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testNumberRange(this.layer, n));
+	self.validateValue(function(s){ return s.testNumberRange(self.layer, n); });
 	this.pop();
 }
 
@@ -958,7 +968,8 @@ StreamParser.prototype.endKey = function endKey(){
 }
 
 StreamParser.prototype.startString = function startString(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeString(this.layer));
+	var self = this;
+	self.validateValue(function(s){ return s.testTypeString(self.layer); });
 }
 
 StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
@@ -978,12 +989,14 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 
 StreamParser.prototype.endString = function endString(){
 	this.event('string', this.string);
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testStringRange(this.layer, this.string));
+	var self = this;
+	self.validateValue(function(s){ return s.testStringRange(self.layer, self.string); });
 	this.pop();
 }
 
 StreamParser.prototype.startBoolean = function startBoolean(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeBoolean(this.layer));
+	var self = this;
+	self.validateValue(function(s){ return s.testTypeBoolean(self.layer); });
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
@@ -992,7 +1005,8 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 }
 
 StreamParser.prototype.startNull = function endNull(){
-	if(this.layer.schema) this.addErrorList(this.layer.schema.testTypeNull(this.layer));
+	var self = this;
+	self.validateValue(function(s){ return s.testTypeNull(self.layer); });
 }
 
 StreamParser.prototype.endNull = function endNull(){
