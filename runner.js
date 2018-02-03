@@ -8,14 +8,18 @@ var Parser = require('./index.js').StreamParser;
 Error.stackTraceLimit = 25;
 
 var argv = process.argv.slice(2);
+var args = [];
 for(var i=0; i<argv.length; i++){
 	var arg = argv[i];
 	if(arg.slice(0,1)=='-') switch(arg){
 		case '-v': case '--version':
 			console.log();
 			break;
+	}else{
+		args.push(arg);
 	}
 }
+if(args.length) console.log('Running files:', args);
 
 var syntaxTestDir = 'test/syntax-suite/test_parsing';
 var syntaxTestFiles = fs.readdirSync(syntaxTestDir).filter(function(n){
@@ -40,6 +44,7 @@ syntaxTestFiles = syntaxTestFiles.filter(function(v){
 //	'n_structure_lone-invalid-utf-8.json',
 //	'n_structure_incomplete_UTF8_BOM.json',
 //];
+if(args.length) syntaxTestFiles = syntaxTestFiles.filter(function(n){ return args.indexOf(n)>=0; });
 
 var validationTestFiles = [
 	'tests/draft7/additionalItems.json',
@@ -71,6 +76,7 @@ var validationTestFiles = [
 	'tests/draft7/type.json',
 	//'tests/draft7/uniqueItems.json',
 ];
+if(args.length) validationTestFiles = validationTestFiles.filter(function(n){ return args.indexOf(n)>=0; });
 
 function runSyntaxTest(filename, done){
 	var res = {
