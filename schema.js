@@ -266,23 +266,16 @@ Schema.prototype.intersect = function intersect(s){
 	}
 
 	// Keyword: "type"
-	if(typeof s.type=='string'){
-		if(s.type!='number' && s.type!='integer') self.allowNumber=false;
-		if(s.type!='number') self.allowFraction=false;
-		if(s.type!='string') self.allowString=false;
-		if(s.type!='boolean') self.allowBoolean=false;
-		if(s.type!='null') self.allowNull=false;
-		if(s.type!='object') self.allowObject=false;
-		if(s.type!='array') self.allowArray=false;
-	}else if(Array.isArray(s.type)){
-		if(s.type.indexOf('number')<0 && s.type.indexOf('integer')<0) self.allowNumber=false;
+	var type = (typeof s.type=='string') ? [s.type] : s.type;
+	if(Array.isArray(type)){
+		if(type.indexOf('number')<0 && type.indexOf('integer')<0) self.allowNumber=false;
 		if(s.type.indexOf('number')<0) self.allowFraction=false;
 		if(s.type.indexOf('string')<0) self.allowString=false;
 		if(s.type.indexOf('boolean')<0) self.allowBoolean=false;
 		if(s.type.indexOf('null')<0) self.allowNull=false;
 		if(s.type.indexOf('object')<0) self.allowObject=false;
 		if(s.type.indexOf('array')<0) self.allowArray=false;
-	}else if(s.type!==undefined){
+	}else if(type!==undefined){
 		throw new Error('Invalid "type" keyword');
 	}
 	// Keyword: "minimum", "exclusiveMinimum"
