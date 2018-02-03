@@ -242,19 +242,21 @@ Schema.prototype.intersect = function intersect(s){
 	// Keyword: "not"
 	if(s.not){
 		// FIXME allow schema references, too
-		if(!isSchema(s.not)){
+		if(!isSchemaResolve(s.not)){
 			throw new Error('"not" not a schema');
 		}
-		self.not.push(s);
+		self.not.push(self.registry.resolve(self.id, s.not));
 	}
 
 	// Keyword: "oneOf"
 	if(s.oneOf){
-		// FIXME allow schema references, too
 		if(!Array.isArray(s.oneOf)){
 			throw new Error('"allOf" not an array');
 		}
-		s.oneOf.forEach(function(sc){ self.oneOf.push(sc); });
+		s.oneOf.forEach(function(sc){
+			if(!isSchemaResolve(sc)) throw new Error('"anyOf" item not a schema');
+			self.oneOf.push(self.registry.resolve(self.id, sc));
+		});
 	}
 
 	// Keyword: "anyOf"
@@ -262,7 +264,10 @@ Schema.prototype.intersect = function intersect(s){
 		if(!Array.isArray(s.anyOf)){
 			throw new Error('"anyOf" not an array');
 		}
-		s.anyOf.forEach(function(sc){ self.anyOf.push(sc); });
+		s.anyOf.forEach(function(sc){
+			if(!isSchemaResolve(sc)) throw new Error('"anyOf" item not a schema');
+			self.anyOf.push(self.registry.resolve(self.id, sc));
+		});
 	}
 
 	// Keyword: "type"
@@ -538,10 +543,6 @@ function ValidateObject(schema){
 	if(!schema) throw new Error('`schema` argument is required');
 	var self = this;
 	self.schema = schema;
-	self.oneOfMap = [];
-	schema.oneOf.forEach(function(v,i){ self.oneOfMap[i] = false; });
-	self.anyOfMap = [];
-	schema.anyOf.forEach(function(v,i){ self.anyOfMap[i] = false; });
 	self.requiredMap = {};
 	self.requiredRemain = 0;
 	for(var k in schema.required){
@@ -584,10 +585,15 @@ Schema.prototype.testObjectBegin = function(){
 function SchemaUnion(arr){
 	if(!Array.isArray(arr)) throw new Error('Expected `arr` to be an Array');
 	this.set = arr;
+	this.anyOf = [];
+	this.oneOf = [];
+	this.not = [];
 }
 
-SchemaUnion.prototype.intersect = function intersect(s){
-	this.set.push(s);
+SchemaUnion.prototype.intersect = function intersect(schema){
+	var self = this;
+	this.set.push(schema);
+	schema.not.forEach(function(s){ self.not.push(s); })
 }
 
 SchemaUnion.prototype.testTypeNumber = function testTypeNumber(layer){

@@ -56,6 +56,15 @@ function toknam(code) {
 }
 
 
+// Store results alongside main validation
+// Keeps track if a subschema in not/anyOf/oneOf is valid/invalid without propogating results to main schema stream
+function ProcessValid(schema, validator){
+	this.schema = schema;
+	this.validator = validator;
+	this.errors = [];
+}
+
+
 module.exports.StreamParser = StreamParser;
 function StreamParser(schema, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
@@ -86,13 +95,10 @@ function StreamParser(schema, options) {
 	// Object stack stuff
 	this.stack = [];
 	// Allow trailing whitespace at the end of the document
-	this.push();
-	this.layer.path = '';
+	this.push('');
 	this.layer.state = VOID;
 	// Start parsing a value
-	this.push();
-	this.layer.path = '';
-	this.layer.schema = schema;
+	this.push('', schema);
 	this.errors = [];
 
 	// for parsing
@@ -143,17 +149,29 @@ StreamParser.prototype.push = function push(k, schema) {
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
 		schema: schema,
-		//not: {},
-		//allOf: [],
-		//oneOf: [],
-		//anyOf: [],
+		// anyOfResults: At least one instance in this array must have zero errors
+		anyOfResults: schema ? schema.anyOf.map(function(s){ return new ProcessValid(s); }) : [],
+		// oneOfResults: Exactly one item in this array, if any, must have zero errors
+		oneOfResults: schema ? schema.oneOf.map(function(s){ return new ProcessValid(s); }) : [],
+		// notResults: No item in this array may have zero errors (i.e. every item must report invalid)
+		notResults: schema ? schema.not.map(function(s){ return new ProcessValid(s); }) : [],
 	};
 	this.stack.push(this.layer);
 };
 StreamParser.prototype.pop = function pop(){
-	var layer = this.stack.pop();
-	if(layer.keepValue) this.value = layer.value;
-	this.layer = this.stack[this.stack.length-1];
+	var self = this;
+	var layer = self.stack.pop();
+	if(layer.schema && layer.notResults.length){
+		console.log('notResults', layer.notResults);
+		var failures = layer.notResults.filter(function(v){
+			return v.errors.length===0;
+		});
+		if(failures.length){
+			self.addErrorList(new S.ValidationError('not', layer.path, layer.schema, 'not', failures.length, 0));
+		}
+	}
+	if(layer.keepValue) self.value = layer.value;
+	self.layer = self.stack[this.stack.length-1];
 	return layer;
 }
 
@@ -167,7 +185,11 @@ StreamParser.prototype.addErrorList = function addErrorList(errs) {
 }
 
 StreamParser.prototype.validateInstance = function validateInstance(cb) {
-	if(this.layer.schema) this.addErrorList(cb(this.layer.schema));
+	var self = this;
+	self.layer.notResults.forEach(function(res){
+		StreamParser.prototype.addErrorList.call(res, cb(res.schema));
+	});
+	if(self.layer.schema) self.addErrorList(cb(self.layer.schema));
 }
 
 StreamParser.prototype._transform = function (buffer, encoding, callback) {

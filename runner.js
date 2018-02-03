@@ -65,7 +65,7 @@ var validationTestFiles = [
 	'tests/draft7/minLength.json',
 	'tests/draft7/minProperties.json',
 	'tests/draft7/multipleOf.json',
-	//'tests/draft7/not.json',
+	'tests/draft7/not.json',
 	//'tests/draft7/oneOf.json',
 	'tests/draft7/pattern.json',
 	'tests/draft7/patternProperties.json',
