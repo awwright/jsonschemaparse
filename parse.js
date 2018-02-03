@@ -131,9 +131,6 @@ StreamParser.prototype.charError = function (buffer, i, expecting) {
 		+  ( expecting ? (" expecting one of: " + expecting) : '' )
 	);
 };
-StreamParser.prototype.onError = function (e) {
-	console.error(e.stack);
-};
 
 StreamParser.prototype.push = function push(k, schema) {
 	var path = this.layer && this.layer.path || '';
