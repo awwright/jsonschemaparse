@@ -892,14 +892,11 @@ StreamParser.prototype.startObject = function startObject(){
 }
 
 StreamParser.prototype.endObject = function endObject(){
-	this.event('endObject');
-	if(this.layer.validator) this.addErrorList(this.layer.validator.finish());
-	this.validateObject();
-	this.pop();
-}
-StreamParser.prototype.validateObject = function validateObject(){
 	var self = this;
+	self.event('endObject');
+	if(self.layer.validator) self.addErrorList(self.layer.validator.finish());
 	self.validateInstance(function(s){ return s.testPropertiesCount(self.layer.length); });
+	self.pop();
 }
 
 StreamParser.prototype.startArray = function startArray(){
@@ -908,14 +905,11 @@ StreamParser.prototype.startArray = function startArray(){
 	self.event('startArray');
 }
 
-StreamParser.prototype.endArray = function endArray(n, s){
-	this.event('endArray');
-	this.validateArray(n, s);
-	this.pop();
-}
-StreamParser.prototype.validateArray = function validateArray(n, s){
+StreamParser.prototype.endArray = function endArray(){
 	var self = this;
+	self.event('endArray');
 	self.validateInstance(function(s){ return s.testItemsCount(self.layer.length); });
+	self.pop();
 }
 
 StreamParser.prototype.startNumber = function startNumber(){
