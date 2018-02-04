@@ -155,6 +155,24 @@ StreamParser.prototype.push = function push(k, schema) {
 	};
 	this.stack.push(this.layer);
 };
+
+StreamParser.prototype.pushKey = function pushKey(k){
+	var validator = this.schema;
+	return this.push(k, validator && validator.getKeySchema(k));
+}
+
+StreamParser.prototype.pushProperty = function pushProperty(k) {
+	var validator = this.schema;
+	return this.push(k, validator && validator.getPropertySchema(k));
+}
+
+StreamParser.prototype.pushItem = function pushItem(k) {
+	var validator = this.schema;
+	return this.push(k, validator && validator.getItemSchema(k));
+}
+
+
+
 StreamParser.prototype.pop = function pop(){
 	var self = this;
 	var layer = self.stack.pop();
@@ -338,6 +356,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x22: // `"`
 				// Start parsing a keyword name
 				this.string = "";
+				// When the new layer (created next) pops, be in the "finished parsing key" state
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
 				this.push();
@@ -352,14 +371,12 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, '" }');
 		case OBJECT2:
 			// Finished parsing key
-			if(this.layer.validator) this.layer.validator.testPropertyName(this.string);
+			// the endKey method will have already been called by the just-popped layer
 			this.layer.key = this.string;
 			this.layer.state = OBJECT3;
 			// pass to OBJECT3
 		case OBJECT3:
 			// Stored state of key, expecting a colon
-			var schema = this.layer.schema;
-			if(schema) var subschema = schema.getPropertySchema(this.layer.key);
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -371,7 +388,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x3a: // `:`
 				this.layer.state = OBJECT4;
 				// Parse the next characters as a new value
-				this.push(this.layer.key, subschema);
+				this.pushProperty(this.layer.key);
 				continue;
 			}
 			this.charError(buffer, i, ':');
@@ -403,8 +420,6 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, ', }');
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
-			var schema = this.layer.schema;
-			if(schema) var subschema = schema.getItemSchema(this.layer.length);
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -419,47 +434,47 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// If none of this, then it's starting a new value
 			case 0x7b: // `{`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startObject();
 				this.layer.state = OBJECT1;
 				if(this.layer.keepValue) this.layer.value = {};
 				continue;
 			case 0x5b: // `[`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startArray();
 				this.layer.state = ARRAY1;
 				if(this.layer.keepValue) this.layer.value = [];
 				continue;
 			case 0x74: // `t`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startBoolean();
 				this.layer.state = TRUE1;
 				continue;
 			case 0x66: // `f`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startBoolean();
 				this.layer.state = FALSE1;
 				continue;
 			case 0x6e: // `n`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.layer.state = NULL1;
 				this.startNull();
 				continue;
 			case 0x22: // `"`
 				// Start parsing a string
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.string = "";
 				this.layer.state = STRING1;
 				this.startString();
 				continue;
 			case 0x2d: // `-`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.negative = true;
 				this.layer.state = NUMBER1;
 				this.string = "-";
@@ -467,7 +482,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue;
 			case 0x30: // `0`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				this.string = "0";
@@ -517,8 +532,6 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.charError(buffer, i, '] ,');
 		case ARRAY4:
 			// Finished reading comma, expecting value
-			var schema = this.layer.schema;
-			if(schema) var subschema = schema.getItemSchema(this.layer.length);
 			switch(chrcode){
 			case 0x0a:
 				this.lineOffset = i;
@@ -531,47 +544,47 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			// If none of this, then it's starting a new value
 			case 0x7b: // `{`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startObject();
 				this.layer.state = OBJECT1;
 				if(this.layer.keepValue) this.layer.value = {};
 				continue;
 			case 0x5b: // `[`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startArray();
 				this.layer.state = ARRAY1;
 				if(this.layer.keepValue) this.layer.value = [];
 				continue;
 			case 0x74: // `t`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startBoolean();
 				this.layer.state = TRUE1;
 				continue;
 			case 0x66: // `f`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.startBoolean();
 				this.layer.state = FALSE1;
 				continue;
 			case 0x6e: // `n`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.layer.state = NULL1;
 				this.startNull();
 				continue;
 			case 0x22: // `"`
 				// Start parsing a string
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.string = "";
 				this.layer.state = STRING1;
 				this.startString();
 				continue;
 			case 0x2d: // `-`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.negative = true;
 				this.layer.state = NUMBER1;
 				this.string = "-";
@@ -579,7 +592,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue;
 			case 0x30: // `0`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				this.string = "0";
@@ -595,7 +608,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x38: // `8`
 			case 0x39: // `9`
 				this.layer.state = ARRAY2;
-				this.push(this.layer.length, subschema);
+				this.pushItem(this.layer.length);
 				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				this.string = String.fromCharCode(chrcode);
