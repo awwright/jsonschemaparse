@@ -895,7 +895,7 @@ StreamParser.prototype.endObject = function endObject(){
 	var self = this;
 	self.event('endObject');
 	if(self.layer.validator) self.addErrorList(self.layer.validator.finish());
-	self.validateInstance(function(s){ return s.testPropertiesCount(self.layer.length); });
+	self.validateInstance(function(s){ return s.endObject(self.layer); });
 	self.pop();
 }
 
@@ -908,7 +908,7 @@ StreamParser.prototype.startArray = function startArray(){
 StreamParser.prototype.endArray = function endArray(){
 	var self = this;
 	self.event('endArray');
-	self.validateInstance(function(s){ return s.testItemsCount(self.layer.length); });
+	self.validateInstance(function(s){ return s.endArray(self.layer); });
 	self.pop();
 }
 
@@ -966,7 +966,7 @@ StreamParser.prototype.onNumber = function onNumber(n, s){
 	var self = this;
 	if(self.layer.keepValue) this.layer.value = n;
 	self.event('number', n);
-	self.validateInstance(function(s){ return s.testNumberRange(self.layer, n); });
+	self.validateInstance(function(s){ return s.endNumber(self.layer, n); });
 	self.pop();
 }
 
@@ -1003,7 +1003,7 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 StreamParser.prototype.endString = function endString(){
 	this.event('string', this.string);
 	var self = this;
-	self.validateInstance(function(s){ return s.testStringRange(self.layer, self.string); });
+	self.validateInstance(function(s){ return s.endString(self.layer, self.string); });
 	this.pop();
 }
 

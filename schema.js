@@ -471,9 +471,10 @@ Schema.prototype.getItemSchema = function getItemSchema(k){
 	return new SchemaUnion(patterns);
 }
 
-Schema.prototype.testItemsCount = function(length){
+Schema.prototype.endArray = function(layer){
 	var schema = this;
 	var error = false;
+	var length = layer.length;
 	if(typeof schema.minItems=='number' && length < schema.minItems){
 		error = true;
 	}
@@ -484,9 +485,10 @@ Schema.prototype.testItemsCount = function(length){
 	return new Error('Incorrect number of items');
 }
 
-Schema.prototype.testPropertiesCount = function(length){
+Schema.prototype.endObject = function(layer){
 	var schema = this;
 	var error = false;
+	var length = layer.length;
 	if(typeof schema.minProperties=='number' && length < schema.minProperties){
 		error = true;
 	}
@@ -497,7 +499,7 @@ Schema.prototype.testPropertiesCount = function(length){
 	return new Error('Incorrect number of properties');
 }
 
-Schema.prototype.testNumberRange = function(layer, n){
+Schema.prototype.endNumber = function(layer, n){
 	var schema = this;
 	var error = false;
 	if(typeof schema.exclusiveMinimum=='number' && n<=schema.exclusiveMinimum){
@@ -524,9 +526,10 @@ Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
 	}
 }
 
-Schema.prototype.testStringRange = function testStringRange(layer, instance){
+Schema.prototype.endString = function endString(layer, instance){
 	var self = this;
-	if(typeof instance != 'string') return;
+	// This function shouldn't be called if instance is not a string
+	if(typeof instance != 'string') throw new Error('A string instance is required');
 	if(typeof self.minLength=='number' && layer.length < self.minLength){
 		return new ValidationError('String too short', layer.path, self, 'minLength', self.minLength, layer.length);
 	}
@@ -633,15 +636,15 @@ SchemaUnion.prototype.testTypeArray = function testTypeArray(layer){
 	}
 }
 
-SchemaUnion.prototype.testNumberRange = function testNumberRange(layer, n){
+SchemaUnion.prototype.endNumber = function endNumber(layer, n){
 	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].testNumberRange(layer, n);
+		var res = this.set[i].endNumber(layer, n);
 		if(res) return res;
 	}
 }
-SchemaUnion.prototype.testStringRange = function testStringRange(n){
+SchemaUnion.prototype.endString = function endString(layer, n){
 	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].testStringRange(n);
+		var res = this.set[i].endString(layer, n);
 		if(res) return res;
 	}
 }
@@ -661,9 +664,9 @@ SchemaUnion.prototype.getPropertySchema = function getPropertySchema(n){
 	});
 	return u;
 }
-SchemaUnion.prototype.testItemsCount = function testItemsCount(n){
+SchemaUnion.prototype.endArray = function endArray(layer){
 	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].testItemsCount(n);
+		var res = this.set[i].endArray(layer);
 		if(res) return res;
 	}
 }
