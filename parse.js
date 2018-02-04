@@ -15,6 +15,7 @@ var OBJECT2 = C.OBJECT2 = 22;
 var OBJECT3 = C.OBJECT3 = 23;
 var OBJECT4 = C.OBJECT4 = 24;
 var OBJECT5 = C.OBJECT5 = 25;
+var OBJECT6 = C.OBJECT6 = 26;
 var ARRAY1  = C.ARRAY1  = 31;
 var ARRAY2  = C.ARRAY2  = 32;
 var ARRAY3  = C.ARRAY3  = 33;
@@ -367,7 +368,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			}
 			this.charError(buffer, i, '" }');
 		case OBJECT2:
-			// Finished parsing key
+			// Process parsed key
 			// the endKey method will have already been called by the just-popped layer
 			this.layer.key = this.string;
 			this.layer.state = OBJECT3;
@@ -383,19 +384,21 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x20:
 				continue; // whitespace, ignore
 			case 0x3a: // `:`
+				// Once property value is parsed, we'll return to OBJECT4
 				this.layer.state = OBJECT4;
-				// Parse the next characters as a new value
+				// But first, parse the next characters as a new value
 				this.pushProperty(this.layer.key);
 				continue;
 			}
 			this.charError(buffer, i, ':');
 		case OBJECT4:
+			// Process parsed value
 			if(this.layer.keepValue) this.layer.value[this.layer.key] = this.value;
 			this.layer.length++;
-			// Parsed a value, expecting a comma or closing curly brace
 			this.layer.state = OBJECT5;
 			// pass to OBJECT5
 		case OBJECT5:
+			// Parsed a value, expecting a comma or closing curly brace
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -406,15 +409,36 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				continue; // whitespace, ignore
 			case 0x2c: // `,`
 				this.layer.key = this.layer.length;
-				// Begin reading a new key
-				this.layer.state = OBJECT2;
-				this.push();
+				this.layer.state = OBJECT6;
 				continue;
 			case 0x7d: // `}`
 				this.endObject();
 				continue;
 			}
 			this.charError(buffer, i, ', }');
+		case OBJECT6:
+			// Parsed a comma, now expecting a string
+			switch (chrcode) {
+			case 0x0a:
+				this.lineOffset = i;
+				this.lineNumber++;
+			case 0x09:
+			case 0x0d:
+			case 0x20:
+				continue; // whitespace, ignore
+			case 0x22: // `"`
+				// Start parsing a keyword name
+				this.string = "";
+				// When the new layer (created next) pops, be in the "finished parsing key" state
+				this.layer.state = OBJECT2;
+				// Parse the next characters as a new value
+				this.push();
+				this.layer.state = STRING1;
+				this.layer.keepValue = true;
+				this.layer.key = true;
+				continue;
+			}
+			this.charError(buffer, i, '"');
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
 			switch (chrcode) {
@@ -983,9 +1007,11 @@ StreamParser.prototype.startKey = function startKey(){
 }
 
 StreamParser.prototype.endKey = function endKey(){
-	this.event('key', this.string);
-	this.validateInstance(function(s){ return s.endKey(this.string); });
+	var key = this.string
+	this.event('key', key);
+	//this.validateInstance(function(s){ return s.endPropertyName(key); });
 	this.pop();
+	this.validateInstance(function(s){ return s.endKey(key); });
 }
 
 StreamParser.prototype.startString = function startString(){

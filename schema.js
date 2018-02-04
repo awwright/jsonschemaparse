@@ -398,8 +398,7 @@ Schema.prototype.intersect = function intersect(s){
 			if(required[k]===true){
 				throw new Error('Items in "required" must be unique');
 			}
-			required[k] = true;
-			self.required[k] = true;
+			required[k] = self.required[k] = true;
 		});
 	}
 	// Keyword: "pattern"
@@ -517,8 +516,7 @@ Schema.prototype.endString = function endString(layer, instance){
 	}
 }
 
-
-// A Validate<Foo> like this stores information about the instance that is specific to the schema
+// Stores information about this instance for parsing the given schema
 module.exports.ValidateLayer = ValidateLayer;
 function ValidateLayer(schema, errors){
 	var self = this;
@@ -532,12 +530,6 @@ function ValidateLayer(schema, errors){
 	// process required properties
 	self.requiredMap = {};
 	self.requiredRemain = 0;
-	for(var k in schema.required){
-		if(!(k in self.requiredMap)){
-			self.requiredMap[k] = false;
-			self.requiredRemain++;
-		}
-	}
 //	// process anyOf/oneOf/not
 //	self.anyOf = [];
 //	self.oneOf = [];
@@ -553,14 +545,6 @@ ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
 	});
 }
 
-
-ValidateLayer.prototype.intersect = function intersect(schema){
-	var self = this;
-	this.set.push(schema);
-	schema.not.forEach(function(s){ self.not.push(s); })
-}
-
-
 // look up the necessary sub-schemas to validate against a sub-instance
 // (array item, object property key, or object property value)
 
@@ -568,7 +552,6 @@ ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
 	var self = this;
 	var schema = self.schema;
 	var patterns = [];
-	//console.log(k, self);
 	if(schema.properties[k]){
 		patterns.push(schema.properties[k]);
 	}
@@ -583,7 +566,6 @@ ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
 }
 
 ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
-	// var subschema = schema.items[this.layer.length] || schema.additionalItems;
 	var self = this;
 	var schema = self.schema;
 	var patterns = [];
@@ -595,13 +577,11 @@ ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
 	return patterns.map(function(v){ return v.validate(self.errors); });
 }
 
-
 ValidateLayer.prototype.getKeySchema = function getKeySchema(n){
 	// TODO
 	// return an array of ValidateLayers or something,
 	// an item for every schema we want to validate against the upcoming object property
 }
-
 
 // Begin parsing an instance
 ValidateLayer.prototype.testTypeNumber = function testTypeNumber(layer){
@@ -617,7 +597,15 @@ ValidateLayer.prototype.testTypeNull = function testTypeNull(layer){
 	this.addErrorList(this.schema.testTypeNull(layer));
 }
 ValidateLayer.prototype.testTypeObject = function testTypeObject(layer){
+	var self = this;
 	this.addErrorList(this.schema.testTypeObject(layer));
+	// If we're allowed to be an object, then index required properties
+	for(var k in self.schema.required){
+		if(!(k in self.requiredMap)){
+			self.requiredMap[k] = false;
+			self.requiredRemain++;
+		}
+	}
 }
 ValidateLayer.prototype.testTypeArray = function testTypeArray(layer){
 	this.addErrorList(this.schema.testTypeArray(layer));
@@ -644,12 +632,13 @@ ValidateLayer.prototype.endKey = function endKey(k){
 		// ...
 	//}
 }
-ValidateLayer.prototype.finish = function finish(){
+ValidateLayer.prototype.finish = function finish(layer){
+	debugger;
 	var self = this;
 	if(self.requiredRemain){
 		var missing = Object.keys(self.requiredMap).filter(function(k){
 			return !self.requiredMap[k];
 		});
-		return new Error('Required properties missing: '+JSON.stringify(missing));
+		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer.path, this));
 	}
 }
