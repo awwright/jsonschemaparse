@@ -55,6 +55,11 @@ Object.keys(C).forEach(function(name){
 function toknam(code) {
 	return tokenNames[code] || code;
 }
+function collapseArray(arr, cb){
+	var res = [];
+	for(var i=0; i<arr.length; i++) cb(arr[i], i).forEach(function(v){ res.push(v); });
+	return res;
+}
 
 
 module.exports.StreamParser = StreamParser;
@@ -127,6 +132,9 @@ StreamParser.prototype.charError = function (buffer, i, expecting) {
 };
 
 StreamParser.prototype.push = function push(k, validator) {
+	if(validator) validator.forEach(function(v){
+		if(!v.testTypeNumber) throw new Error('NOT A VALIDATOR');
+	});
 	var path = this.layer && this.layer.path || '';
 	this.layer = {
 		state: VALUE,
@@ -139,46 +147,34 @@ StreamParser.prototype.push = function push(k, validator) {
 		beginLine: this.lineNumber,
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
-		validator: validator,
+		validator: validator || [],
 	};
 	this.stack.push(this.layer);
 };
 
-StreamParser.prototype.pushKey = function pushKey(k){
-	var list = this.layer.validator;
-	if(!Array.isArray(list)) list = (list ? [list] : []) ;
-	var result = [];
-	list.forEach(function(validator){
-		var res = validator.getKeySchema(k);
-		if(!res) return;
-		else if(!Array.isArray(res)) result.push(res);
-		else res.forEach(function(w){ result.push(w); });
-	});
-	return this.push(k, result);
-}
+//StreamParser.prototype.pushKey = function pushKey(k){
+//	var list = this.layer.validator || [];
+//	if(!Array.isArray(list)) throw new Error('Expected array');
+//	var result = collapseArray(list.map(function(validator){
+//		return validator.getKeySchema(k);
+//	}));
+//	return this.push(k, result);
+//}
 
 StreamParser.prototype.pushProperty = function pushProperty(k) {
-	var list = this.layer.validator;
-	if(!Array.isArray(list)) list = (list ? [list] : []) ;
-	var result = [];
-	list.forEach(function(validator){
-		var res = validator.getPropertySchema(k);
-		if(!res) return;
-		else if(!Array.isArray(res)) result.push(res);
-		else res.forEach(function(w){ result.push(w); });
+	var list = this.layer.validator || [];
+	if(!Array.isArray(list)) throw new Error('Expected array');
+	var result = collapseArray(list, function(validator){
+		return validator.getPropertySchema(k);
 	});
 	return this.push(k, result);
 }
 
 StreamParser.prototype.pushItem = function pushItem(k) {
-	var list = this.layer.validator;
-	if(!Array.isArray(list)) list = (list ? [list] : []) ;
-	var result = [];
-	list.forEach(function(validator){
-		var res = validator.getItemSchema(k);
-		if(!res) return;
-		else if(!Array.isArray(res)) result.push(res);
-		else res.forEach(function(w){ result.push(w); });
+	var list = this.layer.validator || [];
+	if(!Array.isArray(list)) throw new Error('Expected array');
+	var result = collapseArray(list, function(validator){
+		return validator.getItemSchema(k);
 	});
 	return this.push(k, result);
 }
@@ -196,13 +192,12 @@ StreamParser.prototype.pop = function pop(){
 
 StreamParser.prototype.validateInstance = function validateInstance(cb) {
 	var self = this;
-	if(Array.isArray(self.layer.validator)){
-		self.layer.validator.forEach(function(validator){
-			cb(validator);
-		});
-	}else if(self.layer.validator){
-		cb(self.layer.validator);
-	}
+	if(!self.layer.validator) return;
+	if(!Array.isArray(self.layer.validator)) throw new Error('Expected array this.layer.validator');
+	self.layer.validator.forEach(function(validator){
+		if(!validator.testTypeNumber) console.error('NOT A VALIDATOR', validator);
+		cb(validator);
+	});
 }
 
 StreamParser.prototype._transform = function (buffer, encoding, callback) {

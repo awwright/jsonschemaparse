@@ -6,6 +6,12 @@ var uriResolve = url.resolve;
 
 var Parse = require('./parse.js');
 
+function collapseArray(arr, cb){
+	var res = [];
+	for(var i=0; i<arr.length; i++) cb(arr[i], i).forEach(function(v){ res.push(v); });
+	return res;
+}
+
 module.exports.ValidationError = ValidationError;
 function ValidationError(message, propertyPath, schema, keyword, expected, actual){
 	this.message = message;
@@ -222,7 +228,8 @@ Schema.prototype.createParser = function createParser(options){
 }
 
 Schema.prototype.validate = function validate(errors) {
-	return new ValidateLayer(this, errors);
+	//return [new ValidateLayer(this, errors)];
+	return new ValidateLayer(this, errors).getAll();
 }
 
 Schema.prototype.intersect = function intersect(s){
@@ -530,10 +537,22 @@ function ValidateLayer(schema, errors){
 	// process required properties
 	self.requiredMap = {};
 	self.requiredRemain = 0;
-//	// process anyOf/oneOf/not
+	// process anyOf/oneOf/not
+	self.side = [];
 //	self.anyOf = [];
 //	self.oneOf = [];
-//	self.not = [];
+	self.not = schema.not.map(function(s){
+		var validator = new ValidateLayer(s);
+		validator.side.forEach(function(v){ self.side.push(v); });
+		return validator;
+	});
+}
+
+ValidateLayer.prototype.getAll = function getAll(errs) {
+	var list = [this];
+	this.side.forEach(function(v){ list.push(v); });
+	this.not.forEach(function(v){ list.push(v); });
+	return list;
 }
 
 ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
@@ -562,7 +581,7 @@ ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
 	}
 	if(patterns.length==0 && schema.additionalProperties) return schema.additionalProperties.validate(self.errors);
 	if(patterns.length==1) return patterns[0].validate(self.errors);
-	return patterns.map(function(v){ return v.validate(self.errors); });
+	return collapseArray(patterns, function(v){ return v.validate(self.errors); });
 }
 
 ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
@@ -574,7 +593,7 @@ ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
 	}
 	if(patterns.length==0 && schema.additionalItems) return schema.additionalItems.validate(self.errors);
 	if(patterns.length==1) return patterns[0].validate(self.errors);
-	return patterns.map(function(v){ return v.validate(self.errors); });
+	return collapseArray(patterns, function(v){ return v.validate(self.errors); });
 }
 
 ValidateLayer.prototype.getKeySchema = function getKeySchema(n){
@@ -633,12 +652,15 @@ ValidateLayer.prototype.endKey = function endKey(k){
 	//}
 }
 ValidateLayer.prototype.finish = function finish(layer){
-	debugger;
 	var self = this;
 	if(self.requiredRemain){
 		var missing = Object.keys(self.requiredMap).filter(function(k){
 			return !self.requiredMap[k];
 		});
 		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer.path, this));
+	}
+	var notSuccesses = self.not.filter(function(v){ return !v.errors.length; });
+	if(notSuccesses.length){
+		self.addErrorList(new ValidationError('Expected "not" to fail', layer.path, this));
 	}
 }
