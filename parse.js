@@ -144,18 +144,42 @@ StreamParser.prototype.push = function push(k, validator) {
 };
 
 StreamParser.prototype.pushKey = function pushKey(k){
-	var validator = this.validator;
-	return this.push(k, validator && validator.getKeySchema(k));
+	var list = this.layer.validator;
+	if(!Array.isArray(list)) list = (list ? [list] : []) ;
+	var result = [];
+	list.forEach(function(validator){
+		var res = validator.getKeySchema(k);
+		if(!res) return;
+		else if(!Array.isArray(res)) result.push(res);
+		else res.forEach(function(w){ result.push(w); });
+	});
+	return this.push(k, result);
 }
 
 StreamParser.prototype.pushProperty = function pushProperty(k) {
-	var validator = this.validator;
-	return this.push(k, validator && validator.getPropertySchema(k));
+	var list = this.layer.validator;
+	if(!Array.isArray(list)) list = (list ? [list] : []) ;
+	var result = [];
+	list.forEach(function(validator){
+		var res = validator.getPropertySchema(k);
+		if(!res) return;
+		else if(!Array.isArray(res)) result.push(res);
+		else res.forEach(function(w){ result.push(w); });
+	});
+	return this.push(k, result);
 }
 
 StreamParser.prototype.pushItem = function pushItem(k) {
-	var validator = this.validator;
-	return this.push(k, validator && validator.getItemSchema(k));
+	var list = this.layer.validator;
+	if(!Array.isArray(list)) list = (list ? [list] : []) ;
+	var result = [];
+	list.forEach(function(validator){
+		var res = validator.getItemSchema(k);
+		if(!res) return;
+		else if(!Array.isArray(res)) result.push(res);
+		else res.forEach(function(w){ result.push(w); });
+	});
+	return this.push(k, result);
 }
 
 
@@ -471,7 +495,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x38: // `8`
 			case 0x39: // `9`
 				this.layer.state = ARRAY2;
-				this.push();
+				this.pushItem(this.layer.length);
 				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				this.string = String.fromCharCode(chrcode);

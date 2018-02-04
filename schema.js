@@ -278,12 +278,12 @@ Schema.prototype.intersect = function intersect(s){
 	var type = (typeof s.type=='string') ? [s.type] : s.type;
 	if(Array.isArray(type)){
 		if(type.indexOf('number')<0 && type.indexOf('integer')<0) self.allowNumber=false;
-		if(s.type.indexOf('number')<0) self.allowFraction=false;
-		if(s.type.indexOf('string')<0) self.allowString=false;
-		if(s.type.indexOf('boolean')<0) self.allowBoolean=false;
-		if(s.type.indexOf('null')<0) self.allowNull=false;
-		if(s.type.indexOf('object')<0) self.allowObject=false;
-		if(s.type.indexOf('array')<0) self.allowArray=false;
+		if(type.indexOf('number')<0) self.allowFraction=false;
+		if(type.indexOf('string')<0) self.allowString=false;
+		if(type.indexOf('boolean')<0) self.allowBoolean=false;
+		if(type.indexOf('null')<0) self.allowNull=false;
+		if(type.indexOf('object')<0) self.allowObject=false;
+		if(type.indexOf('array')<0) self.allowArray=false;
 	}else if(type!==undefined){
 		throw new Error('Invalid "type" keyword');
 	}
@@ -521,7 +521,6 @@ Schema.prototype.endString = function endString(layer, instance){
 // A Validate<Foo> like this stores information about the instance that is specific to the schema
 module.exports.ValidateLayer = ValidateLayer;
 function ValidateLayer(schema, errors){
-	debugger;
 	var self = this;
 	if(!(schema instanceof Schema)) throw new Error('Expected `schema` to be a Schema');
 	if(errors){
@@ -567,17 +566,18 @@ ValidateLayer.prototype.intersect = function intersect(schema){
 
 ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
 	var self = this;
+	var schema = self.schema;
 	var patterns = [];
 	//console.log(k, self);
-	if(self.properties[k]){
-		patterns.push(self.properties[k]);
+	if(schema.properties[k]){
+		patterns.push(schema.properties[k]);
 	}
-	for(var regexp in self.patternPropertiesRegExp){
-		if(self.patternPropertiesRegExp[regexp].test(k)){
-			patterns.push(self.patternProperties[regexp]);
+	for(var regexp in schema.patternPropertiesRegExp){
+		if(schema.patternPropertiesRegExp[regexp].test(k)){
+			patterns.push(schema.patternProperties[regexp]);
 		}
 	}
-	if(patterns.length==0) return self.additionalProperties.validate(self.errors);
+	if(patterns.length==0 && schema.additionalProperties) return schema.additionalProperties.validate(self.errors);
 	if(patterns.length==1) return patterns[0].validate(self.errors);
 	return patterns.map(function(v){ return v.validate(self.errors); });
 }
@@ -585,28 +585,19 @@ ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
 ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
 	// var subschema = schema.items[this.layer.length] || schema.additionalItems;
 	var self = this;
+	var schema = self.schema;
 	var patterns = [];
-	if(self.items[k]){
-		patterns.push(self.items[k]);
+	if(schema.items[k]){
+		patterns.push(schema.items[k]);
 	}
-	if(patterns.length==0) return self.additionalItems.validate(self.errors);
+	if(patterns.length==0 && schema.additionalItems) return schema.additionalItems.validate(self.errors);
 	if(patterns.length==1) return patterns[0].validate(self.errors);
 	return patterns.map(function(v){ return v.validate(self.errors); });
 }
 
 
-ValidateLayer.prototype.getItemSchema = function getItemSchema(n){
-	// return an array of ValidateLayers or something,
-	// an item for every schema we want to validate against the upcoming array item
-	return new ValidateLayer(this.schema.getItemSchema(n));
-}
 ValidateLayer.prototype.getKeySchema = function getKeySchema(n){
-	var u = new ValidateLayer([]);
-	// return an array of ValidateLayers or something,
-	// an item for every schema we want to validate against the upcoming object property
-}
-ValidateLayer.prototype.getPropertySchema = function getPropertySchema(n){
-	return new ValidateLayer(this.schema.getPropertySchema(n));
+	// TODO
 	// return an array of ValidateLayers or something,
 	// an item for every schema we want to validate against the upcoming object property
 }
