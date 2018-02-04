@@ -264,10 +264,12 @@ Schema.prototype.intersect = function intersect(s){
 		if(!Array.isArray(s.oneOf)){
 			throw new Error('"allOf" not an array');
 		}
+		var oneOf = [];
 		s.oneOf.forEach(function(sc){
 			if(!isSchemaResolve(sc)) throw new Error('"anyOf" item not a schema');
-			self.oneOf.push(self.registry.resolve(self.id, sc));
+			oneOf.push(self.registry.resolve(self.id, sc));
 		});
+		self.oneOf.push(oneOf);
 	}
 
 	// Keyword: "anyOf"
@@ -275,10 +277,12 @@ Schema.prototype.intersect = function intersect(s){
 		if(!Array.isArray(s.anyOf)){
 			throw new Error('"anyOf" not an array');
 		}
+		var anyOf = [];
 		s.anyOf.forEach(function(sc){
 			if(!isSchemaResolve(sc)) throw new Error('"anyOf" item not a schema');
-			self.anyOf.push(self.registry.resolve(self.id, sc));
+			anyOf.push(self.registry.resolve(self.id, sc));
 		});
+		self.anyOf.push(anyOf);
 	}
 
 	// Keyword: "type"
@@ -528,19 +532,40 @@ module.exports.ValidateLayer = ValidateLayer;
 function ValidateLayer(schema, errors){
 	var self = this;
 	if(!(schema instanceof Schema)) throw new Error('Expected `schema` to be a Schema');
+	self.schema = schema;
+
+	// Where to store errors
+	// If `errors` is given, it probably points to `StreamParser#errors`
 	if(errors){
 		this.errors = errors;
 	}else{
 		this.errors = [];
 	}
-	self.schema = schema;
+
 	// process required properties
 	self.requiredMap = {};
 	self.requiredRemain = 0;
+
 	// process anyOf/oneOf/not
+	// A set of schemas that anyOf/oneOf/not in turn depend on
 	self.side = [];
-//	self.anyOf = [];
-//	self.oneOf = [];
+	// an array of arrays
+	self.anyOf  = schema.anyOf.map(function(arr){
+		return arr.map(function(s){
+			var validator = new ValidateLayer(s);
+			validator.side.forEach(function(v){ self.side.push(v); });
+			return validator;
+		});
+	});
+	// another array of arrays
+	self.oneOf  = schema.oneOf.map(function(arr){
+		return arr.map(function(s){
+			var validator = new ValidateLayer(s);
+			validator.side.forEach(function(v){ self.side.push(v); });
+			return validator;
+		});
+	});
+	// just one array of not
 	self.not = schema.not.map(function(s){
 		var validator = new ValidateLayer(s);
 		validator.side.forEach(function(v){ self.side.push(v); });
@@ -551,6 +576,8 @@ function ValidateLayer(schema, errors){
 ValidateLayer.prototype.getAll = function getAll(errs) {
 	var list = [this];
 	this.side.forEach(function(v){ list.push(v); });
+	this.anyOf.forEach(function(arr){ arr.forEach(function(v){ list.push(v); }); });
+	this.oneOf.forEach(function(arr){ arr.forEach(function(v){ list.push(v); }); });
 	this.not.forEach(function(v){ list.push(v); });
 	return list;
 }
@@ -653,14 +680,38 @@ ValidateLayer.prototype.endKey = function endKey(k){
 }
 ValidateLayer.prototype.finish = function finish(layer){
 	var self = this;
+	// Trigger finish on child validators
+	self.anyOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
+	self.oneOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
+	self.not.forEach(function(v){ v.finish(layer); });
+
+	// Compute required properties errors
 	if(self.requiredRemain){
 		var missing = Object.keys(self.requiredMap).filter(function(k){
 			return !self.requiredMap[k];
 		});
-		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer.path, this));
+		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer.path, self, 'required'));
 	}
-	var notSuccesses = self.not.filter(function(v){ return !v.errors.length; });
-	if(notSuccesses.length){
-		self.addErrorList(new ValidationError('Expected "not" to fail', layer.path, this));
+
+	// Compute not/oneOf/anyOf failures
+	var notFailures = self.not.filter(function(v){ return v.errors.length===0; });
+	if(notFailures.length){
+		self.addErrorList(new ValidationError('Expected "not" to fail', layer.path, this, 'not'));
 	}
+	// oneOf
+	var oneOf = self.oneOf.map(function(arr){ return arr.map(function(v){ return v.errors.length; }); });
+	self.oneOf.forEach(function(arr){
+		var oneOfValid = arr.filter(function(v){ return v.errors.length===0; });
+		if(oneOfValid.length!==1){
+			self.addErrorList(new ValidationError('Expected "oneOf" to have exactly one matching schema', layer.path, self, 'oneOf', 1, oneOfValid.length));
+		}
+	});
+	// anyOf
+	var anyOf = self.anyOf.map(function(arr){ return arr.map(function(v){ return v.errors.length; }); });
+	self.anyOf.forEach(function(arr){
+		var anyOfValid = arr.filter(function(v){ return v.errors.length===0; });
+		if(anyOfValid.length===0){
+			self.addErrorList(new ValidationError('Expected "anyOf" to have at least one matching schema', layer.path, self, 'anyOf', 1, anyOfValid.length));
+		}
+	});
 }
