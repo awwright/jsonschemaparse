@@ -56,15 +56,6 @@ function toknam(code) {
 }
 
 
-// Store results alongside main validation
-// Keeps track if a subschema in not/anyOf/oneOf is valid/invalid without propogating results to main schema stream
-function ProcessValid(schema, validator){
-	this.schema = schema;
-	this.validator = validator;
-	this.errors = [];
-}
-
-
 module.exports.StreamParser = StreamParser;
 function StreamParser(schema, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
@@ -94,11 +85,6 @@ function StreamParser(schema, options) {
 
 	// Object stack stuff
 	this.stack = [];
-	// Allow trailing whitespace at the end of the document
-	this.push('');
-	this.layer.state = VOID;
-	// Start parsing a value
-	this.push('', schema);
 	this.errors = [];
 
 	// for parsing
@@ -114,6 +100,13 @@ function StreamParser(schema, options) {
 	this.position = undefined;
 	this.exponent = undefined;
 	this.negativeExponent = undefined;
+
+	// Begin creating stack
+	// Allow trailing whitespace at the end of the document
+	this.push('');
+	this.layer.state = VOID;
+	// Start parsing a value
+	this.push('', schema && schema.validate(this.errors));
 }
 util.inherits(StreamParser, Transform);
 
@@ -132,7 +125,7 @@ StreamParser.prototype.charError = function (buffer, i, expecting) {
 	);
 };
 
-StreamParser.prototype.push = function push(k, schema) {
+StreamParser.prototype.push = function push(k, validator) {
 	var path = this.layer && this.layer.path || '';
 	this.layer = {
 		state: VALUE,
@@ -145,29 +138,23 @@ StreamParser.prototype.push = function push(k, schema) {
 		beginLine: this.lineNumber,
 		beginColumn: this.characters-this.lineOffset,
 		length: 0,
-		schema: schema,
-		// anyOfResults: At least one instance in this array must have zero errors
-		anyOfResults: schema ? schema.anyOf.map(function(s){ return new ProcessValid(s); }) : [],
-		// oneOfResults: Exactly one item in this array, if any, must have zero errors
-		oneOfResults: schema ? schema.oneOf.map(function(s){ return new ProcessValid(s); }) : [],
-		// notResults: No item in this array may have zero errors (i.e. every item must report invalid)
-		notResults: schema ? schema.not.map(function(s){ return new ProcessValid(s); }) : [],
+		validator: validator,
 	};
 	this.stack.push(this.layer);
 };
 
 StreamParser.prototype.pushKey = function pushKey(k){
-	var validator = this.schema;
+	var validator = this.validator;
 	return this.push(k, validator && validator.getKeySchema(k));
 }
 
 StreamParser.prototype.pushProperty = function pushProperty(k) {
-	var validator = this.schema;
+	var validator = this.validator;
 	return this.push(k, validator && validator.getPropertySchema(k));
 }
 
 StreamParser.prototype.pushItem = function pushItem(k) {
-	var validator = this.schema;
+	var validator = this.validator;
 	return this.push(k, validator && validator.getItemSchema(k));
 }
 
@@ -176,35 +163,21 @@ StreamParser.prototype.pushItem = function pushItem(k) {
 StreamParser.prototype.pop = function pop(){
 	var self = this;
 	var layer = self.stack.pop();
-	if(layer.schema && layer.notResults.length){
-		console.log('notResults', layer.notResults);
-		var failures = layer.notResults.filter(function(v){
-			return v.errors.length===0;
-		});
-		if(failures.length){
-			self.addErrorList(new S.ValidationError('not', layer.path, layer.schema, 'not', failures.length, 0));
-		}
-	}
+	self.validateInstance(function(s){ return s.finish(layer); });
 	if(layer.keepValue) self.value = layer.value;
 	self.layer = self.stack[this.stack.length-1];
 	return layer;
 }
 
-StreamParser.prototype.addErrorList = function addErrorList(errs) {
-	var self = this;
-	if(!Array.isArray(errs)) errs = errs?[errs]:[];
-	errs.forEach(function(error){
-		self.errors.push(error);
-		//self.errors.push(new ValidationError(error.message, self.layer.path, self.layer.schema, '', ''));
-	});
-}
-
 StreamParser.prototype.validateInstance = function validateInstance(cb) {
 	var self = this;
-	self.layer.notResults.forEach(function(res){
-		StreamParser.prototype.addErrorList.call(res, cb(res.schema));
-	});
-	if(self.layer.schema) self.addErrorList(cb(self.layer.schema));
+	if(Array.isArray(self.layer.validator)){
+		self.layer.validator.forEach(function(validator){
+			cb(validator);
+		});
+	}else if(self.layer.validator){
+		cb(self.layer.validator);
+	}
 }
 
 StreamParser.prototype._transform = function (buffer, encoding, callback) {
@@ -900,14 +873,12 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 StreamParser.prototype.startObject = function startObject(){
 	var self = this;
 	self.validateInstance(function(s){ return s.testTypeObject(self.layer); });
-	if(self.layer.schema) self.layer.validator = self.layer.schema.testObjectBegin();
 	self.event('startObject');
 }
 
 StreamParser.prototype.endObject = function endObject(){
 	var self = this;
 	self.event('endObject');
-	if(self.layer.validator) self.addErrorList(self.layer.validator.finish());
 	self.validateInstance(function(s){ return s.endObject(self.layer); });
 	self.pop();
 }
@@ -989,7 +960,7 @@ StreamParser.prototype.startKey = function startKey(){
 
 StreamParser.prototype.endKey = function endKey(){
 	this.event('key', this.string);
-	// TODO validate against propertyNames here
+	this.validateInstance(function(s){ return s.endKey(this.string); });
 	this.pop();
 }
 

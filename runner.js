@@ -65,7 +65,7 @@ var validationTestFiles = [
 	'tests/draft7/minLength.json',
 	'tests/draft7/minProperties.json',
 	'tests/draft7/multipleOf.json',
-	'tests/draft7/not.json',
+	//'tests/draft7/not.json',
 	//'tests/draft7/oneOf.json',
 	'tests/draft7/pattern.json',
 	'tests/draft7/patternProperties.json',
@@ -187,7 +187,7 @@ function runTests(){
 		runSyntaxTest(n, function(err, res){
 			if(err) throw err;
 			res.messages.forEach(function(v){
-				console.log('Error: syntaxTest('+n+') '+v.description);
+				console.log('Failure: syntaxTest('+n+') '+v.description);
 				console.log(v.json);
 				console.log(v.ecmaJSON);
 				console.log(v.localJSON);
@@ -215,7 +215,7 @@ function runTests(){
 			if(err) throw err;
 			res.messages.forEach(function(v){
 				//console.log('Error: validationTest('+n+') '+v.description, v);
-				console.log('Error: validationTest('+n+') '+v.description);
+				console.log('Failure: validationTest('+n+') '+v.description);
 				console.dir(v, {depth:10});
 			});
 			pass += res.pass;

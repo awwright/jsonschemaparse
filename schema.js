@@ -221,6 +221,10 @@ Schema.prototype.createParser = function createParser(options){
 	return new Parse.StreamParser(this, options);
 }
 
+Schema.prototype.validate = function validate(errors) {
+	return new ValidateLayer(this, errors);
+}
+
 Schema.prototype.intersect = function intersect(s){
 	var self = this;
 	if(s===false){
@@ -414,61 +418,32 @@ Schema.prototype.intersect = function intersect(s){
 
 Schema.prototype.testTypeNumber = function testNumber(layer, expected){
 	if(this.allowNumber) return;
-	return new ValidationError('Expected a number', layer.path, layer.schema, 'type', expected, 'number');
+	return new ValidationError('Expected a number', layer.path, this, 'type', expected, 'number');
 }
 
 Schema.prototype.testTypeString = function testString(layer, expected){
 	if(this.allowString) return;
-	return new ValidationError('Expected a string', layer.path, layer.schema, 'type', expected, 'string');
+	return new ValidationError('Expected a string', layer.path, this, 'type', expected, 'string');
 }
 
 Schema.prototype.testTypeBoolean = function testBoolean(layer, expected){
 	if(this.allowBoolean) return;
-	return new ValidationError('Expected a boolean', layer.path, layer.schema, 'type', expected, 'boolean');
+	return new ValidationError('Expected a boolean', layer.path, this, 'type', expected, 'boolean');
 }
 
 Schema.prototype.testTypeNull = function testNull(layer, expected){
 	if(this.allowNull) return;
-	return new ValidationError('Expected a null', layer.path, layer.schema, 'type', expected, 'null');
+	return new ValidationError('Expected a null', layer.path, this, 'type', expected, 'null');
 }
 
 Schema.prototype.testTypeObject = function testObject(layer, expected){
 	if(this.allowObject) return;
-	return new ValidationError('Expected an object', layer.path, layer.schema, 'type', expected, 'object');
+	return new ValidationError('Expected an object', layer.path, this, 'type', expected, 'object');
 }
 
 Schema.prototype.testTypeArray = function testArray(layer, expected){
 	if(this.allowArray) return;
-	return new ValidationError('Expected an array', layer.path, layer.schema, 'type', expected, 'array');
-}
-
-Schema.prototype.getPropertySchema = function getPropertySchema(k){
-	var self = this;
-	var patterns = [];
-	//console.log(k, self);
-	if(self.properties[k]){
-		patterns.push(self.properties[k]);
-	}
-	for(var regexp in self.patternPropertiesRegExp){
-		if(self.patternPropertiesRegExp[regexp].test(k)){
-			patterns.push(self.patternProperties[regexp]);
-		}
-	}
-	if(patterns.length==0) return self.additionalProperties;
-	if(patterns.length==1) return patterns[0];
-	return new SchemaUnion(patterns);
-}
-
-Schema.prototype.getItemSchema = function getItemSchema(k){
-	// var subschema = schema.items[this.layer.length] || schema.additionalItems;
-	var self = this;
-	var patterns = [];
-	if(self.items[k]){
-		patterns.push(self.items[k]);
-	}
-	if(patterns.length==0) return self.additionalItems;
-	if(patterns.length==1) return patterns[0];
-	return new SchemaUnion(patterns);
+	return new ValidationError('Expected an array', layer.path, this, 'type', expected, 'array');
 }
 
 Schema.prototype.endArray = function(layer){
@@ -522,7 +497,7 @@ Schema.prototype.endNumber = function(layer, n){
 
 Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
 	if (!instance.match(pattern)) {
-		return new ValidationError('String does not match pattern', layer.path , layer.schema, 'pattern', pattern, instance);
+		return new ValidationError('String does not match pattern', layer.path , this, 'pattern', pattern, instance);
 	}
 }
 
@@ -542,18 +517,134 @@ Schema.prototype.endString = function endString(layer, instance){
 	}
 }
 
-function ValidateObject(schema){
-	if(!schema) throw new Error('`schema` argument is required');
+
+// A Validate<Foo> like this stores information about the instance that is specific to the schema
+module.exports.ValidateLayer = ValidateLayer;
+function ValidateLayer(schema, errors){
+	debugger;
 	var self = this;
+	if(!(schema instanceof Schema)) throw new Error('Expected `schema` to be a Schema');
+	if(errors){
+		this.errors = errors;
+	}else{
+		this.errors = [];
+	}
 	self.schema = schema;
+	// process required properties
 	self.requiredMap = {};
 	self.requiredRemain = 0;
 	for(var k in schema.required){
-		self.requiredMap[k] = false;
-		self.requiredRemain++;
+		if(!(k in self.requiredMap)){
+			self.requiredMap[k] = false;
+			self.requiredRemain++;
+		}
 	}
+//	// process anyOf/oneOf/not
+//	self.anyOf = [];
+//	self.oneOf = [];
+//	self.not = [];
 }
-ValidateObject.prototype.testPropertyName = function testPropertyName(k){
+
+ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
+	var self = this;
+	if(!Array.isArray(errs)) errs = errs?[errs]:[];
+	errs.forEach(function(error){
+		// `self.errors` might be a reference, so don't replace
+		self.errors.push(error);
+	});
+}
+
+
+ValidateLayer.prototype.intersect = function intersect(schema){
+	var self = this;
+	this.set.push(schema);
+	schema.not.forEach(function(s){ self.not.push(s); })
+}
+
+
+// look up the necessary sub-schemas to validate against a sub-instance
+// (array item, object property key, or object property value)
+
+ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
+	var self = this;
+	var patterns = [];
+	//console.log(k, self);
+	if(self.properties[k]){
+		patterns.push(self.properties[k]);
+	}
+	for(var regexp in self.patternPropertiesRegExp){
+		if(self.patternPropertiesRegExp[regexp].test(k)){
+			patterns.push(self.patternProperties[regexp]);
+		}
+	}
+	if(patterns.length==0) return self.additionalProperties.validate(self.errors);
+	if(patterns.length==1) return patterns[0].validate(self.errors);
+	return patterns.map(function(v){ return v.validate(self.errors); });
+}
+
+ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
+	// var subschema = schema.items[this.layer.length] || schema.additionalItems;
+	var self = this;
+	var patterns = [];
+	if(self.items[k]){
+		patterns.push(self.items[k]);
+	}
+	if(patterns.length==0) return self.additionalItems.validate(self.errors);
+	if(patterns.length==1) return patterns[0].validate(self.errors);
+	return patterns.map(function(v){ return v.validate(self.errors); });
+}
+
+
+ValidateLayer.prototype.getItemSchema = function getItemSchema(n){
+	// return an array of ValidateLayers or something,
+	// an item for every schema we want to validate against the upcoming array item
+	return new ValidateLayer(this.schema.getItemSchema(n));
+}
+ValidateLayer.prototype.getKeySchema = function getKeySchema(n){
+	var u = new ValidateLayer([]);
+	// return an array of ValidateLayers or something,
+	// an item for every schema we want to validate against the upcoming object property
+}
+ValidateLayer.prototype.getPropertySchema = function getPropertySchema(n){
+	return new ValidateLayer(this.schema.getPropertySchema(n));
+	// return an array of ValidateLayers or something,
+	// an item for every schema we want to validate against the upcoming object property
+}
+
+
+// Begin parsing an instance
+ValidateLayer.prototype.testTypeNumber = function testTypeNumber(layer){
+	this.addErrorList(this.schema.testTypeNumber(layer));
+}
+ValidateLayer.prototype.testTypeString = function testTypeString(layer){
+	this.addErrorList(this.schema.testTypeString(layer));
+}
+ValidateLayer.prototype.testTypeBoolean = function testTypeBoolean(layer){
+	this.addErrorList(this.schema.testTypeBoolean(layer));
+}
+ValidateLayer.prototype.testTypeNull = function testTypeNull(layer){
+	this.addErrorList(this.schema.testTypeNull(layer));
+}
+ValidateLayer.prototype.testTypeObject = function testTypeObject(layer){
+	this.addErrorList(this.schema.testTypeObject(layer));
+}
+ValidateLayer.prototype.testTypeArray = function testTypeArray(layer){
+	this.addErrorList(this.schema.testTypeArray(layer));
+}
+
+ValidateLayer.prototype.endNumber = function endNumber(layer, n){
+	this.addErrorList(this.schema.endNumber(layer, n));
+}
+ValidateLayer.prototype.endString = function endString(layer, str){
+	this.addErrorList(this.schema.endString(layer, str));
+}
+ValidateLayer.prototype.endObject = function endObject(layer, n){
+	this.addErrorList(this.schema.endObject(layer, n));
+}
+ValidateLayer.prototype.endArray = function endArray(layer, n){
+	this.addErrorList(this.schema.endArray(layer, n));
+}
+ValidateLayer.prototype.endKey = function endKey(k){
 	if(this.requiredMap[k]===false){
 		this.requiredMap[k] = true;
 		this.requiredRemain--;
@@ -562,111 +653,12 @@ ValidateObject.prototype.testPropertyName = function testPropertyName(k){
 		// ...
 	//}
 }
-ValidateObject.prototype.finish = function finish(){
+ValidateLayer.prototype.finish = function finish(){
 	var self = this;
 	if(self.requiredRemain){
 		var missing = Object.keys(self.requiredMap).filter(function(k){
 			return !self.requiredMap[k];
 		});
 		return new Error('Required properties missing: '+JSON.stringify(missing));
-	}
-}
-
-
-Schema.prototype.testObjectBegin = function(){
-	var schema = this;
-	// Return a stateful object representing which schemas have passed/failed
-	return new ValidateObject(schema);
-}
-
-
-function SchemaUnion(arr){
-	if(!Array.isArray(arr)) throw new Error('Expected `arr` to be an Array');
-	this.set = arr;
-	this.anyOf = [];
-	this.oneOf = [];
-	this.not = [];
-}
-
-SchemaUnion.prototype.intersect = function intersect(schema){
-	var self = this;
-	this.set.push(schema);
-	schema.not.forEach(function(s){ self.not.push(s); })
-}
-
-SchemaUnion.prototype.testTypeNumber = function testTypeNumber(layer){
-	for(var i=0; i<this.set.length; i++){
-		if(this.set[i].allowNumber) continue;
-		return new ValidationError('Invalid number', layer.path, this.set[i], 'type', this.set[i].type, 'number');
-	}
-}
-
-SchemaUnion.prototype.testTypeString = function testTypeString(layer){
-	for(var i=0; i<this.set.length; i++){
-		if(this.set[i].allowString) continue;
-		return new ValidationError('Invalid string', layer.path, this.set[i], 'type', this.set[i].type, 'string');
-	}
-}
-
-SchemaUnion.prototype.testTypeBoolean = function testTypeBoolean(layer){
-	for(var i=0; i<this.set.length; i++){
-		if(this.set[i].allowBoolean) continue;
-		return new ValidationError('Invalid boolean', layer.path, this.set[i], 'type', this.set[i].type, 'boolean');
-	}
-}
-
-SchemaUnion.prototype.testTypeNull = function testTypeNull(layer){
-	for(var i=0; i<this.set.length; i++){
-		if(this.set[i].allowNull) continue;
-		return new ValidationError('Invalid nuull', layer.path, this.set[i], 'type', this.set[i].type, 'null');
-	}
-}
-
-SchemaUnion.prototype.testTypeObject = function testTypeObject(layer){
-	for(var i=0; i<this.set.length; i++){
-		if(this.set[i].allowObject) continue;
-		return new ValidationError('Invalid object', layer.path, this.set[i], 'type', this.set[i].type, 'object');
-	}
-}
-
-SchemaUnion.prototype.testTypeArray = function testTypeArray(layer){
-	for(var i=0; i<this.set.length; i++){
-		if(this.set[i].allowArray) continue;
-		return new ValidationError('Invalid array', layer.path, this.set[i], 'type', this.set[i].type, 'array');
-	}
-}
-
-SchemaUnion.prototype.endNumber = function endNumber(layer, n){
-	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].endNumber(layer, n);
-		if(res) return res;
-	}
-}
-SchemaUnion.prototype.endString = function endString(layer, n){
-	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].endString(layer, n);
-		if(res) return res;
-	}
-}
-SchemaUnion.prototype.getItemSchema = function getItemSchema(n){
-	var u = new SchemaUnion([]);
-	this.set.forEach(function(v){
-		var vv = v.getItemSchema(n);
-		if(vv) u.intersect(vv);
-	});
-	return u;
-}
-SchemaUnion.prototype.getPropertySchema = function getPropertySchema(n){
-	var u = new SchemaUnion([]);
-	this.set.forEach(function(v){
-		var vv = v.getPropertySchema(n);
-		if(vv) u.intersect(vv);
-	});
-	return u;
-}
-SchemaUnion.prototype.endArray = function endArray(layer){
-	for(var i=0; i<this.set.length; i++){
-		var res = this.set[i].endArray(layer);
-		if(res) return res;
 	}
 }
