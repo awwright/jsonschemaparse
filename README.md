@@ -34,7 +34,8 @@ Shortcut for parsing a one-off block of JSON.
 
 * schema: Schema instance to be validated against
 * options: additional options for validating/parsing the JSON document
-** charset: Specifies how the document is encoded: "ASCII" for Buffer or Uint8Array of 7-bit characters, "UTF-8" for a UTF-8 encoded Buffer/Uint8Array, or "string" for a native (UTF-16) string.
+ * charset: Specifies how the Buffer or Uint8Array is encoded: "ASCII", "UTF-8", or "string" for a native string (UTF-16).
+ * keepValue: If true, saves parsed value to `Parser#value`. Default `false`.
 * document: The entire JSON document to parse, provided as a string, Buffer, or Uint8Array.
 
 ```javascript
