@@ -1,4 +1,4 @@
-json/parse/schema: Parse a JSON Document into an object structure and/or while validating it against a JSON Schema
+JSONSchemaParse: Parse a JSON Document into an object structure, validating it against a JSON Schema
 
 Features:
 
