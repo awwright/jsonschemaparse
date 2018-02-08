@@ -426,34 +426,34 @@ Schema.prototype.intersect = function intersect(s){
 }
 
 
-Schema.prototype.testTypeNumber = function testNumber(layer, expected){
+Schema.prototype.testTypeNumber = function testNumber(layer){
 	if(this.allowNumber) return;
-	return new ValidationError('Expected a number', layer.path, this, 'type', expected, 'number');
+	return new ValidationError('Expected a number', layer.path, this, 'type', this.allowedTypes, 'number');
 }
 
-Schema.prototype.testTypeString = function testString(layer, expected){
+Schema.prototype.testTypeString = function testString(layer){
 	if(this.allowString) return;
-	return new ValidationError('Expected a string', layer.path, this, 'type', expected, 'string');
+	return new ValidationError('Expected a string', layer.path, this, 'type', this.allowedTypes, 'string');
 }
 
-Schema.prototype.testTypeBoolean = function testBoolean(layer, expected){
+Schema.prototype.testTypeBoolean = function testBoolean(layer){
 	if(this.allowBoolean) return;
-	return new ValidationError('Expected a boolean', layer.path, this, 'type', expected, 'boolean');
+	return new ValidationError('Expected a boolean', layer.path, this, 'type', this.allowedTypes, 'boolean');
 }
 
-Schema.prototype.testTypeNull = function testNull(layer, expected){
+Schema.prototype.testTypeNull = function testNull(layer){
 	if(this.allowNull) return;
-	return new ValidationError('Expected a null', layer.path, this, 'type', expected, 'null');
+	return new ValidationError('Expected a null', layer.path, this, 'type', this.allowedTypes, 'null');
 }
 
-Schema.prototype.testTypeObject = function testObject(layer, expected){
+Schema.prototype.testTypeObject = function testObject(layer){
 	if(this.allowObject) return;
-	return new ValidationError('Expected an object', layer.path, this, 'type', expected, 'object');
+	return new ValidationError('Expected an object', layer.path, this, 'type', this.allowedTypes, 'object');
 }
 
-Schema.prototype.testTypeArray = function testArray(layer, expected){
+Schema.prototype.testTypeArray = function testArray(layer){
 	if(this.allowArray) return;
-	return new ValidationError('Expected an array', layer.path, this, 'type', expected, 'array');
+	return new ValidationError('Expected an array', layer.path, this, 'type', this.allowedTypes, 'array');
 }
 
 Schema.prototype.endArray = function(layer){

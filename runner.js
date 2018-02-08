@@ -70,7 +70,7 @@ var validationTestFiles = [
 	'tests/draft7/pattern.json',
 	'tests/draft7/patternProperties.json',
 	'tests/draft7/properties.json',
-	//'tests/draft7/ref.json',
+	'tests/draft7/ref.json',
 	//'tests/draft7/refRemote.json',
 	'tests/draft7/required.json',
 	'tests/draft7/type.json',
