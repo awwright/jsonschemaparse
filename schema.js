@@ -233,6 +233,8 @@ Schema.prototype.validate = function validate(errors) {
 }
 
 Schema.prototype.intersect = function intersect(s){
+	// FIXME Thrown errors may leave this object in a partially modified state
+
 	var self = this;
 	if(s===false){
 		// always fail
@@ -298,6 +300,14 @@ Schema.prototype.intersect = function intersect(s){
 	}else if(type!==undefined){
 		throw new Error('Invalid "type" keyword');
 	}
+	// Update "allowedTypes" index
+	if(self.allowNumber) self.allowedTypes.push('number');
+	if(self.allowString) self.allowedTypes.push('string');
+	if(self.allowBoolean) self.allowedTypes.push('boolean');
+	if(self.allowNull) self.allowedTypes.push('null');
+	if(self.allowObject) self.allowedTypes.push('object');
+	if(self.allowArray) self.allowedTypes.push('array');
+
 	// Keyword: "minimum", "exclusiveMinimum"
 	if(typeof s.minimum=='number' && s.exclusiveMinimum===true){
 		if(s.exclusiveMinimum >= self.exclusiveMinimum || s.minimum >= self.exclusiveMinimum){
@@ -416,13 +426,6 @@ Schema.prototype.intersect = function intersect(s){
 	if(typeof s.pattern=='string'){
 		self.testsString.push(Schema.stringTestPattern.bind(self, s.pattern));
 	}
-	// Update indexes
-	if(self.allowNumber) self.allowedTypes.push('number');
-	if(self.allowString) self.allowedTypes.push('string');
-	if(self.allowBoolean) self.allowedTypes.push('boolean');
-	if(self.allowNull) self.allowedTypes.push('null');
-	if(self.allowObject) self.allowedTypes.push('object');
-	if(self.allowArray) self.allowedTypes.push('array');
 }
 
 
