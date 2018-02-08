@@ -3,7 +3,7 @@
 const Transform = require('stream').Transform;
 const util = require('util');
 
-var S = require('./schema.js');
+var Schema = require('./schema.js');
 
 // Named constants with unique integer values
 var C = {};
@@ -79,7 +79,7 @@ function StreamParser(schema, options) {
 	this.multipleValue = false;
 
 	if(schema){
-		if(!(schema instanceof S.Schema)) throw new Error('schema must be instance of Schema');
+		if(!(schema instanceof Schema.Schema)) throw new Error('schema must be instance of Schema');
 	}
 
 	// Line number tracking

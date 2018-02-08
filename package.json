@@ -1,7 +1,6 @@
 {
   "name": "jsonschemaparse",
   "description": "Streaming JSON validation with integrated validation and error reporting tools",
-  "main": "parse.js",
   "directories": {
     "test": "test"
   },
