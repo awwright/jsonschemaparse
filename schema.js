@@ -429,32 +429,32 @@ Schema.prototype.intersect = function intersect(s){
 }
 
 
-Schema.prototype.testTypeNumber = function testNumber(layer){
+Schema.prototype.startNumber = function startNumber(layer){
 	if(this.allowNumber) return;
 	return new ValidationError('Expected a number', layer.path, this, 'type', this.allowedTypes, 'number');
 }
 
-Schema.prototype.testTypeString = function testString(layer){
+Schema.prototype.startString = function startString(layer){
 	if(this.allowString) return;
 	return new ValidationError('Expected a string', layer.path, this, 'type', this.allowedTypes, 'string');
 }
 
-Schema.prototype.testTypeBoolean = function testBoolean(layer){
+Schema.prototype.startBoolean = function startBoolean(layer){
 	if(this.allowBoolean) return;
 	return new ValidationError('Expected a boolean', layer.path, this, 'type', this.allowedTypes, 'boolean');
 }
 
-Schema.prototype.testTypeNull = function testNull(layer){
+Schema.prototype.startNull = function startNull(layer){
 	if(this.allowNull) return;
 	return new ValidationError('Expected a null', layer.path, this, 'type', this.allowedTypes, 'null');
 }
 
-Schema.prototype.testTypeObject = function testObject(layer){
+Schema.prototype.startObject = function startObject(layer){
 	if(this.allowObject) return;
 	return new ValidationError('Expected an object', layer.path, this, 'type', this.allowedTypes, 'object');
 }
 
-Schema.prototype.testTypeArray = function testArray(layer){
+Schema.prototype.startArray = function startArray(layer){
 	if(this.allowArray) return;
 	return new ValidationError('Expected an array', layer.path, this, 'type', this.allowedTypes, 'array');
 }
@@ -597,7 +597,7 @@ ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
 // look up the necessary sub-schemas to validate against a sub-instance
 // (array item, object property key, or object property value)
 
-ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
+ValidateLayer.prototype.validateProperty = function validateProperty(k){
 	var self = this;
 	var schema = self.schema;
 	var patterns = [];
@@ -614,7 +614,7 @@ ValidateLayer.prototype.getPropertySchema = function getPropertySchema(k){
 	return collapseArray(patterns, function(v){ return v.validate(self.errors); });
 }
 
-ValidateLayer.prototype.getItemSchema = function getItemSchema(k){
+ValidateLayer.prototype.validateItem = function validateItem(k){
 	var self = this;
 	var schema = self.schema;
 	var patterns = [];
@@ -633,21 +633,21 @@ ValidateLayer.prototype.getKeySchema = function getKeySchema(n){
 }
 
 // Begin parsing an instance
-ValidateLayer.prototype.testTypeNumber = function testTypeNumber(layer){
-	this.addErrorList(this.schema.testTypeNumber(layer));
+ValidateLayer.prototype.startNumber = function startNumber(layer){
+	this.addErrorList(this.schema.startNumber(layer));
 }
-ValidateLayer.prototype.testTypeString = function testTypeString(layer){
-	this.addErrorList(this.schema.testTypeString(layer));
+ValidateLayer.prototype.startString = function startString(layer){
+	this.addErrorList(this.schema.startString(layer));
 }
-ValidateLayer.prototype.testTypeBoolean = function testTypeBoolean(layer){
-	this.addErrorList(this.schema.testTypeBoolean(layer));
+ValidateLayer.prototype.startBoolean = function startBoolean(layer){
+	this.addErrorList(this.schema.startBoolean(layer));
 }
-ValidateLayer.prototype.testTypeNull = function testTypeNull(layer){
-	this.addErrorList(this.schema.testTypeNull(layer));
+ValidateLayer.prototype.startNull = function startNull(layer){
+	this.addErrorList(this.schema.startNull(layer));
 }
-ValidateLayer.prototype.testTypeObject = function testTypeObject(layer){
+ValidateLayer.prototype.startObject = function startObject(layer){
 	var self = this;
-	this.addErrorList(this.schema.testTypeObject(layer));
+	this.addErrorList(this.schema.startObject(layer));
 	// If we're allowed to be an object, then index required properties
 	for(var k in self.schema.required){
 		if(!(k in self.requiredMap)){
@@ -656,8 +656,8 @@ ValidateLayer.prototype.testTypeObject = function testTypeObject(layer){
 		}
 	}
 }
-ValidateLayer.prototype.testTypeArray = function testTypeArray(layer){
-	this.addErrorList(this.schema.testTypeArray(layer));
+ValidateLayer.prototype.startArray = function startArray(layer){
+	this.addErrorList(this.schema.startArray(layer));
 }
 
 ValidateLayer.prototype.endNumber = function endNumber(layer, n){

@@ -141,43 +141,56 @@ fs.createReadStream('file.json')
 ```
 
 ## Interface: Validator
+A Validator is the fundemental paradigm that is used to process information from the JSON parser as it is streaming.
 
-A Validator is an object that maintains a state
+It is an ECMAScript object that consumes information about a single layer in the parser stack as it tokenizes input.
+A validator only evaluates over a single layer in the stack (like an object or a string), it is not notified of events that happen in children or grandchildren layers.
+Instead, when a child is encountered (like an array item), a function is called requesting a list of validators that can process that sub-instance.
+When the child finishes parsing, the validator can then examine the return value and act on it.
 
-### Validator#testTypeObject(layer)
+A new validator does not yet know the type of incoming value, and may not know until e.g. all whitespace is consumed. You must wait for a start{type} call.
+
+### new Validator(options, errors)
+Called to create a validator, whenever a new layer in the parsing stack is entered.
+
+Optionally pass an outside array that errors will be pushed to.
+Normally, this will be the instance of Parser#errors, so that errors from all validators get gathered together at the parser.
+Otherwise, a local array will be created.
+
+### Validator#startObject(layer)
 Called when the parser has begun consuming a object.
 ### Validator#endObject(layer)
 Called when the parser has fully consumed the Object.
-### Validator#getPropertySchema(k)
+### Validator#validateProperty(k)
 Returns an array of Validators (usually just one) that will validate the value for the property with the given key _k_.
-### Validator#testTypeKey(layer)
+### Validator#startKey(layer)
 Called when the parser has begun consuming a key.
 ### Validator#endKey(layer, name)
 Called when the parser has fully consumed the Key. Provides the parsed value.
 
-### Validator#testTypeArray(layer)
+### Validator#startArray(layer)
 Called when the parser has begun consuming an array.
 ### Validator#endArray(layer)
 Called when the parser has fully consumed the Array.
-### Validator#getItemSchema(i)
+### Validator#validateItem(i)
 Returns an array of Validators (usually just one) that will validate the value for the property with the given index _i_.
 
-### Validator#testTypeNumber(layer)
+### Validator#startNumber(layer)
 Called when the parser has begun consuming a number.
 ### Validator#endNumber(layer, value)
 Called when the parser has fully consumed the Number. Provides the parsed value.
 
-### Validator#testTypeString(layer)
+### Validator#startString(layer)
 Called when the parser has begun consuming a string.
 ### Validator#endString(layer, value)
 Called when the parser has fully consumed the String. Provides the parsed value.
 
-### Validator#testTypeBoolean(layer)
+### Validator#startBoolean(layer)
 Called when the parser has begun consuming a boolean.
 ### Validator#endBoolean(layer, value)
 Called when the parser has fully consumed the Boolean. Provides the parsed value.
 
-### Validator#testTypeNull(layer)
+### Validator#startNull(layer)
 Called when the parser has begun consuming a null.
 ### Validator#endNull(layer, value)
 Called when the parser has fully consumed the Null. Provides the parsed value.
