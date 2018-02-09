@@ -62,6 +62,17 @@ function collapseArray(arr, cb){
 }
 
 
+module.exports.SyntaxError = SyntaxError;
+function SyntaxError(message, propertyPath, position, expected, actual){
+	this.message = message;
+	this.path = propertyPath;
+	this.position = position;
+	this.expected = expected;
+	this.actual = actual;
+}
+
+
+
 module.exports.StreamParser = StreamParser;
 function StreamParser(schema, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
@@ -122,12 +133,16 @@ StreamParser.prototype.event = function (name, value) {
 }
 
 StreamParser.prototype.charError = function (buffer, i, expecting) {
-	throw new Error(
+	throw new SyntaxError(
 		"Unexpected "
-		+ JSON.stringify(String.fromCharCode(buffer[i]))
-		+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
-		+ " in state " + toknam(this.layer.state)
-		+  ( expecting ? (" expecting one of: " + expecting) : '' )
+			+ JSON.stringify(String.fromCharCode(buffer[i]))
+			+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
+			+ " in state " + toknam(this.layer.state)
+			+  ( expecting ? (" expecting one of: " + expecting) : '' ),
+		this.layer.path,
+		{line:this.lineNumber, column:this.characters-this.lineOffset},
+		expecting,
+		String.fromCharCode(buffer[i])
 	);
 };
 
