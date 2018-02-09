@@ -1063,7 +1063,7 @@ StreamParser.prototype.endBoolean = function endBoolean(){
 	this.pop();
 }
 
-StreamParser.prototype.startNull = function endNull(){
+StreamParser.prototype.startNull = function startNull(){
 	var self = this;
 	self.validateInstance(function(s){ return s.testTypeNull(self.layer); });
 }
@@ -1086,7 +1086,13 @@ StreamParser.prototype.eof = function eof() {
 		this.endNumber();
 		break;
 	}
+	// EOF is only expected in a VOID, which is stack element 0
 	if(this.stack.length>1){
-		throw new Error('Unexpected end of document');
+		throw new SyntaxError(
+			'Unexpected end of document while parsing '+toknam(this.layer.state),
+			 this.layer.path,
+			{line:this.lineNumber, column:this.characters-this.lineOffset},
+			expecting,
+			actual );
 	}
 }
