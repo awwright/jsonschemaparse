@@ -140,6 +140,48 @@ fs.createReadStream('file.json')
 	});
 ```
 
+## Interface: Validator
+
+A Validator is an object that maintains a state
+
+### Validator#testTypeObject(layer)
+Called when the parser has begun consuming a object.
+### Validator#endObject(layer)
+Called when the parser has fully consumed the Object.
+### Validator#getPropertySchema(k)
+Returns an array of Validators (usually just one) that will validate the value for the property with the given key _k_.
+### Validator#testTypeKey(layer)
+Called when the parser has begun consuming a key.
+### Validator#endKey(layer, name)
+Called when the parser has fully consumed the Key. Provides the parsed value.
+
+### Validator#testTypeArray(layer)
+Called when the parser has begun consuming an array.
+### Validator#endArray(layer)
+Called when the parser has fully consumed the Array.
+### Validator#getItemSchema(i)
+Returns an array of Validators (usually just one) that will validate the value for the property with the given index _i_.
+
+### Validator#testTypeNumber(layer)
+Called when the parser has begun consuming a number.
+### Validator#endNumber(layer, value)
+Called when the parser has fully consumed the Number. Provides the parsed value.
+
+### Validator#testTypeString(layer)
+Called when the parser has begun consuming a string.
+### Validator#endString(layer, value)
+Called when the parser has fully consumed the String. Provides the parsed value.
+
+### Validator#testTypeBoolean(layer)
+Called when the parser has begun consuming a boolean.
+### Validator#endBoolean(layer, value)
+Called when the parser has fully consumed the Boolean. Provides the parsed value.
+
+### Validator#testTypeNull(layer)
+Called when the parser has begun consuming a null.
+### Validator#endNull(layer, value)
+Called when the parser has fully consumed the Null. Provides the parsed value.
+
 ## Table of Files
 
 * index.js: Entry point for Node.js
