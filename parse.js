@@ -133,16 +133,18 @@ StreamParser.prototype.event = function (name, value) {
 }
 
 StreamParser.prototype.charError = function (buffer, i, expecting) {
+	var actual = buffer[i];
+	if(typeof actual==='number') actual=String.fromCharCode(actual);
 	throw new SyntaxError(
 		"Unexpected "
-			+ JSON.stringify(String.fromCharCode(buffer[i]))
+			+ JSON.stringify(actual)
 			+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
 			+ " in state " + toknam(this.layer.state)
 			+  ( expecting ? (" expecting one of: " + expecting) : '' ),
 		this.layer.path,
 		{line:this.lineNumber, column:this.characters-this.lineOffset},
 		expecting,
-		String.fromCharCode(buffer[i])
+		actual
 	);
 };
 
@@ -646,7 +648,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 				this.startNumber();
 				continue;
 			}
-			this.charError(buffer, i);
+			this.charError(buffer, i, 'VALUE ]');
 		case NUMBER1:
 			// after minus
 			// expecting a digit
@@ -776,73 +778,73 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			this.endNumber();
 			i--, this.characters--; // this character is not a number
 			continue;
-		case TRUE1: // r
-			if (chrcode === 0x72) {
+		case TRUE1:
+			if (chrcode === 0x72) { // r
 				this.layer.state = TRUE2;
 				continue;
 			}
-			this.charError(buffer, i);
-		case TRUE2: // u
-			if (chrcode === 0x75) {
+			this.charError(buffer, i, 'r');
+		case TRUE2:
+			if (chrcode === 0x75) { // u
 				this.layer.state = TRUE3;
 				continue;
 			}
-			this.charError(buffer, i);
-		case TRUE3: // e
-			if (chrcode === 0x65) {
+			this.charError(buffer, i, 'u');
+		case TRUE3:
+			if (chrcode === 0x65) { // e
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = true;
 				this.endBoolean();
 				continue;
 			}
-			this.charError(buffer, i);
-		case FALSE1: // a
-			if (chrcode === 0x61) {
+			this.charError(buffer, i, 'e');
+		case FALSE1:
+			if (chrcode === 0x61) { // a
 				this.layer.state = FALSE2;
 				continue;
 			}
-			this.charError(buffer, i);
-		case FALSE2: // l
-			if (chrcode === 0x6c) {
+			this.charError(buffer, i, 'a');
+		case FALSE2:
+			if (chrcode === 0x6c) { // l
 				this.layer.state = FALSE3;
 				continue;
 			}
-			this.charError(buffer, i);
-		case FALSE3: // s
-			if (chrcode === 0x73) {
+			this.charError(buffer, i, 'l');
+		case FALSE3:
+			if (chrcode === 0x73) { // s
 				this.layer.state = FALSE4;
 				continue;
 			}
-			this.charError(buffer, i);
-		case FALSE4: // e
-			if (chrcode === 0x65) {
+			this.charError(buffer, i, 's');
+		case FALSE4:
+			if (chrcode === 0x65) { // e
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = false;
 				this.endBoolean();
 				continue;
 			}
-			this.charError(buffer, i);
-		case NULL1: // u
-			if (chrcode === 0x75) {
+			this.charError(buffer, i, 'e');
+		case NULL1:
+			if (chrcode === 0x75) { // u
 				this.layer.state = NULL2;
 				continue;
 			}
-			this.charError(buffer, i);
-		case NULL2: // l
-			if (chrcode === 0x6c) {
+			this.charError(buffer, i, 'u');
+		case NULL2:
+			if (chrcode === 0x6c) { // l
 				this.layer.state = NULL3;
 				continue;
 			}
-			this.charError(buffer, i);
-		case NULL3: // l
-			if (chrcode === 0x6c) {
+			this.charError(buffer, i, 'l');
+		case NULL3:
+			if (chrcode === 0x6c) { // l
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = null;
 				this.startNull();
 				this.endNull();
 				continue;
 			}
-			this.charError(buffer, i);
+			this.charError(buffer, i, 'l');
 		case STRING1: // After open quote
 			switch (chrcode) {
 			case 0x22: // `"`
@@ -879,7 +881,7 @@ StreamParser.prototype.parseBlock = function parseBlock(buffer){
 			case 0x74: this.string += "\t"; this.layer.length++; this.layer.state = STRING1; continue;
 			case 0x75: this.unicode = ""; this.layer.state = STRING3; continue;
 			}
-			this.charError(buffer, i);
+			this.charError(buffer, i, "\" \\ \/ b f n r t u");
 		case STRING3:
 		case STRING4:
 		case STRING5:
