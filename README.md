@@ -139,3 +139,14 @@ fs.createReadStream('file.json')
 		console.log(parser.value);
 	});
 ```
+
+## Table of Files
+
+* index.js: Entry point for Node.js
+* parse.js: JSON parser
+* schema.js: JSON validation logic & JSON Schema implementation
+* runner.js: Executable to run the parser & validator against test suites
+* package.json: npm metadata
+* UNLICENSE: Public Domain dedication
+* test/schema-suite: link to the official JSON Schema test suite
+* test/syntax-suite: link to a JSON parser test suite
