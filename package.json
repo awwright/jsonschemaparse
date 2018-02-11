@@ -7,7 +7,9 @@
   "dependencies": {
     "nodemon": "^1.11.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "json-metaschema": "^1.2.0"
+  },
   "scripts": {
     "test": "make test"
   },

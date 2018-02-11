@@ -5,6 +5,8 @@ var SchemaRegistry = require('./index.js').SchemaRegistry;
 var Schema = require('./index.js').Schema;
 var Parser = require('./index.js').StreamParser;
 
+var metaschemaObject = require('json-metaschema/draft-07-schema.json');
+
 Error.stackTraceLimit = 25;
 
 var argv = process.argv.slice(2);
@@ -146,6 +148,8 @@ function runValidationTest(filepath, done){
 			var throws = false;
 			try {
 				var registry = new SchemaRegistry;
+				// This passes just one test
+				registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
 				var schema = registry.import('http://localhost/'+filepath, s.schema);
 				var p = schema.createParser({charset:'string'});
 				p.parse(tjson);
