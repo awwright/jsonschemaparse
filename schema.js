@@ -35,6 +35,8 @@ function isSchema(s){
 	// Also a boolean is also a valid schema
 	return (typeof s=='object' && !Array.isArray(s) && !s.$ref) || (typeof s=='boolean');
 }
+
+module.exports.isSchemaResolve = isSchemaResolve;
 function isSchemaResolve(s){
 	// Is an object, but not an array. $ref is OK.
 	// Also a boolean is also a valid schema
