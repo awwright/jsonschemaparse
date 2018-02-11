@@ -44,11 +44,21 @@ function isSchemaResolve(s){
 	return (typeof s=='object' && !Array.isArray(s)) || (typeof s=='boolean') || (typeof s=='string');
 }
 
+module.exports.resolveFragmentDefault = resolveFragmentDefault;
+function resolveFragmentDefault(fragment){
+	return fragment.split('/').slice(1).map(function(v){
+		return decodeURIComponent(v).replace(/~0/g, '~').replace(/~1/g, '/');
+		//return decodeURIComponent(v);
+		//return (v);
+	});
+}
+
 module.exports.SchemaRegistry = SchemaRegistry;
 function SchemaRegistry(){
 	this.seen = {};
 	this.source = {};
 	this.parsed = {};
+	this.resolveFragment = resolveFragmentDefault;
 }
 SchemaRegistry.prototype.import = function importSchema(id, schema, path){
 	this.scan(id, schema, '');
@@ -152,9 +162,7 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 		if(self.source[id] && parts[1]){
 			var resolved = self.source[id];
 			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(id));
-			var hier = parts[1].split('/').slice(1).map(function(v){
-				return v;
-			});
+			var hier = self.resolveFragment(parts[1]);
 			id += '#';
 			for(var i=0; i<hier.length; i++){
 				var key = hier[i];
