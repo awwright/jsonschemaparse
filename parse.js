@@ -1092,7 +1092,7 @@ StreamParser.prototype.eof = function eof() {
 			'Unexpected end of document while parsing '+toknam(this.layer.state),
 			 this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset},
-			expecting,
-			actual );
+			'', // FIXME provide an expected character set here
+			'EOF');
 	}
 }
