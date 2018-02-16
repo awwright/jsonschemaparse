@@ -6,10 +6,28 @@ var uriResolve = url.resolve;
 
 var Parse = require('./parse.js');
 
+module.exports.collapseArray = collapseArray;
 function collapseArray(arr, cb){
 	var res = [];
 	for(var i=0; i<arr.length; i++) cb(arr[i], i).forEach(function(v){ res.push(v); });
 	return res;
+}
+
+module.exports.compareDeep = compareDeep;
+function compareDeep(a, b){
+	if(typeof a!==typeof b) return false;
+	if(a===b) return true;
+	if(typeof a!=='object') return a===b; // handle string, number, boolean, undefined equality
+	if(!a || !b) return a===b; // handle null equality
+	// now handle array and object cases
+	if(Array.isArray(a) && Array.isArray(b)){
+		if(a.length !== b.length) return false;
+		return a.every(function(v, i){ return compareDeep(v, b[i]); });
+	}else{
+		if(Object.keys(a).length !== Object.keys(b).length) return false;
+		for(var k in a) if(compareDeep(a[k], b[k])===false) return false;
+		return true;
+	}
 }
 
 module.exports.ValidationError = ValidationError;
@@ -207,6 +225,7 @@ function Schema(id, schema, registry){
 	self.allowArray = true;
 	self.allowedTypes = [];
 	self.allowFraction = true; // Allow numbers with a fractional component
+	self.const = undefined;
 	self.maximum = null;
 	self.exclusiveMaximum = null;
 	self.minimum = null;
@@ -317,6 +336,10 @@ Schema.prototype.intersect = function intersect(s){
 	if(self.allowNull) self.allowedTypes.push('null');
 	if(self.allowObject) self.allowedTypes.push('object');
 	if(self.allowArray) self.allowedTypes.push('array');
+
+	if(s.const !== undefined){
+		if(!self.const) self.const = s.const;
+	}
 
 	// Keyword: "minimum", "exclusiveMinimum"
 	if(typeof s.minimum=='number' && s.exclusiveMinimum===true){
@@ -706,6 +729,12 @@ ValidateLayer.prototype.finish = function finish(layer){
 		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer.path, self, 'required'));
 	}
 
+	// "const"
+	if(self.schema.const !== undefined){
+		if(!compareDeep(layer.value, self.schema.const)){
+			self.addErrorList(new ValidationError('Expected "const" to match', layer.path, this, 'const', self.schema.const, layer.value));
+		}
+	}
 	// Compute not/oneOf/anyOf failures
 	var notFailures = self.not.filter(function(v){ return v.errors.length===0; });
 	if(notFailures.length){

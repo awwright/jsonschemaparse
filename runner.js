@@ -54,7 +54,7 @@ var validationTestFiles = [
 	'tests/draft7/allOf.json',
 	'tests/draft7/anyOf.json',
 	'tests/draft7/boolean_schema.json',
-	//'tests/draft7/const.json',
+	'tests/draft7/const.json',
 	//'tests/draft7/contains.json',
 	'tests/draft7/default.json',
 	//'tests/draft7/definitions.json',
