@@ -5,7 +5,6 @@
     "test": "test"
   },
   "dependencies": {
-    "nodemon": "^1.11.0"
   },
   "devDependencies": {
     "json-metaschema": "^1.2.0"
