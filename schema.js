@@ -464,35 +464,40 @@ Schema.prototype.intersect = function intersect(s){
 	}
 }
 
+function expectedType(actual, allowedTypes){
+	if(allowedTypes.length===0) return "Unexpected "+actual+": No value allowed";
+	if(allowedTypes.length===1) return "Unexpected "+actual+": Expected "+allowedTypes[0];
+	return "Unexpected "+actual+": Expected one of "+allowedTypes.join(', ');
+}
 
 Schema.prototype.startNumber = function startNumber(layer){
 	if(this.allowNumber) return;
-	return new ValidationError('Unexpected number', layer, this, 'type', this.allowedTypes, 'number');
+	return new ValidationError(expectedType('number', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'number');
 }
 
 Schema.prototype.startString = function startString(layer){
 	if(this.allowString) return;
-	return new ValidationError('Unexpected string', layer, this, 'type', this.allowedTypes, 'string');
+	return new ValidationError(expectedType('string', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'string');
 }
 
 Schema.prototype.startBoolean = function startBoolean(layer){
 	if(this.allowBoolean) return;
-	return new ValidationError('Unexpected boolean', layer, this, 'type', this.allowedTypes, 'boolean');
+	return new ValidationError(expectedType('boolean', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'boolean');
 }
 
 Schema.prototype.startNull = function startNull(layer){
 	if(this.allowNull) return;
-	return new ValidationError('Unexpected null', layer, this, 'type', this.allowedTypes, 'null');
+	return new ValidationError(expectedType('null', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'null');
 }
 
 Schema.prototype.startObject = function startObject(layer){
 	if(this.allowObject) return;
-	return new ValidationError('Unexpected object', layer, this, 'type', this.allowedTypes, 'object');
+	return new ValidationError(expectedType('object', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'object');
 }
 
 Schema.prototype.startArray = function startArray(layer){
 	if(this.allowArray) return;
-	return new ValidationError('Unexpected array', layer, this, 'type', this.allowedTypes, 'array');
+	return new ValidationError(expectedType('array', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'array');
 }
 
 Schema.prototype.endArray = function(layer){
