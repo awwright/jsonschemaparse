@@ -163,6 +163,9 @@ StreamParser.prototype.push = function push(k, validator) {
 		beginChar: this.characters,
 		beginLine: this.lineNumber,
 		beginColumn: this.characters-this.lineOffset,
+		endChar: null,
+		endLine: null,
+		endColumn: null,
 		length: 0,
 		validator: validator || [],
 	};
@@ -201,6 +204,9 @@ StreamParser.prototype.pushItem = function pushItem(k) {
 StreamParser.prototype.pop = function pop(){
 	var self = this;
 	var layer = self.stack.pop();
+	layer.endChar = self.characters;
+	layer.endLine = self.lineNumber;
+	layer.endColumn = self.characters-self.lineOffset;
 	self.validateInstance(function(s){ return s.finish(layer); });
 	if(layer.keepValue) self.value = layer.value;
 	self.layer = self.stack[this.stack.length-1];

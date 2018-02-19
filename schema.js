@@ -31,9 +31,12 @@ function compareDeep(a, b){
 }
 
 module.exports.ValidationError = ValidationError;
-function ValidationError(message, propertyPath, schema, keyword, expected, actual){
+function ValidationError(message, layer, schema, keyword, expected, actual){
 	this.message = message;
-	this.path = propertyPath;
+	this.path = layer.path;
+	this.layer = layer;
+	this.position = {line:layer.beginLine, column:layer.beginColumn};
+	this.to = {line:layer.endLine, column:layer.endColumn};
 	//this.schema = schema;
 	this.schemaId = schema.id;
 	this.keyword = keyword;
@@ -464,32 +467,32 @@ Schema.prototype.intersect = function intersect(s){
 
 Schema.prototype.startNumber = function startNumber(layer){
 	if(this.allowNumber) return;
-	return new ValidationError('Expected a number', layer.path, this, 'type', this.allowedTypes, 'number');
+	return new ValidationError('Unexpected number', layer, this, 'type', this.allowedTypes, 'number');
 }
 
 Schema.prototype.startString = function startString(layer){
 	if(this.allowString) return;
-	return new ValidationError('Expected a string', layer.path, this, 'type', this.allowedTypes, 'string');
+	return new ValidationError('Unexpected string', layer, this, 'type', this.allowedTypes, 'string');
 }
 
 Schema.prototype.startBoolean = function startBoolean(layer){
 	if(this.allowBoolean) return;
-	return new ValidationError('Expected a boolean', layer.path, this, 'type', this.allowedTypes, 'boolean');
+	return new ValidationError('Unexpected boolean', layer, this, 'type', this.allowedTypes, 'boolean');
 }
 
 Schema.prototype.startNull = function startNull(layer){
 	if(this.allowNull) return;
-	return new ValidationError('Expected a null', layer.path, this, 'type', this.allowedTypes, 'null');
+	return new ValidationError('Unexpected null', layer, this, 'type', this.allowedTypes, 'null');
 }
 
 Schema.prototype.startObject = function startObject(layer){
 	if(this.allowObject) return;
-	return new ValidationError('Expected an object', layer.path, this, 'type', this.allowedTypes, 'object');
+	return new ValidationError('Unexpectedn object', layer, this, 'type', this.allowedTypes, 'object');
 }
 
 Schema.prototype.startArray = function startArray(layer){
 	if(this.allowArray) return;
-	return new ValidationError('Expected an array', layer.path, this, 'type', this.allowedTypes, 'array');
+	return new ValidationError('Unexpectedn array', layer, this, 'type', this.allowedTypes, 'array');
 }
 
 Schema.prototype.endArray = function(layer){
@@ -524,26 +527,26 @@ Schema.prototype.endNumber = function(layer, n){
 	var schema = this;
 	var error = false;
 	if(typeof schema.exclusiveMinimum=='number' && n<=schema.exclusiveMinimum){
-		return new ValidationError('Number under minimum', layer.path, schema, 'exclusiveMinimum', schema.exclusiveMinimum, n);
+		return new ValidationError('Number under minimum', layer, schema, 'exclusiveMinimum', schema.exclusiveMinimum, n);
 	}else if(typeof schema.minimum=='number' && n < schema.minimum){
-		return new ValidationError('Number under/equal to minimum', layer.path, schema, 'minimum', schema.minimum, n);
+		return new ValidationError('Number under/equal to minimum', layer, schema, 'minimum', schema.minimum, n);
 	}
 	if(typeof schema.exclusiveMaximum=='number' && n>=schema.exclusiveMaximum){
-		return new ValidationError('Number under maximum', layer.path, schema, 'exclusiveMaximum', schema.exclusiveMaximum, n);
+		return new ValidationError('Number under maximum', layer, schema, 'exclusiveMaximum', schema.exclusiveMaximum, n);
 	}else if(typeof schema.maximum=='number' && n > schema.maximum){
-		return new ValidationError('Number under/equal to maximum', layer.path, schema, 'maximum', schema.maximum, n);
+		return new ValidationError('Number under/equal to maximum', layer, schema, 'maximum', schema.maximum, n);
 	}
 	if(typeof schema.multipleOf=='number' && schema.multipleOf>0 && (n / schema.multipleOf % 1)){
-		return new ValidationError('Number not multiple of', layer.path, schema, 'multipleOf', schema.multipleOf, n);
+		return new ValidationError('Number not multiple of', layer, schema, 'multipleOf', schema.multipleOf, n);
 	}
 	if(schema.allowFraction==false && n%1){
-		return new ValidationError('Expected an integer', layer.path, schema, 'type', schema.type, 'number');
+		return new ValidationError('Expected an integer', layer, schema, 'type', schema.type, 'number');
 	}
 }
 
 Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
 	if (!instance.match(pattern)) {
-		return new ValidationError('String does not match pattern', layer.path , this, 'pattern', pattern, instance);
+		return new ValidationError('String does not match pattern', layer , this, 'pattern', pattern, instance);
 	}
 }
 
@@ -552,10 +555,10 @@ Schema.prototype.endString = function endString(layer, instance){
 	// This function shouldn't be called if instance is not a string
 	if(typeof instance != 'string') throw new Error('A string instance is required');
 	if(typeof self.minLength=='number' && layer.length < self.minLength){
-		return new ValidationError('String too short', layer.path, self, 'minLength', self.minLength, layer.length);
+		return new ValidationError('String too short', layer, self, 'minLength', self.minLength, layer.length);
 	}
 	if(typeof self.maxLength=='number' && layer.length > self.maxLength){
-		return new ValidationError('String too long', layer.path, self, 'maxLength', self.maxLength, layer.length);
+		return new ValidationError('String too long', layer, self, 'maxLength', self.maxLength, layer.length);
 	}
 	for(var i=0; i<self.testsString.length; i++){
 		var res = self.testsString[i](layer, instance);
@@ -726,26 +729,26 @@ ValidateLayer.prototype.finish = function finish(layer){
 		var missing = Object.keys(self.requiredMap).filter(function(k){
 			return !self.requiredMap[k];
 		});
-		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer.path, self, 'required'));
+		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer, self, 'required'));
 	}
 
 	// "const"
 	if(self.schema.const !== undefined){
 		if(!compareDeep(layer.value, self.schema.const)){
-			self.addErrorList(new ValidationError('Expected "const" to match', layer.path, this, 'const', self.schema.const, layer.value));
+			self.addErrorList(new ValidationError('Expected "const" to match', layer, this, 'const', self.schema.const, layer.value));
 		}
 	}
 	// Compute not/oneOf/anyOf failures
 	var notFailures = self.not.filter(function(v){ return v.errors.length===0; });
 	if(notFailures.length){
-		self.addErrorList(new ValidationError('Expected "not" to fail', layer.path, this, 'not'));
+		self.addErrorList(new ValidationError('Expected "not" to fail', layer, this, 'not'));
 	}
 	// oneOf
 	var oneOf = self.oneOf.map(function(arr){ return arr.map(function(v){ return v.errors.length; }); });
 	self.oneOf.forEach(function(arr){
 		var oneOfValid = arr.filter(function(v){ return v.errors.length===0; });
 		if(oneOfValid.length!==1){
-			self.addErrorList(new ValidationError('Expected "oneOf" to have exactly one matching schema', layer.path, self, 'oneOf', 1, oneOfValid.length));
+			self.addErrorList(new ValidationError('Expected "oneOf" to have exactly one matching schema', layer, self, 'oneOf', 1, oneOfValid.length));
 		}
 	});
 	// anyOf
@@ -753,7 +756,7 @@ ValidateLayer.prototype.finish = function finish(layer){
 	self.anyOf.forEach(function(arr){
 		var anyOfValid = arr.filter(function(v){ return v.errors.length===0; });
 		if(anyOfValid.length===0){
-			self.addErrorList(new ValidationError('Expected "anyOf" to have at least one matching schema', layer.path, self, 'anyOf', 1, anyOfValid.length));
+			self.addErrorList(new ValidationError('Expected "anyOf" to have at least one matching schema', layer, self, 'anyOf', 1, anyOfValid.length));
 		}
 	});
 }
