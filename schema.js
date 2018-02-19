@@ -500,27 +500,22 @@ Schema.prototype.endArray = function(layer){
 	var error = false;
 	var length = layer.length;
 	if(typeof schema.minItems=='number' && length < schema.minItems){
-		error = true;
+		return new ValidationError('Too few items', layer, schema, 'minItems', schema.minItems, length);
 	}
 	if(typeof schema.maxItems=='number' && length > schema.maxItems){
-		error = true;
+		return new ValidationError('Too many items', layer, schema, 'maxItems', schema.maxItems, length);
 	}
-	if(!error) return;
-	return new Error('Incorrect number of items');
 }
 
 Schema.prototype.endObject = function(layer){
 	var schema = this;
-	var error = false;
 	var length = layer.length;
 	if(typeof schema.minProperties=='number' && length < schema.minProperties){
-		error = true;
+		return new ValidationError('Too few properties', layer, schema, 'minProperties', schema.minProperties, length);
 	}
 	if(typeof schema.maxProperties=='number' && length > schema.maxProperties){
-		error = true;
+		return new ValidationError('Too many properties', layer, schema, 'maxProperties', schema.maxProperties, length);
 	}
-	if(!error) return;
-	return new Error('Incorrect number of properties');
 }
 
 Schema.prototype.endNumber = function(layer, n){
