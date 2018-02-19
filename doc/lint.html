@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+
+<title>JSON Schema Parse Demo</title>
+<meta charset="utf-8"/>
+<link type="text/css" rel=stylesheet href="../codemirror/doc/docs.css" />
+<link type="text/css" rel="stylesheet" href="../codemirror/lib/codemirror.css" />
+<link type="text/css" rel="stylesheet" href="../codemirror/addon/lint/lint.css" />
+<script type="application/ecmascript" src="../codemirror/lib/codemirror.js"></script>
+<script type="application/ecmascript" src="../codemirror/mode/javascript/javascript.js"></script>
+<script type="application/ecmascript" src="../codemirror/addon/lint/lint.js"></script>
+<!-- Browserified JSONSchemaParse object -->
+<script type="application/ecmascript" src="JSONSchemaParse.js"></script>
+<script type="application/ecmascript" src="json-lint.js"></script>
+<style type="text/css">
+.CodeMirror {border: 1px solid black;}
+ </style>
+</head>
+<body>
+<article>
+<h2>JSON Schema Parse Demo</h2>
+
+<p><textarea id="code-schema">{
+	"type": "array",
+	"items": {
+		"type": "object",
+		"properties": {
+			"_id": { "type": "string" },
+			"author": { "type": "string" },
+			"content": { "type": "string" },
+			"page_views": { "type": "number" }
+		}
+	}
+}
+</textarea></p>
+
+    <p><textarea id="code-instance">[
+ {
+  _id: "post 1",
+  "author": "Bob",
+  "content": "...",
+  "page_views": 5
+ },
+ {
+  "_id": "post 2",
+  "author": "Bob",
+  "content": "...",
+  "page_views": 9
+ },
+ {
+  "_id": "post 3",
+  "author": "Bob",
+  "content": "...",
+  "page_views": 8
+ }
+]
+</textarea></p>
+
+<script type="application/ecmascript">
+	var editor_schema = CodeMirror.fromTextArea(document.getElementById("code-schema"), {
+		indentWithTabs: true,
+		lineNumbers: true,
+		mode: "javascript",
+		gutters: ["CodeMirror-lint-markers"],
+		lint: JSONLint.bind(null, null),
+	});
+
+	var editor_instance = CodeMirror.fromTextArea(document.getElementById("code-instance"), {
+		indentWithTabs: true,
+		lineNumbers: true,
+		mode: "application/json",
+		gutters: ["CodeMirror-lint-markers"],
+		lint: JSONLint.bind(null, editor_schema),
+	});
+  
+</script>
+
+</article>
+</body>
+</html>
