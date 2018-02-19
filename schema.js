@@ -487,12 +487,12 @@ Schema.prototype.startNull = function startNull(layer){
 
 Schema.prototype.startObject = function startObject(layer){
 	if(this.allowObject) return;
-	return new ValidationError('Unexpectedn object', layer, this, 'type', this.allowedTypes, 'object');
+	return new ValidationError('Unexpected object', layer, this, 'type', this.allowedTypes, 'object');
 }
 
 Schema.prototype.startArray = function startArray(layer){
 	if(this.allowArray) return;
-	return new ValidationError('Unexpectedn array', layer, this, 'type', this.allowedTypes, 'array');
+	return new ValidationError('Unexpected array', layer, this, 'type', this.allowedTypes, 'array');
 }
 
 Schema.prototype.endArray = function(layer){
