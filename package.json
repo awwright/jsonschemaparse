@@ -4,10 +4,10 @@
   "directories": {
     "test": "test"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
-    "json-metaschema": "^1.2.0"
+    "json-metaschema": "^1.2.0",
+    "mocha": "^5.2.0"
   },
   "scripts": {
     "test": "make test"
