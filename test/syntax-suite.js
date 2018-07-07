@@ -28,7 +28,7 @@ describe('Syntax tests', function(){
 				assert.fail();
 			});
 			p.on('finish', function(){
-				assert.ok(p.value);
+				assert(p.value!==undefined);
 				done();
 			});
 		});
