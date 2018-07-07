@@ -21,15 +21,16 @@ describe('Syntax tests', function(){
 		var filepath = syntaxTestDir + '/' + filename;
 		var label = filename + ' (UTF-8)';
 		it(label, function(done){
+			var error = null;
 			var t = fs.createReadStream(filepath);
 			var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
 			t.pipe(p);
-			p.on('error', function(){
-				assert.fail();
+			p.on('error', function(err){
+				done(err);
 			});
-			p.on('finish', function(){
+			t.on('end', function(){
 				assert(p.value!==undefined);
-				done();
+				if(!error) done();
 			});
 		});
 	});
@@ -37,16 +38,20 @@ describe('Syntax tests', function(){
 		var filepath = syntaxTestDir + '/' + filename;
 		var label = filename + ' (UTF-8)';
 		it(label, function(done){
+			//console.log('\n\n'+filepath);
+			var error = null;
 			var t = fs.createReadStream(filepath);
 			var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
 			t.pipe(p);
-			var error = null;
 			p.on('error', function(err){
+				//console.log('error');
 				error = err;
-			});
-			p.on('finish', function(){
-				assert.ok(error);
 				done();
+			});
+			t.on('end', function(){
+				//console.log('finish');
+				assert.ok(error);
+				if(!error) done();
 			});
 		});
 
