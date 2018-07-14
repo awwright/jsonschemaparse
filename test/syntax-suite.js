@@ -8,7 +8,7 @@ var Parser = require('../index.js').StreamParser;
 
 var metaschemaObject = require('json-metaschema/draft-07-schema.json');
 
-var syntaxTestDir = __dirname+'/syntax-suite/test_parsing';
+var syntaxTestDir = __dirname+'/vendor-syntax-suite/test_parsing';
 var syntaxTestFilesPositive = fs.readdirSync(syntaxTestDir).filter(function(n){
 	return n[0]=='y';
 });

@@ -53,7 +53,7 @@ var validationTestFiles = [
 describe('Schema tests', function(){
 	validationTestFiles.forEach(function(filename){
 		var label = filename;
-		var filepath = __dirname+'/schema-suite/tests/' + filename;
+		var filepath = __dirname+'/vendor-schema-suite/tests/' + filename;
 		describe(label, function(done){
 			var schemas = require(filepath);
 			schemas.forEach(function(schemaTest){
@@ -86,7 +86,7 @@ describe('Schema tests', function(){
 });
 
 function runValidationTest(filepath, done){
-	var schemas = require('./test/schema-suite/'+filepath);
+	var schemas = require('./test/vendor-schema-suite/'+filepath);
 	//console.log(filepath + ' ...');
 	schemas.forEach(function(s){
 		var tests = s.tests;
