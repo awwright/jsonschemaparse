@@ -75,32 +75,3 @@ describe('Schema tests', function(){
 	});
 });
 
-function runValidationTest(filepath, done){
-	var schemas = require('./test/vendor-schema-suite/'+filepath);
-	//console.log(filepath + ' ...');
-	schemas.forEach(function(s){
-		var tests = s.tests;
-		tests.forEach(function(t, i){
-			var tjson = JSON.stringify(t.data, null, "\t");
-			var throws = false;
-			try {
-				var registry = new SchemaRegistry;
-				// This passes just one test
-				registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
-				var schema = registry.import('http://localhost/'+filepath, s.schema);
-				var p = schema.createParser({charset:'string'});
-				p.parse(tjson);
-			}catch(e){
-				throws = e;
-			}
-			if(throws){
-				var er = {description:t.description, i:i, valid:t.valid, errors:throws, schema:s.schema, value:t.data};
-			}else if(t.valid!=!!p.errors.length){
-			}else{
-			}
-		});
-	});
-	return void done(null, res);
-}
-
-
