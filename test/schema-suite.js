@@ -60,25 +60,15 @@ describe('Schema tests', function(){
 				var tests = schemaTest.tests;
 				tests.forEach(function(t, i){
 					it(t.description, function(){
-						
+						var tjson = JSON.stringify(t.data, null, "\t");
+						var registry = new SchemaRegistry;
+						// This passes just one test
+						registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
+						var schema = registry.import('http://localhost/'+filepath, schemaTest.schema);
+						var p = schema.createParser({charset:'string'});
+						p.parse(tjson);
+						assert.equal(t.valid, !p.errors.length);
 					});
-//					var tjson = JSON.stringify(t.data, null, "\t");
-//					var throws = false;
-//					try {
-//						var registry = new SchemaRegistry;
-//						// This passes just one test
-//						registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
-//						var schema = registry.import('http://localhost/'+filepath, s.schema);
-//						var p = schema.createParser({charset:'string'});
-//						p.parse(tjson);
-//					}catch(e){
-//						throws = e;
-//					}
-//					if(throws){
-//						var er = {description:t.description, i:i, valid:t.valid, errors:throws, schema:s.schema, value:t.data};
-//					}else if(t.valid!=!!p.errors.length){
-//					}else{
-//					}
 				});
 			});
 		});
