@@ -51,6 +51,9 @@ var validationTestFiles = [
 ];
 
 describe('Schema tests', function(){
+	it('meta', function(){
+		assert(validationTestFiles.length);
+	})
 	validationTestFiles.forEach(function(filename){
 		var label = filename;
 		var filepath = __dirname+'/vendor-schema-suite/tests/' + filename;

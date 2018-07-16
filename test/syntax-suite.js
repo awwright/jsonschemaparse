@@ -17,6 +17,10 @@ var syntaxTestFilesNegative = fs.readdirSync(syntaxTestDir).filter(function(n){
 });
 
 describe('Syntax tests', function(){
+	it('meta', function(){
+		assert(syntaxTestFilesPositive.length);
+		assert(syntaxTestFilesNegative.length);
+	});
 	syntaxTestFilesPositive.forEach(function(filename){
 		var filepath = syntaxTestDir + '/' + filename;
 		var label = filename + ' (UTF-8)';
