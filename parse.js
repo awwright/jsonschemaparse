@@ -256,12 +256,14 @@ StreamParser.prototype.parse = function parse(buffer){
 
 StreamParser.prototype.parseBlock = function parseBlock(buffer){
 	if(this.charset==='string'){
-		if(typeof buffer!=='string') throw new Error('string `buffer` argument required');
+		if(typeof buffer!=='string') throw new Error('Expected arguments[0] `buffer` to be a string');
 	}else if(this.charset==='ASCII'){
-		if(!Buffer.isBuffer(buffer)) throw new Error('ASCII Buffer `buffer` argument required');
+		if(!Buffer.isBuffer(buffer)) throw new Error('Expected arguments[0] `buffer` to be a Buffer with ASCII data');
 	}else if(this.charset==='UTF-8'){
 		// TODO UTF-8 isn't actually supported yet
-		if(!Buffer.isBuffer(buffer)) throw new Error('UTF-8 Buffer `buffer` argument required');
+		if(!Buffer.isBuffer(buffer)) throw new Error('Expected arguments[0] `buffer` to be a Buffer with UTF-8 data');
+	}else{
+		throw new Error('Unknown encoding '+JSON.stringify(this.charset));
 	}
 	for (var i = 0; i < buffer.length; i++, this.characters++) {
 		var chrcode = (typeof buffer==='string') ? buffer.charCodeAt(i) : buffer[i] ;
