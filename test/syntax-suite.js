@@ -23,8 +23,8 @@ describe('Syntax tests', function(){
 	});
 	syntaxTestFilesPositive.forEach(function(filename){
 		var filepath = syntaxTestDir + '/' + filename;
-		var label = filename + ' (UTF-8)';
-		it(label, function(done){
+		var label = 'Positive: '+filename;
+		it(label + ' (UTF-8 buffer)', function(done){
 			var error = null;
 			var t = fs.createReadStream(filepath);
 			var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
@@ -37,11 +37,24 @@ describe('Syntax tests', function(){
 				if(!error) done();
 			});
 		});
+		it(label + ' (string)', function(done){
+			var error = null;
+			var t = fs.createReadStream(filepath, {encoding:'UTF-8'});
+			var p = new Parser(null, {keepValue:true, charset:'string'});
+			t.pipe(p);
+			p.on('error', function(err){
+				done(err);
+			});
+			t.on('end', function(){
+				assert(p.value!==undefined);
+				if(!error) done();
+			});
+		});
 	});
 	syntaxTestFilesNegative.forEach(function(filename){
 		var filepath = syntaxTestDir + '/' + filename;
-		var label = filename + ' (UTF-8)';
-		it(label, function(done){
+		var label = 'Negative: '+filename ;
+		it(label + ' (UTF-8 buffer)', function(done){
 			//console.log('\n\n'+filepath);
 			var error = null;
 			var t = fs.createReadStream(filepath);
@@ -54,10 +67,26 @@ describe('Syntax tests', function(){
 			});
 			t.on('end', function(){
 				//console.log('finish');
-				assert.ok(error);
+				assert(error);
 				if(!error) done();
 			});
 		});
-
+		it(label + ' (string)', function(done){
+			//console.log('\n\n'+filepath);
+			var error = null;
+			var t = fs.createReadStream(filepath, {encoding:'UTF-8'});
+			var p = new Parser(null, {keepValue:true, charset:'string'});
+			t.pipe(p);
+			p.on('error', function(err){
+				//console.log('error');
+				error = err;
+				done();
+			});
+			t.on('end', function(){
+				//console.log('finish');
+				assert(error);
+				if(!error) done();
+			});
+		});
 	});
 });
