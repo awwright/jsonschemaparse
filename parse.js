@@ -1,6 +1,6 @@
 
 "use strict";
-const Transform = require('stream').Transform;
+const stream = require('stream');
 const util = require('util');
 
 var Schema = require('./schema.js');
@@ -76,7 +76,9 @@ function SyntaxError(message, propertyPath, position, expected, actual){
 module.exports.StreamParser = StreamParser;
 function StreamParser(schema, options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
-	Transform.call(this, {});
+	stream.Writable.call(this, {
+		decodeStrings: false,
+	});
 
 	if(!options) options = {};
 
@@ -125,7 +127,7 @@ function StreamParser(schema, options) {
 	// Start parsing a value
 	this.push('', schema && schema.validate(this.errors));
 }
-util.inherits(StreamParser, Transform);
+util.inherits(StreamParser, stream.Writable);
 
 StreamParser.prototype.event = function (name, value) {
 	this.emit(name, this.layer, value);
@@ -223,7 +225,7 @@ StreamParser.prototype.validateInstance = function validateInstance(cb) {
 	});
 }
 
-StreamParser.prototype._transform = function (buffer, encoding, callback) {
+StreamParser.prototype._transform = StreamParser.prototype._write = function (buffer, encoding, callback) {
 	try {
 		this.parseBlock(buffer);
 	}catch(e){
@@ -233,7 +235,7 @@ StreamParser.prototype._transform = function (buffer, encoding, callback) {
 	if(callback) callback();
 }
 
-StreamParser.prototype._flush = function _flush(callback) {
+StreamParser.prototype._flush = StreamParser.prototype._final = function _flush(callback) {
 	try {
 		this.eof();
 	}catch(e){

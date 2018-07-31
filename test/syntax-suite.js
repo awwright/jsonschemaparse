@@ -1,6 +1,7 @@
 var assert = require('assert');
 
 var fs = require('fs');
+var stream = require('stream');
 
 var SchemaRegistry = require('../index.js').SchemaRegistry;
 var Schema = require('../index.js').Schema;
@@ -32,7 +33,7 @@ describe('Syntax tests', function(){
 			p.on('error', function(err){
 				done(err);
 			});
-			t.on('end', function(){
+			p.on('finish', function(){
 				assert(p.value!==undefined);
 				if(!error) done();
 			});
@@ -45,7 +46,7 @@ describe('Syntax tests', function(){
 			p.on('error', function(err){
 				done(err);
 			});
-			t.on('end', function(){
+			p.on('finish', function(){
 				assert(p.value!==undefined);
 				if(!error) done();
 			});
@@ -59,34 +60,36 @@ describe('Syntax tests', function(){
 			var error = null;
 			var t = fs.createReadStream(filepath);
 			var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
-			t.pipe(p);
-			p.on('error', function(err){
-				//console.log('error');
-				error = err;
-				done();
-			});
-			t.on('end', function(){
-				//console.log('finish');
-				assert(error);
-				if(!error) done();
-			});
+			//t.pipe(p);
+//			p.on('error', function(err){
+//				console.log('error');
+//				error = err;
+//				done();
+//			});
+//			p.on('finish', function(){
+//				console.log('finish');
+//				assert(error);
+//				if(!error) done();
+//			});
+			stream.pipeline(t, p, function(err){ done(!err); });
 		});
 		it(label + ' (string)', function(done){
 			//console.log('\n\n'+filepath);
 			var error = null;
 			var t = fs.createReadStream(filepath, {encoding:'UTF-8'});
 			var p = new Parser(null, {keepValue:true, charset:'string'});
-			t.pipe(p);
-			p.on('error', function(err){
-				//console.log('error');
-				error = err;
-				done();
-			});
-			t.on('end', function(){
-				//console.log('finish');
-				assert(error);
-				if(!error) done();
-			});
+//			t.pipe(p);
+//			p.on('error', function(err){
+//				//console.log('error');
+//				error = err;
+//				done();
+//			});
+//			p.on('finish', function(){
+//				//console.log('finish');
+//				assert(error);
+//				if(!error) done();
+//			});
+			stream.pipeline(t, p, function(err){ done(!err); });
 		});
 	});
 });
