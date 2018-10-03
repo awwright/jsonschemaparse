@@ -38,6 +38,20 @@ describe('Syntax tests', function(){
 				if(!error) done();
 			});
 		});
+		it(label + ' (UTF-8 each-character)', function(done){
+			var error = null;
+			var t = fs.readFile(filepath, function(err, data){
+				var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
+				for(var i=0; i<data.length; i++){
+					p.write(new Uint8Array([data[i]]));
+				}
+				p.end();
+				p.on('finish', function(){
+					assert(p.value!==undefined);
+					if(!error) done();
+				});
+			});
+		});
 		it(label + ' (string)', function(done){
 			var error = null;
 			var t = fs.createReadStream(filepath, {encoding:'UTF-8'});
