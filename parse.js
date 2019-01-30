@@ -110,7 +110,7 @@ function StreamParser(schema, options) {
 	this.value = undefined;
 
 	// for string parsing
-	this.string = undefined; // string data
+	this.buffer = undefined; // string data
 	this.unicode = undefined; // unicode escapes
 
 	// For number parsing
@@ -331,20 +331,22 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			case 0x22: // `"`
 				// Start parsing a string
-				this.string = "";
+				this.startBuffer(block, i);
 				this.layer.state = STRING1;
 				this.startString();
 				continue;
 			case 0x2d: // `-`
 				this.negative = true;
 				this.layer.state = NUMBER1;
-				this.string = "-";
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x30: // `0`
 				this.magnatude = 0;
 				this.layer.state = NUMBER2;
-				this.string = "0";
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x31: // `1`
@@ -358,7 +360,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x39: // `9`
 				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
-				this.string = String.fromCharCode(chrcode);
+				this.buffer = String.fromCharCode(chrcode);
 				this.startNumber();
 				continue;
 			}
@@ -375,7 +377,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue; // whitespace, ignore
 			case 0x22: // `"`
 				// Start parsing a keyword name
-				this.string = "";
+				this.startBuffer(block, i);
 				// When the new layer (created next) pops, be in the "finished parsing key" state
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
@@ -392,7 +394,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case OBJECT2:
 			// Process parsed key
 			// the endKey method will have already been called by the just-popped layer
-			this.layer.key = this.string;
+			this.layer.key = this.buffer;
 			this.layer.state = OBJECT3;
 			// pass to OBJECT3
 		case OBJECT3:
@@ -450,7 +452,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue; // whitespace, ignore
 			case 0x22: // `"`
 				// Start parsing a keyword name
-				this.string = "";
+				this.startBuffer(block, i);
 				// When the new layer (created next) pops, be in the "finished parsing key" state
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
@@ -511,7 +513,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// Start parsing a string
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.string = "";
+				this.startBuffer(block, i);
 				this.layer.state = STRING1;
 				this.startString();
 				continue;
@@ -520,7 +522,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.negative = true;
 				this.layer.state = NUMBER1;
-				this.string = "-";
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x30: // `0`
@@ -528,7 +531,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.magnatude = 0;
 				this.layer.state = NUMBER2;
-				this.string = "0";
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x31: // `1`
@@ -544,7 +548,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
-				this.string = String.fromCharCode(chrcode);
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			}
@@ -621,7 +626,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// Start parsing a string
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.string = "";
+				this.startBuffer(block, i);
 				this.layer.state = STRING1;
 				this.startString();
 				continue;
@@ -630,7 +635,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.negative = true;
 				this.layer.state = NUMBER1;
-				this.string = "-";
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x30: // `0`
@@ -638,7 +644,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.magnatude = 0;
 				this.layer.state = NUMBER2;
-				this.string = "0";
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x31: // `1`
@@ -654,7 +661,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
-				this.string = String.fromCharCode(chrcode);
+				this.startBuffer(block, i);
+				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			}
@@ -662,10 +670,10 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case NUMBER1:
 			// after minus
 			// expecting a digit
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			switch(chrcode){
 			case 0x30: // `0`
-				this.string += "0";
+				this.appendCodepoint(chrcode);
 				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				continue;
@@ -678,7 +686,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.string += String.fromCharCode(chrcode);
+				this.appendCodepoint(chrcode);
 				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				continue;
@@ -689,13 +697,13 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			// expecting a decimal or exponent
 			switch (chrcode) {
 			case 0x2e: // `.`
-				this.string += String.fromCharCode(chrcode);
+				this.appendCodepoint(chrcode);
 				this.position = 0.1;
 				this.layer.state = NUMBER4;
 				continue;
 			case 0x65: // `e`
 			case 0x45: // `E`
-				this.string += String.fromCharCode(chrcode);
+				this.appendCodepoint(chrcode);
 				this.exponent = 0;
 				this.layer.state = NUMBER6;
 				continue;
@@ -704,7 +712,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			i--, this.characters--; // this character is not a number
 			continue;
 		case NUMBER3: // * After digit (before period)
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			switch (chrcode) {
 			case 0x2e: // .
 				this.position = 0.1;
@@ -732,7 +740,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			i--, this.characters--; // this character is not a number
 			continue;
 		case NUMBER4: // After period
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
 				this.magnatude += this.position * (chrcode - 0x30);
 				this.position /= 10;
@@ -741,7 +749,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			}
 			this.charError(block, i, '0-9');
 		case NUMBER5: // * After digit (after period)
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
 				this.magnatude += this.position * (chrcode - 0x30);
 				this.position /= 10;
@@ -758,7 +766,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			continue;
 		case NUMBER6:
 			// After e/E
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			if (chrcode === 0x2b || chrcode === 0x2d) { // +/-
 				if (chrcode === 0x2d) { this.negativeExponent = true; }
 				this.layer.state = NUMBER7;
@@ -771,7 +779,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			}
 			this.charError(block, i, '+ - 0-9');
 		case NUMBER7: // After +/-
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
 				this.exponent = this.exponent * 10 + (chrcode - 0x30);
 				this.layer.state = NUMBER8;
@@ -780,7 +788,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			this.charError(block, i, '0-9');
 		case NUMBER8:
 			// * After digit (after +/-)
-			this.string += String.fromCharCode(chrcode);
+			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
 				this.exponent = this.exponent * 10 + (chrcode - 0x30);
 				continue;
@@ -858,7 +866,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case STRING1: // After open quote
 			switch (chrcode) {
 			case 0x22: // `"`
-				if(this.layer.keepValue) this.layer.value = this.string;
+				if(this.layer.keepValue) this.layer.value = this.readBuffer(block, i);
 				if(this.layer.key) this.endKey();
 				else this.endString();
 				continue;
@@ -881,14 +889,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			this.charError(block, i);
 		case STRING2: // After backslash
 			switch (chrcode) {
-			case 0x22: this.string += "\""; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x5c: this.string += "\\"; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x2f: this.string += "\/"; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x62: this.string += "\b"; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x66: this.string += "\f"; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x6e: this.string += "\n"; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x72: this.string += "\r"; this.layer.length++; this.layer.state = STRING1; continue;
-			case 0x74: this.string += "\t"; this.layer.length++; this.layer.state = STRING1; continue;
+			case 0x22: this.appendCodepoint("\"".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x5c: this.appendCodepoint("\\".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x2f: this.appendCodepoint("\/".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x62: this.appendCodepoint("\b".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x66: this.appendCodepoint("\f".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x6e: this.appendCodepoint("\n".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x72: this.appendCodepoint("\r".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x74: this.appendCodepoint("\t".charCodeAt()); this.layer.state = STRING1; continue;
 			case 0x75: this.unicode = ""; this.layer.state = STRING3; continue;
 			}
 			this.charError(block, i, "\" \\ \/ b f n r t u");
@@ -977,7 +985,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 		this.layer.state = VOID;
 		this.magnatude = undefined;
 		this.negative = undefined;
-		this.onNumber(0, this.string);
+		this.onNumber(0, this.buffer);
 		break;
 	case NUMBER3: // * After digit (before period)
 		this.layer.state = VOID;
@@ -985,7 +993,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 			this.magnatude = -this.magnatude;
 			this.negative = undefined;
 		}
-		this.onNumber(this.magnatude, this.string);
+		this.onNumber(this.magnatude, this.buffer);
 		this.magnatude = undefined;
 		break;
 	case NUMBER5: // * After digit (after period)
@@ -994,7 +1002,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 			this.magnatude = -this.magnatude;
 			this.negative = undefined;
 		}
-		this.onNumber(this.negative ? -this.magnatude : this.magnatude, this.string);
+		this.onNumber(this.negative ? -this.magnatude : this.magnatude, this.buffer);
 		this.magnatude = undefined;
 		this.position = undefined;
 		break;
@@ -1010,7 +1018,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 			this.negative = undefined;
 		}
 		this.layer.state = VOID;
-		this.onNumber(this.magnatude, this.string);
+		this.onNumber(this.magnatude, this.buffer);
 		this.magnatude = undefined;
 		break;
 	}
@@ -1029,7 +1037,7 @@ StreamParser.prototype.startKey = function startKey(){
 }
 
 StreamParser.prototype.endKey = function endKey(){
-	var key = this.string
+	var key = this.buffer
 	this.event('key', key);
 	//this.validateInstance(function(s){ return s.endPropertyName(key); });
 	this.pop();
@@ -1041,15 +1049,25 @@ StreamParser.prototype.startString = function startString(){
 	self.validateInstance(function(s){ return s.startString(self.layer); });
 }
 
+StreamParser.prototype.startBuffer = function startBuffer(block, i) {
+       this.blockOffset = i;
+       this.buffer = "";
+};
+
+StreamParser.prototype.readBuffer = function readBuffer(block, i) {
+       // return this.buffer + block.slice(this.stringStart, i);
+       return this.buffer;
+};
+
 StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 	if(chrcode>=0x10000){
 		// Compute and append UTF-16 surrogate pair
-		this.string +=
+		this.buffer +=
 			String.fromCharCode(((chrcode-0x10000)>>10) + 0xD800)
 			+ String.fromCharCode(((chrcode-0x10000)&0x3ff) + 0xDC00);
 		this.layer.length++;
 	}else{
-		this.string += String.fromCharCode(chrcode);
+		this.buffer += String.fromCharCode(chrcode);
 		// Only increment if the character completes a code point
 		// i.e. exclude high surrogates
 		if(chrcode<0xD800 || chrcode>0xDBFF) this.layer.length++;
@@ -1057,9 +1075,9 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 }
 
 StreamParser.prototype.endString = function endString(){
-	this.event('string', this.string);
+	this.event('string', this.buffer);
 	var self = this;
-	self.validateInstance(function(s){ return s.endString(self.layer, self.string); });
+	self.validateInstance(function(s){ return s.endString(self.layer, self.buffer); });
 	this.pop();
 }
 
