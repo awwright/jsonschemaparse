@@ -113,13 +113,6 @@ function StreamParser(schema, options) {
 	this.buffer = undefined; // string data
 	this.unicode = undefined; // unicode escapes
 
-	// For number parsing
-	this.negative = undefined;
-	this.magnatude = undefined;
-	this.position = undefined;
-	this.exponent = undefined;
-	this.negativeExponent = undefined;
-
 	// Begin creating stack
 	// Allow trailing whitespace at the end of the document
 	this.push('');
@@ -336,14 +329,12 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.startString();
 				continue;
 			case 0x2d: // `-`
-				this.negative = true;
 				this.layer.state = NUMBER1;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
 				this.startNumber();
 				continue;
 			case 0x30: // `0`
-				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -358,7 +349,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				this.buffer = String.fromCharCode(chrcode);
 				this.startNumber();
@@ -520,7 +510,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x2d: // `-`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.negative = true;
 				this.layer.state = NUMBER1;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -529,7 +518,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x30: // `0`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -546,7 +534,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x39: // `9`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -633,7 +620,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x2d: // `-`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.negative = true;
 				this.layer.state = NUMBER1;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -642,7 +628,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x30: // `0`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -659,7 +644,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x39: // `9`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
-				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				this.startBuffer(block, i);
 				this.appendCodepoint(chrcode);
@@ -673,8 +657,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			this.appendCodepoint(chrcode);
 			switch(chrcode){
 			case 0x30: // `0`
-				this.appendCodepoint(chrcode);
-				this.magnatude = 0;
 				this.layer.state = NUMBER2;
 				continue;
 			case 0x31: // `1`
@@ -686,8 +668,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.appendCodepoint(chrcode);
-				this.magnatude = chrcode - 0x30;
 				this.layer.state = NUMBER3;
 				continue;
 			}
@@ -698,30 +678,27 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			switch (chrcode) {
 			case 0x2e: // `.`
 				this.appendCodepoint(chrcode);
-				this.position = 0.1;
 				this.layer.state = NUMBER4;
 				continue;
 			case 0x65: // `e`
 			case 0x45: // `E`
 				this.appendCodepoint(chrcode);
-				this.exponent = 0;
 				this.layer.state = NUMBER6;
 				continue;
 			}
-			this.endNumber();
 			i--, this.characters--; // this character is not a number
+			this.endNumber();
 			continue;
 		case NUMBER3: // * After digit (before period)
-			this.appendCodepoint(chrcode);
 			switch (chrcode) {
 			case 0x2e: // .
-				this.position = 0.1;
 				this.layer.state = NUMBER4;
+				this.appendCodepoint(chrcode);
 				continue;
 			case 0x65: // `e`
 			case 0x45: // `E`
-				this.exponent = 0;
 				this.layer.state = NUMBER6;
+				this.appendCodepoint(chrcode);
 				continue;
 			case 0x30: // `0`
 			case 0x31: // `1`
@@ -733,47 +710,42 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x37: // `7`
 			case 0x38: // `8`
 			case 0x39: // `9`
-				this.magnatude = this.magnatude * 10 + (chrcode - 0x30);
+				this.appendCodepoint(chrcode);
 				continue;
 			}
-			this.endNumber();
 			i--, this.characters--; // this character is not a number
+			this.endNumber();
 			continue;
 		case NUMBER4: // After period
-			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
-				this.magnatude += this.position * (chrcode - 0x30);
-				this.position /= 10;
+				this.appendCodepoint(chrcode);
 				this.layer.state = NUMBER5;
 				continue;
 			}
 			this.charError(block, i, '0-9');
 		case NUMBER5: // * After digit (after period)
-			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
-				this.magnatude += this.position * (chrcode - 0x30);
-				this.position /= 10;
+				this.appendCodepoint(chrcode);
 				continue;
 			}
 			if (chrcode === 0x65 || chrcode === 0x45) { // E/e
-				this.exponent = 0;
+				this.appendCodepoint(chrcode);
 				this.layer.state = NUMBER6;
 				continue;
 			}
-			this.endNumber();
 			// FIXME what if we're at the first character of the incoming block?
 			i--, this.characters--; // this character is not a number, rewind
+			this.endNumber();
 			continue;
 		case NUMBER6:
 			// After e/E
-			this.appendCodepoint(chrcode);
 			if (chrcode === 0x2b || chrcode === 0x2d) { // +/-
-				if (chrcode === 0x2d) { this.negativeExponent = true; }
+				this.appendCodepoint(chrcode);
 				this.layer.state = NUMBER7;
 				continue;
 			}
 			if (chrcode>=0x30 && chrcode<=0x39) {
-				this.exponent = this.exponent * 10 + (chrcode - 0x30);
+				this.appendCodepoint(chrcode);
 				this.layer.state = NUMBER8;
 				continue;
 			}
@@ -781,20 +753,18 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case NUMBER7: // After +/-
 			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
-				this.exponent = this.exponent * 10 + (chrcode - 0x30);
 				this.layer.state = NUMBER8;
 				continue;
 			}
 			this.charError(block, i, '0-9');
 		case NUMBER8:
 			// * After digit (after +/-)
-			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
-				this.exponent = this.exponent * 10 + (chrcode - 0x30);
+				this.appendCodepoint(chrcode);
 				continue;
 			}
-			this.endNumber();
 			i--, this.characters--; // this character is not a number
+			this.endNumber();
 			continue;
 		case TRUE1:
 			if (chrcode === 0x72) { // r
@@ -983,52 +953,30 @@ StreamParser.prototype.endNumber = function endNumber(){
 	switch (this.layer.state) {
 	case NUMBER2: // * After initial zero
 		this.layer.state = VOID;
-		this.magnatude = undefined;
-		this.negative = undefined;
-		this.onNumber(0, this.buffer);
+		this.onNumber();
 		break;
 	case NUMBER3: // * After digit (before period)
 		this.layer.state = VOID;
-		if (this.negative) {
-			this.magnatude = -this.magnatude;
-			this.negative = undefined;
-		}
-		this.onNumber(this.magnatude, this.buffer);
-		this.magnatude = undefined;
+		this.onNumber();
 		break;
 	case NUMBER5: // * After digit (after period)
 		this.layer.state = VOID;
-		if (this.negative) {
-			this.magnatude = -this.magnatude;
-			this.negative = undefined;
-		}
-		this.onNumber(this.negative ? -this.magnatude : this.magnatude, this.buffer);
-		this.magnatude = undefined;
-		this.position = undefined;
+		this.onNumber();
 		break;
 	case NUMBER8: // * After digit (after +/-)
-		if (this.negativeExponent) {
-			this.exponent = -this.exponent;
-			this.negativeExponent = undefined;
-		}
-		this.magnatude *= Math.pow(10, this.exponent);
-		this.exponent = undefined;
-		if (this.negative) {
-			this.magnatude = -this.magnatude;
-			this.negative = undefined;
-		}
 		this.layer.state = VOID;
-		this.onNumber(this.magnatude, this.buffer);
-		this.magnatude = undefined;
+		this.onNumber();
 		break;
 	}
 }
 
-StreamParser.prototype.onNumber = function onNumber(n, s){
+StreamParser.prototype.onNumber = function onNumber(){
 	var self = this;
-	if(self.layer.keepValue) this.layer.value = n;
-	self.event('number', n);
-	self.validateInstance(function(s){ return s.endNumber(self.layer, n); });
+	var value = JSON.parse(self.buffer);
+	if(typeof value!=='number') throw new Error('Failed assertion');
+	if(self.layer.keepValue) this.layer.value = JSON.parse(self.buffer);
+	self.event('number', value);
+	self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
 	self.pop();
 }
 
