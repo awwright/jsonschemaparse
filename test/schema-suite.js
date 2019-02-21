@@ -61,16 +61,24 @@ describe('Schema tests', function(){
 			var schemas = require(filepath);
 			schemas.forEach(function(schemaTest){
 				var tests = schemaTest.tests;
-				tests.forEach(function(t, i){
-					it(t.description, function(){
-						var tjson = JSON.stringify(t.data, null, "\t");
-						var registry = new SchemaRegistry;
-						// This passes just one test
-						registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
-						var schema = registry.import('http://localhost/'+filepath, schemaTest.schema);
-						var p = schema.createParser({charset:'string'});
-						p.parse(tjson);
-						assert.equal(t.valid, !p.errors.length);
+				describe(schemaTest.description, function(){
+					tests.forEach(function(t, i){
+						it(t.description, function(){
+							var tjson = JSON.stringify(t.data, null, "\t");
+							var registry = new SchemaRegistry;
+							// This passes just one test
+							registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
+							var schema = registry.import('http://localhost/'+filepath, schemaTest.schema);
+							var p = schema.createParser({charset:'string'});
+							p.parse(tjson);
+							if(t.valid){
+								if(p.errors.length) console.error(p.errors.map(function(v){ return v.toString(); }));
+								assert.deepEqual(p.errors.length, 0);
+								// assert.deepEqual(p.errors, []);
+							}else{
+								assert.notEqual(p.errors.length, 0);
+							}
+						});
 					});
 				});
 			});

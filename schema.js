@@ -229,6 +229,8 @@ function Schema(id, schema, registry){
 	self.allowedTypes = [];
 	self.allowFraction = true; // Allow numbers with a fractional component
 	self.const = undefined;
+	self.constType = undefined; // stores expected type for matching const
+	self.constLength = undefined; // stores expected number of properties/items
 	self.maximum = null;
 	self.exclusiveMaximum = null;
 	self.minimum = null;
@@ -339,10 +341,6 @@ Schema.prototype.intersect = function intersect(s){
 	if(self.allowNull) self.allowedTypes.push('null');
 	if(self.allowObject) self.allowedTypes.push('object');
 	if(self.allowArray) self.allowedTypes.push('array');
-
-	if(s.const !== undefined){
-		if(!self.const) self.const = s.const;
-	}
 
 	// Keyword: "minimum", "exclusiveMinimum"
 	if(typeof s.minimum=='number' && s.exclusiveMinimum===true){
@@ -458,6 +456,45 @@ Schema.prototype.intersect = function intersect(s){
 			required[k] = self.required[k] = true;
 		});
 	}
+	// Keyword: "const"
+	if(s.const!==undefined){
+		if(compareDeep(self.const, s.const)){
+			// const is the same, ignore
+		}else if(self.constType){
+			// FIXME this should just return invalid, this isn't a schema error
+			throw new Error('Double const');
+		}else{
+			if(Array.isArray(s.const)){
+				self.constType = 'array';
+				self.constLength = s.const.length;
+				s.const.forEach(function(item, i){
+					if(!self.items[i]) self.items[i] = new Schema(self.id+' ['+i+']', {}, self.registry);
+					self.items[i].intersect({const: item});
+				});
+			}else if(s.const && typeof s.const==='object'){
+				self.constType = 'object';
+				self.constLength = Object.keys(s.const).length;
+				Object.keys(s.const).forEach(function(k){
+					if(!self.properties[k]) self.properties[k] = new Schema(self.id+' ['+k+']', {}, self.registry);
+					self.properties[k].intersect({const: s.const[k]});
+				});
+			}else if(typeof s.const==='boolean'){
+				self.const = s.const;
+				self.constType = 'boolean';
+			}else if(typeof s.const==='string'){
+				self.const = s.const;
+				self.constType = 'string';
+				self.constLength = s.const.length;
+			}else if(typeof s.const==='number'){
+				self.const = s.const;
+				self.constType = 'number';
+			}else if(s.const===null){
+				self.constType = 'null';
+			}else{
+				throw new Error('Assertion error: Unkown const type');
+			}
+		}
+	}
 	// Keyword: "pattern"
 	if(typeof s.pattern=='string'){
 		self.testsString.push(Schema.stringTestPattern.bind(self, s.pattern));
@@ -471,44 +508,77 @@ function expectedType(actual, allowedTypes){
 }
 
 Schema.prototype.startNumber = function startNumber(layer){
-	if(this.allowNumber) return;
-	return new ValidationError(expectedType('number', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'number');
+	if(!this.allowNumber){
+		return new ValidationError(expectedType('number', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'number');
+	}
+	if(this.constType && this.constType!=='number'){
+		return new ValidationError('Unexpected number', layer, this, 'const', this.constType, 'number');
+	}
 }
 
 Schema.prototype.startString = function startString(layer){
-	if(this.allowString) return;
-	return new ValidationError(expectedType('string', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'string');
+	if(!this.allowString){
+		return new ValidationError(expectedType('string', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'string');
+	}
+	if(this.constType && this.constType!=='string'){
+		return new ValidationError('Unexpected string', layer, this, 'const', this.constType, 'string');
+	}
 }
 
 Schema.prototype.startBoolean = function startBoolean(layer){
-	if(this.allowBoolean) return;
-	return new ValidationError(expectedType('boolean', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'boolean');
+	if(!this.allowBoolean){
+		return new ValidationError(expectedType('boolean', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'boolean');
+	}
+	if(this.constType && this.constType!=='boolean'){
+		return new ValidationError('Unexpected boolean', layer, this, 'const', this.constType, 'boolean');
+	}
+}
+
+Schema.prototype.endBoolean = function endBoolean(layer, value){
+	if(this.const!==undefined && this.const!==value){
+		return new ValidationError('const mismatch', layer, this, 'const', this.constType, this.const);
+	}
 }
 
 Schema.prototype.startNull = function startNull(layer){
-	if(this.allowNull) return;
-	return new ValidationError(expectedType('null', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'null');
+	if(!this.allowNull){
+		return new ValidationError(expectedType('null', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'null');
+	}
+	if(this.constType && this.constType!=='null'){
+		return new ValidationError('Unexpected null', layer, this, 'const', this.constType, 'null');
+	}
 }
 
 Schema.prototype.startObject = function startObject(layer){
-	if(this.allowObject) return;
-	return new ValidationError(expectedType('object', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'object');
+	if(!this.allowObject){
+		return new ValidationError(expectedType('object', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'object');
+	}
+	if(this.constType && this.constType!=='object'){
+		return new ValidationError('Unexpected object', layer, this, 'const', this.constType, 'object');
+	}
 }
 
 Schema.prototype.startArray = function startArray(layer){
-	if(this.allowArray) return;
-	return new ValidationError(expectedType('array', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'array');
+	if(!this.allowArray){
+		return new ValidationError(expectedType('array', this.allowedTypes), layer, this, 'type', this.allowedTypes, 'array');
+	}
+	if(this.constType && this.constType!=='array'){
+		return new ValidationError('Unexpected array', layer, this, 'const', this.constType, 'array');
+	}
 }
 
 Schema.prototype.endArray = function(layer){
 	var schema = this;
-	var error = false;
 	var length = layer.length;
 	if(typeof schema.minItems=='number' && length < schema.minItems){
 		return new ValidationError('Too few items', layer, schema, 'minItems', schema.minItems, length);
 	}
 	if(typeof schema.maxItems=='number' && length > schema.maxItems){
 		return new ValidationError('Too many items', layer, schema, 'maxItems', schema.maxItems, length);
+	}
+	if(typeof schema.constLength=='number' && length !== schema.constLength){
+		// TODO specialize this type to distinguish this from other violations of "const" (e.g. wrong type)
+		return new ValidationError('Incorrect number of properties', layer, schema, 'const', schema.constLength, length);
 	}
 }
 
@@ -520,6 +590,10 @@ Schema.prototype.endObject = function(layer){
 	}
 	if(typeof schema.maxProperties=='number' && length > schema.maxProperties){
 		return new ValidationError('Too many properties', layer, schema, 'maxProperties', schema.maxProperties, length);
+	}
+	if(typeof schema.constLength=='number' && length !== schema.constLength){
+		// TODO specialize this type to distinguish this from other violations of "const" (e.g. wrong type)
+		return new ValidationError('Incorrect number of properties', layer, schema, 'const', schema.constLength, length);
 	}
 }
 
@@ -541,6 +615,9 @@ Schema.prototype.endNumber = function(layer, n){
 	}
 	if(schema.allowFraction==false && n%1){
 		return new ValidationError('Expected an integer', layer, schema, 'type', schema.type, 'number');
+	}
+	if(typeof schema.const=='number' && schema.const!==n){
+		return new ValidationError('const number mismatch', layer, schema, 'const', schema.constLength, n);
 	}
 }
 
@@ -639,6 +716,8 @@ ValidateLayer.prototype.validateProperty = function validateProperty(k){
 	var patterns = [];
 	if(schema.properties[k]){
 		patterns.push(schema.properties[k]);
+	}else if(schema.constType==='object'){
+		this.addErrorList(new ValidationError('Unexpected property by const', self, schema, 'const', null, k));
 	}
 	for(var regexp in schema.patternPropertiesRegExp){
 		if(schema.patternPropertiesRegExp[regexp].test(k)){
@@ -702,6 +781,9 @@ ValidateLayer.prototype.endNumber = function endNumber(layer, n){
 ValidateLayer.prototype.endString = function endString(layer, str){
 	this.addErrorList(this.schema.endString(layer, str));
 }
+ValidateLayer.prototype.endBoolean = function endBoolean(layer, v){
+	this.addErrorList(this.schema.endBoolean(layer, v));
+}
 ValidateLayer.prototype.endObject = function endObject(layer, n){
 	this.addErrorList(this.schema.endObject(layer, n));
 }
@@ -723,6 +805,7 @@ ValidateLayer.prototype.finish = function finish(layer){
 	self.anyOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
 	self.oneOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
 	self.not.forEach(function(v){ v.finish(layer); });
+	// TODO add if/then/else schemas here
 
 	// Compute required properties errors
 	if(self.requiredRemain){
@@ -732,12 +815,14 @@ ValidateLayer.prototype.finish = function finish(layer){
 		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer, self, 'required'));
 	}
 
-	// "const"
-	if(self.schema.const !== undefined){
-		if(!compareDeep(layer.value, self.schema.const)){
-			self.addErrorList(new ValidationError('Expected "const" to match', layer, this, 'const', self.schema.const, layer.value));
-		}
+	if(self.constRemain){
+		var missing = Object.keys(self.requiredMap).filter(function(k){
+			return !self.requiredMap[k];
+		});
+		self.addErrorList(new ValidationError('Required properties missing: '+JSON.stringify(missing), layer, self, 'required'));
 	}
+
+	// "const"
 	// Compute not/oneOf/anyOf failures
 	var notFailures = self.not.filter(function(v){ return v.errors.length===0; });
 	if(notFailures.length){

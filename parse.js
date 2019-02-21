@@ -828,7 +828,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			if (chrcode === 0x6c) { // l
 				this.layer.state = VOID;
 				if(this.layer.keepValue) this.layer.value = null;
-				this.startNull();
 				this.endNull();
 				continue;
 			}
@@ -1035,7 +1034,9 @@ StreamParser.prototype.startBoolean = function startBoolean(){
 }
 
 StreamParser.prototype.endBoolean = function endBoolean(){
+	var self = this;
 	this.event('boolean', this.value);
+	self.validateInstance(function(s){ return s.endBoolean(self.layer, self.value); });
 	this.pop();
 }
 
