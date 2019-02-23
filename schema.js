@@ -618,7 +618,6 @@ Schema.prototype.endObject = function(layer){
 
 Schema.prototype.endNumber = function(layer, n){
 	var schema = this;
-	var error = false;
 	if(typeof schema.exclusiveMinimum=='number' && n<=schema.exclusiveMinimum){
 		return new ValidationError('Number under minimum', layer, schema, 'exclusiveMinimum', schema.exclusiveMinimum, n);
 	}else if(typeof schema.minimum=='number' && n < schema.minimum){
