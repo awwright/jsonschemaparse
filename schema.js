@@ -217,6 +217,7 @@ function Schema(id, schema, registry){
 	var self = this;
 	if(!registry) registry = new SchemaRegistry;
 	self.registry = registry;
+	if(typeof id !== 'string') throw new Error('Expected `id` to be a string');
 	self.id = id;
 	if(schema) var idref = schema.$id || schema.id;
 	if(idref) self.id = uriResolve(self.id, idref) || '_:';
@@ -319,6 +320,25 @@ Schema.prototype.intersect = function intersect(s){
 			anyOf.push(self.registry.resolve(self.id, sc));
 		});
 		self.anyOf.push(anyOf);
+	}
+
+	// Keyword: "enum"
+	if(s.enum){
+		if(!Array.isArray(s.enum)){
+			throw new Error('"anyOf" not an array');
+		}
+		if(self.enum){
+			// set to the intersection of self.enum and the new enum
+			self.enum = self.enum.filter(function(v){
+				return s.enum.some(function(w){
+					compareDeep(v.const, w);
+				});
+			});
+		}else{
+			self.enum = s.enum.map(function(sc, i){
+				return new Schema(self.id+' ['+i+']', {const: sc});
+			});
+		}
 	}
 
 	// Keyword: "type"
@@ -479,22 +499,21 @@ Schema.prototype.intersect = function intersect(s){
 					self.properties[k].intersect({const: s.const[k]});
 				});
 			}else if(typeof s.const==='boolean'){
-				self.const = s.const;
 				self.constType = 'boolean';
 			}else if(typeof s.const==='string'){
-				self.const = s.const;
 				self.constType = 'string';
 				self.constLength = s.const.length;
 			}else if(typeof s.const==='number'){
-				self.const = s.const;
 				self.constType = 'number';
 			}else if(s.const===null){
 				self.constType = 'null';
 			}else{
 				throw new Error('Assertion error: Unkown const type');
 			}
+			self.const = s.const;
 		}
 	}
+
 	// Keyword: "pattern"
 	if(typeof s.pattern=='string'){
 		self.testsString.push(Schema.stringTestPattern.bind(self, s.pattern));
@@ -687,6 +706,12 @@ function ValidateLayer(schema, errors){
 		validator.side.forEach(function(v){ self.side.push(v); });
 		return validator;
 	});
+	// array of allowed literal values
+	if(schema.enum) self.enum = schema.enum.map(function(s){
+		var validator = new ValidateLayer(s);
+		validator.side.forEach(function(v){ self.side.push(v); });
+		return validator;
+	});
 }
 
 ValidateLayer.prototype.getAll = function getAll(errs) {
@@ -695,6 +720,7 @@ ValidateLayer.prototype.getAll = function getAll(errs) {
 	this.anyOf.forEach(function(arr){ arr.forEach(function(v){ list.push(v); }); });
 	this.oneOf.forEach(function(arr){ arr.forEach(function(v){ list.push(v); }); });
 	this.not.forEach(function(v){ list.push(v); });
+	if(this.enum) this.enum.forEach(function(v){ list.push(v); });
 	return list;
 }
 
@@ -805,6 +831,7 @@ ValidateLayer.prototype.finish = function finish(layer){
 	self.anyOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
 	self.oneOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
 	self.not.forEach(function(v){ v.finish(layer); });
+	if(self.enum) self.enum.forEach(function(v){ v.finish(layer); });
 	// TODO add if/then/else schemas here
 
 	// Compute required properties errors
@@ -829,7 +856,6 @@ ValidateLayer.prototype.finish = function finish(layer){
 		self.addErrorList(new ValidationError('Expected "not" to fail', layer, this, 'not'));
 	}
 	// oneOf
-	var oneOf = self.oneOf.map(function(arr){ return arr.map(function(v){ return v.errors.length; }); });
 	self.oneOf.forEach(function(arr){
 		var oneOfValid = arr.filter(function(v){ return v.errors.length===0; });
 		if(oneOfValid.length!==1){
@@ -837,11 +863,19 @@ ValidateLayer.prototype.finish = function finish(layer){
 		}
 	});
 	// anyOf
-	var anyOf = self.anyOf.map(function(arr){ return arr.map(function(v){ return v.errors.length; }); });
 	self.anyOf.forEach(function(arr){
 		var anyOfValid = arr.filter(function(v){ return v.errors.length===0; });
 		if(anyOfValid.length===0){
 			self.addErrorList(new ValidationError('Expected "anyOf" to have at least one matching schema', layer, self, 'anyOf', 1, anyOfValid.length));
 		}
 	});
+	// enum
+	if(self.enum){
+		console.log('self.enum');
+		console.log(self.enum);
+		var enumValid = self.enum.filter(function(v){ return v.errors.length===0; });
+		if(enumValid.length===0){
+			self.addErrorList(new ValidationError('Expected "enum" to have at least one matching value', layer, self, 'enum', 1, enumValid.length));
+		}
+	}
 }

@@ -20,7 +20,7 @@ var validationTestFiles = [
 	'draft7/default.json',
 	// 'draft7/definitions.json',
 	// 'draft7/dependencies.json',
-	// 'draft7/enum.json',
+	'draft7/enum.json',
 	'draft7/exclusiveMaximum.json',
 	'draft7/exclusiveMinimum.json',
 	// 'draft7/if-then-else.json',
