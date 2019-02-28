@@ -4,8 +4,8 @@
 <title>JSON Schema Parse Demo</title>
 <meta charset="utf-8"/>
 <link type="text/css" rel="stylesheet" href="theme.css" />
-<link type="text/css" rel="stylesheet" href="../codemirror/lib/codemirror.css" />
-<link type="text/css" rel="stylesheet" href="../codemirror/addon/lint/lint.css" />
+<link type="text/css" rel="stylesheet" href="codemirror.css" />
+<link type="text/css" rel="stylesheet" href="lint.css" />
 <script type="application/ecmascript" src="JSONSchemaParse.js"></script>
 <style type="text/css">
 .CodeMirror {border: 1px solid black;}
@@ -74,7 +74,6 @@
 		gutters: ["CodeMirror-lint-markers"],
 		lint: JSONLint.bind(null, editor_schema),
 	});
-  
 </script>
 
 </article>
