@@ -29,4 +29,14 @@ test:
 clean:
 	rm -f $(DOC_BUILD)
 
-.PHONY: all test clean
+BUILDDIR = .gh-pages-build
+BUILD_BRANCH = gh-pages
+gh-pages:
+	git worktree add --detach $(BUILDDIR) master
+	cd $(BUILDDIR) && make DOC_TARGET=doc BROWSERIFY=../node_modules/.bin/browserify CODEMIRROR=../node_modules/codemirror
+	cd $(BUILDDIR) && git add -f doc/*
+	cd $(BUILDDIR) && git branch -f $(BUILD_BRANCH) $(git commit-tree -p master -m 'gh-pages build' $(git write-tree --prefix=doc/))
+	git worktree remove -f $(BUILDDIR)
+	git push -f origin $(BUILD_BRANCH)
+
+.PHONY: all test clean gh-pages
