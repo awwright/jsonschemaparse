@@ -1,6 +1,7 @@
 
 NODEJS ?= node
 BROWSERIFY ?= node_modules/.bin/browserify
+CODEMIRROR ?= node_modules/codemirror
 
 DOC_TARGET = doc
 DOC_BUILD = \
@@ -14,12 +15,12 @@ DOC_BUILD = \
 all: $(DOC_BUILD)
 
 $(DOC_TARGET)/JSONSchemaParse.js: doc/app.src.js
-	$(BROWSERIFY) -e $< -s JSONSchemaParse > $@
+	$(BROWSERIFY) -e $< > $@
 
-$(DOC_TARGET)/codemirror.css: ./node_modules/codemirror/lib/codemirror.css
+$(DOC_TARGET)/codemirror.css: $(CODEMIRROR)/lib/codemirror.css
 	cp $< $@
 
-$(DOC_TARGET)/lint.css: ./node_modules/codemirror/addon/lint/lint.css
+$(DOC_TARGET)/lint.css: $(CODEMIRROR)/addon/lint/lint.css
 	cp $< $@
 
 test:
