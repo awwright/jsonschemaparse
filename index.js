@@ -1,4 +1,4 @@
-
+"use strict";
 module.exports.StreamParser = require('./parse.js').StreamParser;
 module.exports.parse = require('./parse.js').StreamParser.parse;
 module.exports.SyntaxError = require('./parse.js').SyntaxError;

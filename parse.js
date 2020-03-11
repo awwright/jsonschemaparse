@@ -124,8 +124,7 @@ util.inherits(StreamParser, stream.Writable);
 
 StreamParser.prototype.event = function (name, value) {
 	this.emit(name, this.layer, value);
-
-}
+};
 
 StreamParser.prototype.charError = function (block, i, expecting) {
 	var actual = block[i];
@@ -145,7 +144,7 @@ StreamParser.prototype.charError = function (block, i, expecting) {
 
 StreamParser.prototype.push = function push(k, validator) {
 	if(validator) validator.forEach(function(v){
-		if(!v.startNumber) throw new Error('NOT A VALIDATOR');
+		if(!(v instanceof Schema.ValidateLayer)) throw new Error('NOT A VALIDATOR');
 	});
 	var path = this.layer && this.layer.path || '';
 	this.layer = {
@@ -176,23 +175,23 @@ StreamParser.prototype.push = function push(k, validator) {
 //	return this.push(k, result);
 //}
 
-StreamParser.prototype.pushProperty = function pushProperty(k) {
+StreamParser.prototype.pushProperty = function pushProperty(key) {
 	var list = this.layer.validator || [];
 	if(!Array.isArray(list)) throw new Error('Expected array');
 	var result = collapseArray(list, function(validator){
-		return validator.validateProperty(k);
+		return validator.initProperty(key);
 	});
-	return this.push(k, result);
-}
+	return this.push(key, result);
+};
 
 StreamParser.prototype.pushItem = function pushItem(k) {
 	var list = this.layer.validator || [];
 	if(!Array.isArray(list)) throw new Error('Expected array');
 	var result = collapseArray(list, function(validator){
-		return validator.validateItem(k);
+		return validator.initItem(k);
 	});
 	return this.push(k, result);
-}
+};
 
 
 
@@ -206,17 +205,16 @@ StreamParser.prototype.pop = function pop(){
 	if(layer.keepValue) self.value = layer.value;
 	self.layer = self.stack[this.stack.length-1];
 	return layer;
-}
+};
 
 StreamParser.prototype.validateInstance = function validateInstance(cb) {
 	var self = this;
 	if(!self.layer.validator) return;
 	if(!Array.isArray(self.layer.validator)) throw new Error('Expected array this.layer.validator');
 	self.layer.validator.forEach(function(validator){
-		if(!validator.startNumber) console.error('NOT A VALIDATOR', validator);
 		cb(validator);
 	});
-}
+};
 
 StreamParser.prototype._transform = StreamParser.prototype._write = function (block, encoding, callback) {
 	try {
@@ -226,7 +224,7 @@ StreamParser.prototype._transform = StreamParser.prototype._write = function (bl
 		throw e;
 	}
 	if(callback) callback();
-}
+};
 
 StreamParser.prototype._flush = StreamParser.prototype._final = function _flush(callback) {
 	try {
@@ -235,19 +233,19 @@ StreamParser.prototype._flush = StreamParser.prototype._final = function _flush(
 		return void callback(e);
 	}
 	callback();
-}
+};
 
 StreamParser.parse = function parse(schema, options, block){
 	var parser = new StreamParser(schema, options);
 	parser.keepValue = true;
 	parser.parse(block);
 	return parser;
-}
+};
 
 StreamParser.prototype.parse = function parse(block){
 	this.parseBlock(block);
 	this.eof();
-}
+};
 
 StreamParser.prototype.parseBlock = function parseBlock(block){
 	if(this.charset==='string'){
@@ -273,7 +271,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// continue execution since we're decoding to UTF-16 anyways
 			}else{
 				// This is a UTF-16 low (second) surrogate
-				var utf16_high = this.utf16_high;
+				// var utf16_high = this.utf16_high;
 				this.utf16_high = null;
 			}
 		}
@@ -285,17 +283,20 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x0a:
 				this.lineOffset = this.characters;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
 				continue; // whitespace, ignore
 			}
 			this.charError(block, i, "\\s");
+			break;
 		case VALUE:
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -355,12 +356,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '[ { true false null " - 0-9');
+			break;
 		case OBJECT1:
 			// Opened a curly brace, expecting a closing curly brace or a key
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -381,18 +384,20 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '" }');
+			break;
 		case OBJECT2:
 			// Process parsed key
 			// the endKey method will have already been called by the just-popped layer
 			this.layer.key = this.buffer;
 			this.layer.state = OBJECT3;
-			// pass to OBJECT3
+			// fall through to OBJECT3
 		case OBJECT3:
 			// Stored state of key, expecting a colon
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -405,18 +410,20 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, ':');
+			break;
 		case OBJECT4:
 			// Process parsed value
 			if(this.layer.keepValue) this.layer.value[this.layer.key] = this.value;
 			this.layer.length++;
 			this.layer.state = OBJECT5;
-			// pass to OBJECT5
+			// fall through to OBJECT5
 		case OBJECT5:
 			// Parsed a value, expecting a comma or closing curly brace
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -430,12 +437,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, ', }');
+			break;
 		case OBJECT6:
 			// Parsed a comma, now expecting a string
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -453,12 +462,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '"');
+			break;
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -541,18 +552,20 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '] { [ true false null " - 0-9');
+			break;
 		case ARRAY2:
 			// push item to array value
 			if(this.layer.keepValue) this.layer.value[this.layer.length] = this.value;
 			this.layer.length++;
 			this.layer.state = ARRAY3;
-			// fall to next state
+			// fall through to next state
 		case ARRAY3:
 			// Finished reading an array item, now expecting a close array or comma
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -565,12 +578,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '] ,');
+			break;
 		case ARRAY4:
 			// Finished reading comma, expecting value
 			switch(chrcode){
 			case 0x0a:
 				this.lineOffset = i;
 				this.lineNumber++;
+				// fall through
 			case 0x09:
 			case 0x0d:
 			case 0x20:
@@ -651,6 +666,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, 'VALUE ]');
+			break;
 		case NUMBER1:
 			// after minus
 			// expecting a digit
@@ -672,6 +688,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, "0-9");
+			break;
 		case NUMBER2:
 			// after initial zero
 			// expecting a decimal or exponent
@@ -723,6 +740,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '0-9');
+			break;
 		case NUMBER5: // * After digit (after period)
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
 				this.appendCodepoint(chrcode);
@@ -750,6 +768,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '+ - 0-9');
+			break;
 		case NUMBER7: // After +/-
 			this.appendCodepoint(chrcode);
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
@@ -757,6 +776,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '0-9');
+			break;
 		case NUMBER8:
 			// * After digit (after +/-)
 			if (chrcode>=0x30 && chrcode<=0x39) { // 0-9
@@ -772,12 +792,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, 'r');
+			break;
 		case TRUE2:
 			if (chrcode === 0x75) { // u
 				this.layer.state = TRUE3;
 				continue;
 			}
 			this.charError(block, i, 'u');
+			break;
 		case TRUE3:
 			if (chrcode === 0x65) { // e
 				this.layer.state = VOID;
@@ -786,24 +808,28 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, 'e');
+			break;
 		case FALSE1:
 			if (chrcode === 0x61) { // a
 				this.layer.state = FALSE2;
 				continue;
 			}
 			this.charError(block, i, 'a');
+			break;
 		case FALSE2:
 			if (chrcode === 0x6c) { // l
 				this.layer.state = FALSE3;
 				continue;
 			}
 			this.charError(block, i, 'l');
+			break;
 		case FALSE3:
 			if (chrcode === 0x73) { // s
 				this.layer.state = FALSE4;
 				continue;
 			}
 			this.charError(block, i, 's');
+			break;
 		case FALSE4:
 			if (chrcode === 0x65) { // e
 				this.layer.state = VOID;
@@ -812,18 +838,21 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, 'e');
+			break;
 		case NULL1:
 			if (chrcode === 0x75) { // u
 				this.layer.state = NULL2;
 				continue;
 			}
 			this.charError(block, i, 'u');
+			break;
 		case NULL2:
 			if (chrcode === 0x6c) { // l
 				this.layer.state = NULL3;
 				continue;
 			}
 			this.charError(block, i, 'l');
+			break;
 		case NULL3:
 			if (chrcode === 0x6c) { // l
 				this.layer.state = VOID;
@@ -832,6 +861,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, 'l');
+			break;
 		case STRING1: // After open quote
 			switch (chrcode) {
 			case 0x22: // `"`
@@ -856,11 +886,12 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i);
+			break;
 		case STRING2: // After backslash
 			switch (chrcode) {
 			case 0x22: this.appendCodepoint("\"".charCodeAt()); this.layer.state = STRING1; continue;
 			case 0x5c: this.appendCodepoint("\\".charCodeAt()); this.layer.state = STRING1; continue;
-			case 0x2f: this.appendCodepoint("\/".charCodeAt()); this.layer.state = STRING1; continue;
+			case 0x2f: this.appendCodepoint("/".charCodeAt()); this.layer.state = STRING1; continue;
 			case 0x62: this.appendCodepoint("\b".charCodeAt()); this.layer.state = STRING1; continue;
 			case 0x66: this.appendCodepoint("\f".charCodeAt()); this.layer.state = STRING1; continue;
 			case 0x6e: this.appendCodepoint("\n".charCodeAt()); this.layer.state = STRING1; continue;
@@ -868,7 +899,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x74: this.appendCodepoint("\t".charCodeAt()); this.layer.state = STRING1; continue;
 			case 0x75: this.unicode = ""; this.layer.state = STRING3; continue;
 			}
-			this.charError(block, i, "\" \\ \/ b f n r t u");
+			this.charError(block, i, "\" \\ / b f n r t u");
+			break;
 		case STRING3:
 		case STRING4:
 		case STRING5:
@@ -885,6 +917,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				continue;
 			}
 			this.charError(block, i, '0-9 A-F a-f');
+			break;
 		case UTF8_2:
 		case UTF8_3:
 		case UTF8_4:
@@ -893,18 +926,18 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				if (this.layer.state++ === UTF8_4) {
 					var utf32 = 0;
 					switch(this.unicode.length){
-						case 2:
-							utf32 = ((this.unicode[0]&0b11111)<<6) | (this.unicode[1]&0x3f);
-							if(utf32 < 0x0080) this.charError(block, i); // Overlong codepoint
-							break;
-						case 3:
-							utf32 = ((this.unicode[0]&0b1111)<<12) | ((this.unicode[1]&0x3f)<<6) | (this.unicode[2]&0x3f);
-							if(utf32 < 0x0800) this.charError(block, i); // Overlong codepoint
-							break;
-						case 4:
-							utf32 = ((this.unicode[0]&0b111)<<18) | ((this.unicode[1]&0x3f)<<12) | ((this.unicode[2]&0x3f)<<6) | (this.unicode[3]&0x3f);
-							if(utf32 < 0x10000) this.charError(block, i); // Overlong codepoint
-							break;
+					case 2:
+						utf32 = ((this.unicode[0]&0b11111)<<6) | (this.unicode[1]&0x3f);
+						if(utf32 < 0x0080) this.charError(block, i); // Overlong codepoint
+						break;
+					case 3:
+						utf32 = ((this.unicode[0]&0b1111)<<12) | ((this.unicode[1]&0x3f)<<6) | (this.unicode[2]&0x3f);
+						if(utf32 < 0x0800) this.charError(block, i); // Overlong codepoint
+						break;
+					case 4:
+						utf32 = ((this.unicode[0]&0b111)<<18) | ((this.unicode[1]&0x3f)<<12) | ((this.unicode[2]&0x3f)<<6) | (this.unicode[3]&0x3f);
+						if(utf32 < 0x10000) this.charError(block, i); // Overlong codepoint
+						break;
 					}
 					this.appendCodepoint(utf32);
 					this.unicode = undefined;
@@ -921,32 +954,32 @@ StreamParser.prototype.startObject = function startObject(){
 	var self = this;
 	self.validateInstance(function(s){ return s.startObject(self.layer); });
 	self.event('startObject');
-}
+};
 
 StreamParser.prototype.endObject = function endObject(){
 	var self = this;
 	self.event('endObject');
 	self.validateInstance(function(s){ return s.endObject(self.layer); });
 	self.pop();
-}
+};
 
 StreamParser.prototype.startArray = function startArray(){
 	var self = this;
 	self.validateInstance(function(s){ return s.startArray(self.layer); });
 	self.event('startArray');
-}
+};
 
 StreamParser.prototype.endArray = function endArray(){
 	var self = this;
 	self.event('endArray');
 	self.validateInstance(function(s){ return s.endArray(self.layer); });
 	self.pop();
-}
+};
 
 StreamParser.prototype.startNumber = function startNumber(){
 	var self = this;
 	self.validateInstance(function(s){ return s.startNumber(self.layer); });
-}
+};
 
 StreamParser.prototype.endNumber = function endNumber(){
 	switch (this.layer.state) {
@@ -967,7 +1000,7 @@ StreamParser.prototype.endNumber = function endNumber(){
 		this.onNumber();
 		break;
 	}
-}
+};
 
 StreamParser.prototype.onNumber = function onNumber(){
 	var self = this;
@@ -977,33 +1010,33 @@ StreamParser.prototype.onNumber = function onNumber(){
 	self.event('number', value);
 	self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
 	self.pop();
-}
+};
 
 StreamParser.prototype.startKey = function startKey(){
 	// Not much to do here
-}
+};
 
 StreamParser.prototype.endKey = function endKey(){
-	var key = this.buffer
+	var key = this.buffer;
 	this.event('key', key);
 	//this.validateInstance(function(s){ return s.endPropertyName(key); });
 	this.pop();
 	this.validateInstance(function(s){ return s.endKey(key); });
-}
+};
 
 StreamParser.prototype.startString = function startString(){
 	var self = this;
 	self.validateInstance(function(s){ return s.startString(self.layer); });
-}
+};
 
 StreamParser.prototype.startBuffer = function startBuffer(block, i) {
-       this.blockOffset = i;
-       this.buffer = "";
+	this.blockOffset = i;
+	this.buffer = "";
 };
 
 StreamParser.prototype.readBuffer = function readBuffer(block, i) {
-       // return this.buffer + block.slice(this.stringStart, i);
-       return this.buffer;
+	// return this.buffer + block.slice(this.stringStart, i);
+	return this.buffer;
 };
 
 StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
@@ -1019,36 +1052,36 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 		// i.e. exclude high surrogates
 		if(chrcode<0xD800 || chrcode>0xDBFF) this.layer.length++;
 	}
-}
+};
 
 StreamParser.prototype.endString = function endString(){
 	this.event('string', this.buffer);
 	var self = this;
 	self.validateInstance(function(s){ return s.endString(self.layer, self.buffer); });
 	this.pop();
-}
+};
 
 StreamParser.prototype.startBoolean = function startBoolean(){
 	var self = this;
 	self.validateInstance(function(s){ return s.startBoolean(self.layer); });
-}
+};
 
 StreamParser.prototype.endBoolean = function endBoolean(){
 	var self = this;
 	this.event('boolean', this.value);
 	self.validateInstance(function(s){ return s.endBoolean(self.layer, self.value); });
 	this.pop();
-}
+};
 
 StreamParser.prototype.startNull = function startNull(){
 	var self = this;
 	self.validateInstance(function(s){ return s.startNull(self.layer); });
-}
+};
 
 StreamParser.prototype.endNull = function endNull(){
 	this.event('null', this.value);
 	this.pop();
-}
+};
 
 StreamParser.prototype.eof = function eof() {
 	switch (this.layer.state) {
@@ -1067,9 +1100,9 @@ StreamParser.prototype.eof = function eof() {
 	if(this.stack.length>1){
 		throw new SyntaxError(
 			'Unexpected end of document while parsing '+toknam(this.layer.state),
-			 this.layer.path,
+			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset},
 			'', // FIXME provide an expected character set here
 			'EOF');
 	}
-}
+};
