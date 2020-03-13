@@ -1,13 +1,23 @@
 "use strict";
 
-var assert = require('assert');
-var fs = require('fs');
+const assert = require('assert');
+const fs = require('fs');
 
-var SchemaRegistry = require('../index.js').SchemaRegistry;
-var Schema = require('../index.js').Schema;
-var Parser = require('../index.js').StreamParser;
+const SchemaRegistry = require('../index.js').SchemaRegistry;
+const Schema = require('../index.js').Schema;
+const Parser = require('../index.js').StreamParser;
 
-var metaschemaObject = require('json-metaschema/draft-07-schema.json');
+const metaschemas = [
+	require('json-metaschema/draft-2019-09-schema.json'),
+	require('json-metaschema/draft-2019-09-hyper-schema.json'),
+	require('json-metaschema/draft-2019-09-meta-applicator.json'),
+	require('json-metaschema/draft-2019-09-meta-content.json'),
+	require('json-metaschema/draft-2019-09-meta-core.json'),
+	require('json-metaschema/draft-2019-09-meta-format.json'),
+	require('json-metaschema/draft-2019-09-meta-meta-data.json'),
+	require('json-metaschema/draft-2019-09-meta-validation.json'),
+	require('json-metaschema/draft-2019-09-schema.json'),
+];
 
 var validationTestFiles = [
 	'draft2019-09/additionalItems.json',
@@ -18,7 +28,7 @@ var validationTestFiles = [
 	// 'draft2019-09/const.json',
 	// 'draft2019-09/contains.json',
 	'draft2019-09/default.json',
-	// 'draft2019-09/definitions.json',
+	'draft2019-09/defs.json',
 	// 'draft2019-09/dependencies.json',
 	// 'draft2019-09/enum.json',
 	'draft2019-09/exclusiveMaximum.json',
@@ -85,8 +95,8 @@ describe('Schema tests', function(){
 							var tjson = JSON.stringify(t.data, null, "\t");
 							var registry = new SchemaRegistry;
 							// This passes just one test
-							registry.import('http://json-schema.org/draft-07/schema', metaschemaObject);
-							var schema = registry.import('http://localhost/'+filepath, schemaTest.schema);
+							metaschemas.forEach(function(v){ registry.import(v.$id, v); });
+							var schema = registry.import('http://localhost/'+filename+'/'+i+'/schema', schemaTest.schema);
 							assert(schema instanceof Schema);
 							var p = schema.createParser({charset:'string'});
 							p.parse(tjson);

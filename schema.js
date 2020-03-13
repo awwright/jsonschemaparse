@@ -82,9 +82,10 @@ SchemaRegistry.prototype.import = function importSchema(id, schema, path){
 	}else if(id.match(/#\//)){
 		throw new Error('Cannot import a schema with property path');
 	}
+	if(this.parsed[id]) return this.parsed[id];
 	this.scan(id, schema, '');
 	const parsed = this.resolve(id, schema);
-	if(!this.parsed[id]) this.parsed[id] = parsed;
+	this.parsed[id] = parsed;
 	return parsed;
 };
 SchemaRegistry.prototype.scanMap = function scan(id, map, path){
@@ -195,7 +196,7 @@ SchemaRegistry.prototype.lookup = function lookup(id){
 	const idFrag = id.substring(idBase.length + 1);
 
 	// Try to decend the property path, if any
-	if(self.source[idBase] && idFrag){
+	if(self.source[idBase] && idFrag && idFrag[0]==='/'){
 		var resolved = self.source[idBase] || self.source[idBase + '#'];
 		var path = idBase + '#';
 		if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(idBase));
@@ -209,7 +210,7 @@ SchemaRegistry.prototype.lookup = function lookup(id){
 		self.parsed[path] = new Schema(path, resolved, self);
 		return self.parsed[path];
 	}
-	throw new Error(`Could not resolve schema <${idBase}>`);
+	throw new Error(`Could not resolve schema <${id}>`);
 };
 
 SchemaRegistry.prototype.resolve = function resolve(base, schema){
@@ -813,14 +814,14 @@ function ValidateLayer(schema, errors){
 	// an array
 	validator.allOf = schema.allOf.map(function(s){
 		var subvalidator = new ValidateLayer(s, validator.errors);
-		subvalidator.side.forEach(function(v){ validator.side.push(v); });
+		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		return subvalidator;
 	});
 	// array of arrays
 	validator.anyOf = schema.anyOf.map(function(arr){
 		return arr.map(function(s){
 			var subvalidator = new ValidateLayer(s);
-			subvalidator.side.forEach(function(v){ validator.side.push(v); });
+			subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 			return subvalidator;
 		});
 	});
@@ -828,20 +829,20 @@ function ValidateLayer(schema, errors){
 	validator.oneOf = schema.oneOf.map(function(arr){
 		return arr.map(function(s){
 			var subvalidator = new ValidateLayer(s);
-			subvalidator.side.forEach(function(v){ validator.side.push(v); });
+			subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 			return subvalidator;
 		});
 	});
 	// just one array of not
 	validator.not = schema.not.map(function(s){
 		var subvalidator = new ValidateLayer(s);
-		subvalidator.side.forEach(function(v){ validator.side.push(v); });
+		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		return subvalidator;
 	});
 	// array of allowed literal values
 	if(schema.enum) validator.enum = schema.enum.map(function(s){
 		var subvalidator = new ValidateLayer(s);
-		subvalidator.side.forEach(function(v){ validator.side.push(v); });
+		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		return subvalidator;
 	});
 	// external reference to parse
@@ -850,7 +851,7 @@ function ValidateLayer(schema, errors){
 		const subschema = schema.registry.lookup(subschemaURI);
 		if(!subschema) throw new Error('Could not lookup schema <'+subschemaURI+'>');
 		const subvalidator = new ValidateLayer(subschema, validator.errors);
-		subvalidator.side.forEach(function(v){ validator.side.push(v); });
+		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		validator.$ref = subvalidator;
 	}
 }
@@ -1071,11 +1072,12 @@ ValidateLayer.prototype.finish = function finish(layer){
 	}
 
 	// "const"
-	// Compute not/oneOf/anyOf failures
 	const notFailures = self.not.filter(function(v){ return v.errors.length===0; });
 	if(notFailures.length){
 		self.addErrorList(new ValidationError('Expected "not" to fail', layer, this, 'not'));
 	}
+
+	// allOf and $ref don't need entries here because they add errors directly to this instance's error list
 
 	// oneOf
 	self.oneOf.forEach(function(arr){
