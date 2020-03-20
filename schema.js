@@ -75,111 +75,205 @@ function SchemaRegistry(){
 	this.parsed = {};
 	this.resolveFragment = resolveFragmentDefault;
 }
-SchemaRegistry.prototype.import = function importSchema(id, schema, path){
-	// Strip trailing empty fragment
-	if(id.match(/#$/)){
-		id = id.substring(0, id.length-1);
-	}else if(id.match(/#\//)){
-		throw new Error('Cannot import a schema with property path');
+function encodeKey(key){
+	return encodeURIComponent(key);
+}
+function buildPropertyPathFragment(keys){
+	return keys.map(function(v){
+		return '/'+encodeKey(v);
+	}).join('');
+}
+function computeSelf(base, path, schema){
+	const idKeyword = schema.$id || schema.id || base;
+	const selfUri = uriResolve(base, idKeyword);
+	const documentUri = selfUri.split('#', 1)[0];
+	const pathUri = documentUri + '#' + buildPropertyPathFragment(path);
+	// If documentUri is a # and additional characters, it cannot co-exist with $anchir
+	if(schema.$anchor && selfUri > documentUri.length+1){
+		throw new Error('Schema cannot have both $anchor and an $id fragment');
 	}
-	if(this.parsed[id]) return this.parsed[id];
-	this.scan(id, schema, '');
-	const parsed = this.resolve(id, schema);
-	this.parsed[id] = parsed;
-	return parsed;
-};
-SchemaRegistry.prototype.scanMap = function scan(id, map, path){
-	var self = this;
-	if(map) for(var n in map) if(typeof map[n]=='object') self.scan(id, map[n], path+'/'+n);
-};
-SchemaRegistry.prototype.scan = function scan(base, schema, path){
-	var self = this;
-	if(schema===undefined){
-		return;
+	if(schema.$anchor){
+		return { base:documentUri, pathUri, documentUri, anchor:schema.$anchor, id:documentUri+'#'+schema.$anchor };
 	}
-	if(!base){
-		throw new Error('Argument `base` required');
-	}
-	var id = base;
-	if(!path){
-		path = '';
-	}
-	if(Array.isArray(schema)){
-		schema.forEach(function(v, i){ self.scan(base, schema[i], path+'/'+i); });
-		return;
-	}
-	// if(typeof schema==='string'){
-	// 	var id = uriResolve(base, schema);
-	// 	if(!this.source[id]) this.source[id] = null;
-	// 	this.seen[id] = true;
-	// }
-	if(typeof schema==='boolean'){
-		// Alias boolean form to an object schema
-		if(schema===true){
-			schema = { id:'_:true' };
-		}else if(schema===false){
-			schema = { id:'_:false', type:[] };
-		}
-		// continue to 'object'
-	}
-	if(typeof schema==='object'){
-		var uriref = schema.$id || schema.id;
-		if(uriref){
-			id = uriResolve(base, uriref);
+	if(selfUri[documentUri.length]==='#'){
+		if(selfUri[documentUri.length+1]==='/'){
+			throw new Error('Invalid property path in fragment');
 		}else{
-			id = base + '#' + path;
+			const anchor = selfUri.substring(documentUri.length+1);
+			return { base:documentUri, pathUri, documentUri, anchor, id:documentUri+'#'+anchor };
 		}
-		if(schema.$anchor){
-			if(uriref.indexOf('#') >= 0) throw new Error('Cannot use $anchor on fragment URI');
-			uriref = uriref + '#' + schema.$anchor;
+	}else if(schema.$id || schema.id){
+		return { base:documentUri, pathUri, documentUri, anchor:null, id:documentUri };
+	}
+	return { base:documentUri, pathUri };
+}
+
+function addPath(paths, key, newDocument){
+	var subpath = {};
+	if(typeof key === 'string'){
+		for(var k in paths){
+			subpath[k] = paths[k].concat([encodeKey(key)]);
 		}
-		// Strip trailing empty fragment
-		if(id.match(/#$/)){
-			id = id.substring(0, id.length-1);
+	}
+	if(typeof newDocument === 'string'){
+		subpath[newDocument] = [];
+	}
+}
+
+// Functions to register a schema from all of the following, if any:
+// - the URI it was downloaded from
+
+// Import is used when a schema is always available under the given URI
+SchemaRegistry.prototype.import = function importSchema(id, schemaObject){
+	// console.log(`import <${id}>`);
+	const self = this;
+	if(self.source[id]){
+		const oldSchema = JSON.stringify(self.source[id]);
+		const newSchema = JSON.stringify(schemaObject);
+		if(oldSchema!==newSchema) throw new Error('Schema already defined: <'+id+'>');
+		// At this point, this schema is already imported with an identical definition
+	}
+	if(this.parsed[id]){
+		// console.log('Define '+id, schema);
+		return this.parsed[id];
+	}
+	const schema = self.scanSchema(id, schemaObject);
+	if(!(schema instanceof Schema)) throw new Error('scanSchema returned unexpected');
+	this.source[id] = schemaObject;
+	this.parsed[id] = schema;
+	return schema;
+};
+
+SchemaRegistry.prototype.scan = function scan(schemaObject, base){
+	return this.scanSchema(base || schemaObject.$id, schemaObject);
+};
+
+// Add a schema to the Registry
+// Registered under:
+// - The $id that it declares, if any
+// - The $anchor that it declares, if any
+SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, paths){
+	const self = this;
+	const idList = [];
+	paths = paths || [];
+	if(schemaObject===undefined) return;
+	if(typeof base !== 'string') throw new Error('Argument `base` must be a string');
+	const schema = new Schema(base, schemaObject, self);
+	const newSchema = JSON.stringify(schemaObject);
+	// if `id` is a reference and not a full URI, and there's no base to resolve it against, then throw an error
+	// Becuase a relative URI Reference needs a base to resolve against, and we don't want to assume one for the application
+	// the schema's id, as an unresolved URI Reference
+	if(typeof base !== 'string') throw new Error('Expected a string `base` argument');
+	var idRef = schemaObject.$id || schemaObject.id;
+	if(idRef){
+		var fullId = uriResolve(base, idRef);
+		// const baseId = fullId.split('#',1)[0];
+		// const anchor = fullId.substring(baseId.length+1);
+	}
+	if(schemaObject.$anchor){
+		fullId = uriResolve(fullId || base, '#'+schemaObject.$anchor);
+	}
+	if(fullId){
+		idList.push(fullId);
+	}
+	const baseId = idList[0] || base;
+	// if(typeof schema==='string'){
+	// 	var baseId = uriResolve(base, schema);
+	// 	if(!this.source[baseId]) this.source[baseId] = null;
+	// 	this.seen[baseId] = true;
+	// }
+	if(typeof schemaObject==='object'){
+		if(Array.isArray(schemaObject.items)){
+			self.scanList(baseId, schemaObject.items, addPath(paths, '/items'));
+		}else{
+			self.scanSchema(baseId, schemaObject.items, addPath(paths, '/items'));
 		}
-		// Throw error if schema is being re-defined with different definition
-		if(self.source[id]){
-			var oldSchema = JSON.stringify(self.source[id]);
-			var newSchema = JSON.stringify(schema);
-			if(oldSchema!==newSchema) throw new Error('Schema already defined');
-			// This schema is, presumably, already imported with an identical definition
-			return;
-		}
-		self.source[id] = schema;
-		self.scan(id, schema.items, path+'/items');
-		self.scan(id, schema.extends, path+'/extends');
-		self.scan(id, schema.additionalItems, path+'/additionalItems');
-		self.scanMap(id, schema.properties, path+'/properties');
-		self.scan(id, schema.additionalProperties, path+'/additionalProperties');
-		self.scanMap(id, schema.definitions, path+'/definitions');
-		self.scanMap(id, schema.$defs, path+'/$defs');
-		self.scanMap(id, schema.patternProperties, path+'/patternProperties');
-		self.scanMap(id, schema.dependencies, path+'/dependencies');
-		self.scan(id, schema.disallow, path+'/disallow');
-		self.scan(id, schema.allOf, path+'/allOf');
-		self.scan(id, schema.anyOf, path+'/anyOf');
-		self.scan(id, schema.oneOf, path+'/oneOf');
-		self.scan(id, schema.not, path+'/not');
-		if(schema.$ref!==undefined){
-			if(typeof schema.$ref==='string'){
-				var refUri = uriResolve(id, schema.$ref);
+		self.scanSchema(baseId, schemaObject.additionalItems, addPath(paths, '/additionalItems'));
+		self.scanMap(baseId, schemaObject.properties, addPath(paths, '/properties'));
+		self.scanSchema(baseId, schemaObject.additionalProperties, addPath(paths, '/additionalProperties'));
+		self.scanMap(baseId, schemaObject.definitions, addPath(paths, '/definitions'));
+		self.scanMap(baseId, schemaObject.$defs, addPath(paths, '/$defs'));
+		self.scanMap(baseId, schemaObject.patternProperties, addPath(paths, '/patternProperties'));
+		self.scanMap(baseId, schemaObject.dependencies, addPath(paths, '/dependencies'));
+		self.scanSchema(baseId, schemaObject.disallow, addPath(paths, '/disallow'));
+		self.scanList(baseId, schemaObject.allOf, addPath(paths, '/allOf'));
+		self.scanList(baseId, schemaObject.anyOf, addPath(paths, '/anyOf'));
+		self.scanList(baseId, schemaObject.oneOf, addPath(paths, '/oneOf'));
+		self.scanSchema(baseId, schemaObject.not, addPath(paths, '/not'));
+		// obsolete keyword
+		self.scanSchema(baseId, schemaObject.extends, addPath(paths, '/extends'));
+		if(schemaObject.$ref!==undefined){
+			if(typeof schemaObject.$ref==='string'){
+				var refUri = uriResolve(baseId, schemaObject.$ref);
 				if(self.seen[refUri]){
 					//throw new Error('Already imported: '+refUri);
 				}else{
-					self.seen[refUri] = schema;
-					self.pending.push([refUri, schema]);
+					self.seen[refUri] = schemaObject;
+					self.pending.push([refUri, schemaObject]);
 				}
 			}else{
 				throw new Error('Expected $ref to be a string');
 			}
 		}
+	}else if(typeof schemaObject==='boolean'){
+		// void
 	}else{
 		throw new Error('Unexpected value for schema (expected object or boolean)');
 	}
+	idList.forEach(function(id){
+		if(self.source[id]){
+			const oldSchema = JSON.stringify(self.source[id]);
+			if(oldSchema!==newSchema) throw new Error('Schema already defined: <'+id+'>');
+			// At this point, this schema is already imported with an identical definition
+		}
+	});
+	idList.forEach(function(id){
+		if(!self.source[id]) self.source[id] = schemaObject;
+		if(!self.parsed[id]) self.parsed[id] = schema;
+	});
+	return schema;
 };
+
+SchemaRegistry.prototype.scanMap = function scanMap(base, map, anchor, paths){
+	const self = this;
+	if(map) for(var n in map) if(typeof map[n]=='object') self.scanSchema(base, map[n], addPath(paths, n));
+};
+
+SchemaRegistry.prototype.scanList = function scanList(base, schemaList, anchor, paths){
+	const self = this;
+	// rewrite all this
+	if(!Array.isArray(schemaList)) return;
+	return schemaList.map(function(schemaObject, i){
+		return self.scanSchema(base, schemaObject);
+	});
+};
+
+// Add a schema to the Registry under a specific `id`
+// Don't scan subschemas, I guess
+SchemaRegistry.prototype.register = function registerSchema(id, schemaObject){
+	const self = this;
+	// console.log(`register <${id}>`);
+	if(self.source[id]){
+		const oldSchema = JSON.stringify(self.source[id]);
+		const newSchema = JSON.stringify(schemaObject);
+		if(oldSchema!==newSchema) throw new Error('Schema already defined: <'+id+'>');
+		// At this point, this schema is already imported with an identical definition
+	}
+	if(this.parsed[id]){
+		// console.log('Define '+id, schema);
+		return this.parsed[id];
+	}
+	const schema = new Schema(id, schemaObject, self);
+	this.source[id] = schemaObject;
+	this.parsed[id] = schema;
+	return schema;
+};
+
 SchemaRegistry.prototype.lookup = function lookup(id){
 	const self = this;
 	if(typeof id!=='string') throw new Error('`id` must be a string');
+	// Trim trailing fragment
+	if(id[id.length-1]==='#') id = id.substring(0, id.length-1);
 
 	// Return an already existing Schema
 	if(self.parsed[id]){
@@ -191,8 +285,7 @@ SchemaRegistry.prototype.lookup = function lookup(id){
 		return self.parsed[id];
 	}
 
-	const idParts = id.split('#', 1);
-	const idBase = idParts[0];
+	const idBase = id.split('#', 1)[0];
 	const idFrag = id.substring(idBase.length + 1);
 
 	// Try to decend the property path, if any

@@ -23,16 +23,19 @@ var validationTestFiles = [
 	'draft2019-09/additionalItems.json',
 	'draft2019-09/additionalProperties.json',
 	'draft2019-09/allOf.json',
+	'draft2019-09/anchor.json',
 	'draft2019-09/anyOf.json',
 	'draft2019-09/boolean_schema.json',
 	// 'draft2019-09/const.json',
 	// 'draft2019-09/contains.json',
 	'draft2019-09/default.json',
 	'draft2019-09/defs.json',
-	// 'draft2019-09/dependencies.json',
+	// 'draft2019-09/dependentRequired.json',
+	// 'draft2019-09/dependentSchemas.json',
 	// 'draft2019-09/enum.json',
 	'draft2019-09/exclusiveMaximum.json',
 	'draft2019-09/exclusiveMinimum.json',
+	'draft2019-09/format.json',
 	// 'draft2019-09/if-then-else.json',
 	'draft2019-09/items.json',
 	'draft2019-09/maxItems.json',
@@ -54,6 +57,8 @@ var validationTestFiles = [
 	// 'draft2019-09/refRemote.json',
 	'draft2019-09/required.json',
 	'draft2019-09/type.json',
+	// 'draft2019-09/unevaluatedItems.json',
+	// 'draft2019-09/unevaluatedProperties.json',
 	// 'draft2019-09/uniqueItems.json',
 	// 'draft2019-09/optional/bignum.json',
 	// 'draft2019-09/optional/content.json',
@@ -114,4 +119,3 @@ describe('Schema tests', function(){
 		});
 	});
 });
-
