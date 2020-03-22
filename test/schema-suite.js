@@ -100,7 +100,7 @@ describe('Schema tests', function(){
 							var tjson = JSON.stringify(t.data, null, "\t");
 							var registry = new SchemaRegistry;
 							// This passes just one test
-							metaschemas.forEach(function(v){ registry.import(v.$id, v); });
+							metaschemas.forEach(function(v){ registry.scan(v); });
 							var schema = registry.import('http://localhost/'+filename+'/'+i+'/schema', schemaTest.schema);
 							assert(schema instanceof Schema);
 							var p = schema.createParser({charset:'string'});

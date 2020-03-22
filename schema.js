@@ -108,16 +108,18 @@ function computeSelf(base, path, schema){
 	return { base:documentUri, pathUri };
 }
 
-function addPath(paths, key, newDocument){
+function addPath(paths, baseId, key){
 	var subpath = {};
+	if(typeof baseId === 'string' && !subpath[baseId]){
+		subpath[baseId] = [];
+	}
+	// console.log('addPath', paths, key);
 	if(typeof key === 'string'){
 		for(var k in paths){
 			subpath[k] = paths[k].concat([encodeKey(key)]);
 		}
 	}
-	if(typeof newDocument === 'string'){
-		subpath[newDocument] = [];
-	}
+	return subpath;
 }
 
 // Functions to register a schema from all of the following, if any:
@@ -155,10 +157,12 @@ SchemaRegistry.prototype.scan = function scan(schemaObject, base){
 SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, paths){
 	const self = this;
 	const idList = [];
-	paths = paths || [];
+	paths = paths || {};
 	if(schemaObject===undefined) return;
 	if(typeof base !== 'string') throw new Error('Argument `base` must be a string');
-	const schema = new Schema(base, schemaObject, self);
+	// const schemaId = base + ( (paths[base] && paths[base].length) ? ('#'+buildPropertyPathFragment(paths[base])) : '' );
+	const schemaId = base + '#' + (paths[base]?buildPropertyPathFragment(paths[base]):'');
+	const schema = new Schema(schemaId, schemaObject, self);
 	const newSchema = JSON.stringify(schemaObject);
 	// if `id` is a reference and not a full URI, and there's no base to resolve it against, then throw an error
 	// Becuase a relative URI Reference needs a base to resolve against, and we don't want to assume one for the application
@@ -184,24 +188,50 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 	// }
 	if(typeof schemaObject==='object'){
 		if(Array.isArray(schemaObject.items)){
-			self.scanList(baseId, schemaObject.items, addPath(paths, '/items'));
+			schema.sequence = self.scanList(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
 		}else{
-			self.scanSchema(baseId, schemaObject.items, addPath(paths, '/items'));
+			schema.itemValues = self.scanSchema(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
 		}
-		self.scanSchema(baseId, schemaObject.additionalItems, addPath(paths, '/additionalItems'));
-		self.scanMap(baseId, schemaObject.properties, addPath(paths, '/properties'));
-		self.scanSchema(baseId, schemaObject.additionalProperties, addPath(paths, '/additionalProperties'));
-		self.scanMap(baseId, schemaObject.definitions, addPath(paths, '/definitions'));
-		self.scanMap(baseId, schemaObject.$defs, addPath(paths, '/$defs'));
-		self.scanMap(baseId, schemaObject.patternProperties, addPath(paths, '/patternProperties'));
-		self.scanMap(baseId, schemaObject.dependencies, addPath(paths, '/dependencies'));
-		self.scanSchema(baseId, schemaObject.disallow, addPath(paths, '/disallow'));
-		self.scanList(baseId, schemaObject.allOf, addPath(paths, '/allOf'));
-		self.scanList(baseId, schemaObject.anyOf, addPath(paths, '/anyOf'));
-		self.scanList(baseId, schemaObject.oneOf, addPath(paths, '/oneOf'));
-		self.scanSchema(baseId, schemaObject.not, addPath(paths, '/not'));
+		if(schemaObject.additionalItems){
+			schema.additionalItems = self.scanSchema(baseId, schemaObject.additionalItems, addPath(paths, baseId, 'additionalItems'));
+		}
+		if(schemaObject.properties){
+			schema.properties = self.scanMap(baseId, schemaObject.properties, addPath(paths, baseId, 'properties'));
+		}
+		if(schemaObject.additionalProperties){
+			schema.additionalProperties = self.scanSchema(baseId, schemaObject.additionalProperties, addPath(paths, baseId, 'additionalProperties'));
+		}
+		if(schemaObject.definitions){
+			schema.definitions = self.scanMap(baseId, schemaObject.definitions, addPath(paths, baseId, 'definitions'));
+		}
+		if(schemaObject.$defs){
+			schema.$defs = self.scanMap(baseId, schemaObject.$defs, addPath(paths, baseId, '$defs'));
+		}
+		if(schemaObject.patternProperties){
+			schema.patternProperties = self.scanMap(baseId, schemaObject.patternProperties, addPath(paths, baseId, 'patternProperties'));
+		}
+		if(schemaObject.dependencies){
+			schema.dependencies = self.scanMap(baseId, schemaObject.dependencies, addPath(paths, baseId, 'dependencies'));
+		}
+		if(schemaObject.disallow){
+			schema.disallow = self.scanSchema(baseId, schemaObject.disallow, addPath(paths, baseId, 'disallow'));
+		}
+		if(schemaObject.allOf){
+			schema.allOf = self.scanList(baseId, schemaObject.allOf, addPath(paths, baseId, 'allOf'));
+		}
+		if(schemaObject.anyOf){
+			schema.anyOf = [ self.scanList(baseId, schemaObject.anyOf, addPath(paths, baseId, 'anyOf')) ];
+		}
+		if(schemaObject.oneOf){
+			schema.oneOf = [ self.scanList(baseId, schemaObject.oneOf, addPath(paths, baseId, 'oneOf')) ];
+		}
+		if(schemaObject.not){
+			schema.not =  [ self.scanSchema(baseId, schemaObject.not, addPath(paths, baseId, 'not')) ];
+		}
 		// obsolete keyword
-		self.scanSchema(baseId, schemaObject.extends, addPath(paths, '/extends'));
+		if(schemaObject.extends){
+			schema.extends = self.scanSchema(baseId, schemaObject.extends, addPath(paths, baseId, 'extends'));
+		}
 		if(schemaObject.$ref!==undefined){
 			if(typeof schemaObject.$ref==='string'){
 				var refUri = uriResolve(baseId, schemaObject.$ref);
@@ -234,17 +264,30 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 	return schema;
 };
 
-SchemaRegistry.prototype.scanMap = function scanMap(base, map, anchor, paths){
+SchemaRegistry.prototype.scanMap = function scanMap(base, dict, paths){
+	if(!dict || typeof dict!=='object' || Array.isArray(dict)){
+		throw new Error('Expected schema at <'+base+'#'+(paths[base]||'')+'> to be an object');
+	}
 	const self = this;
-	if(map) for(var n in map) if(typeof map[n]=='object') self.scanSchema(base, map[n], addPath(paths, n));
+	const map = {};
+	for(var n in dict){
+		const subschema = dict[n];
+		if(typeof subschema!=='boolean' && (!subschema || typeof subschema!=='object' || Array.isArray(subschema))){
+			throw new Error('Expected schema at <'+base+'#'+(paths[base]||'')+'> to be an object');
+		}
+		map[n] = self.scanSchema(base, subschema, addPath(paths, base, n));
+	}
+	return map;
 };
 
-SchemaRegistry.prototype.scanList = function scanList(base, schemaList, anchor, paths){
+SchemaRegistry.prototype.scanList = function scanList(base, schemaList, paths){
 	const self = this;
 	// rewrite all this
-	if(!Array.isArray(schemaList)) return;
+	if(!Array.isArray(schemaList)){
+		throw new Error('Expected schema at <'+base+'#'+(paths[base]||'')+'> to be an array');
+	}
 	return schemaList.map(function(schemaObject, i){
-		return self.scanSchema(base, schemaObject);
+		return self.scanSchema(base, schemaObject, addPath(paths, base, i.toString()));
 	});
 };
 
@@ -325,9 +368,15 @@ SchemaRegistry.prototype.getUnresolved = function(){
 // Represents a complete JSON Schema and its keywords
 module.exports.Schema = Schema;
 function Schema(id, schema, registry){
+	// console.log('Schema', id);
 	var self = this;
+	self.id = id;
 
 	// Core
+	self.allOf = [];
+	self.anyOf = [];
+	self.oneOf = [];
+	self.not = [];
 
 	if(!registry) registry = new SchemaRegistry;
 	self.registry = registry;
@@ -348,43 +397,14 @@ function Schema(id, schema, registry){
 	}else if(!schema || typeof schema!=='object'){
 		throw new Error('Expected a valid schema (object or boolean)');
 	}
-	if(schema) var idref = schema.$id || schema.id;
-	if(idref) self.id = uriResolve(self.id, idref) || '_:';
+	const idref = schema.$id || schema.id;
+	if(typeof idref === 'string'){
+		self.id = uriResolve(self.id, idref);
+		if(!self.id) throw new Error('Expected schema to have an id');
+	}
 
 	// General
-	self.not = [];
-	if(schema.not!==undefined){
-		if(isSchema(schema.not)){
-			self.not.push(self.registry.resolve(self.id, schema.not));
-		}else{
-			throw new Error('Expected `not` to be a schemas');
-		}
-	}
 
-	self.anyOf = [];
-	if(Array.isArray(schema.anyOf)){
-		self.anyOf.push(schema.anyOf.map(function(s2, i){
-			return self.registry.resolve(self.id, s2);
-		}));
-	}
-
-	self.oneOf = [];
-	if(schema.oneOf!==undefined){
-		if(Array.isArray(schema.oneOf)){
-			self.oneOf.push(schema.oneOf.map(function(s2, i){
-				return self.registry.resolve(self.id, s2);
-			}));
-		}else{
-			throw new Error('Expected `oneOf` to be an array of schemas');
-		}
-	}
-
-	self.allOf = [];
-	if(Array.isArray(schema.allOf)){
-		schema.allOf.forEach(function(s2, i){
-			self.allOf.push(self.registry.resolve(self.id, s2));
-		});
-	}
 
 	if(schema.type===undefined){
 		self.allowNumber = self.allowFraction = self.allowString = self.allowBoolean = self.allowNull = self.allowObject = self.allowArray = true;
@@ -408,6 +428,12 @@ function Schema(id, schema, registry){
 		throw new Error('Unexpected value for "type" keyword (expected string or array)');
 	}
 	self.allowedTypes = [];
+	if(self.allowArray) self.allowedTypes.push("array");
+	if(self.allowObject) self.allowedTypes.push("object");
+	if(self.allowString) self.allowedTypes.push("string");
+	if(self.allowNumber) self.allowedTypes.push("number");
+	if(self.allowBoolean) self.allowedTypes.push("boolean");
+	if(self.allowNull) self.allowedTypes.push("null");
 
 
 	// Object
@@ -680,9 +706,6 @@ Schema.prototype.exportRules = function exportRules(){
 		EndBoolean: [],
 		StartNull: [],
 	};
-
-	// General
-
 
 	// Object
 	if(schema.allowObject===false){
@@ -1141,7 +1164,9 @@ ValidateLayer.prototype.finish = function finish(layer){
 
 	// Trigger finish on child validators
 	self.allOf.forEach(function(v){ v.finish(layer); });
-	if(self.$ref) self.$ref.finish(layer);
+	if(self.$ref){
+		self.$ref.finish(layer);
+	}
 	self.anyOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
 	self.oneOf.forEach(function(arr){ arr.forEach(function(v){ v.finish(layer); }); });
 	self.not.forEach(function(v){ v.finish(layer); });
