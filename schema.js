@@ -55,6 +55,10 @@ function isSchema(s){
 	return (typeof s=='object' && !Array.isArray(s)) || (typeof s=='boolean');
 }
 
+function isObject(v){
+	return v && typeof v==='object' && !Array.isArray(v);
+}
+
 module.exports.resolveFragmentDefault = resolveFragmentDefault;
 function resolveFragmentDefault(fragment){
 	return fragment.split('/').slice(1).map(function(v){
@@ -75,12 +79,9 @@ function SchemaRegistry(){
 	this.parsed = {};
 	this.resolveFragment = resolveFragmentDefault;
 }
-function encodeKey(key){
-	return encodeURIComponent(key);
-}
 function buildPropertyPathFragment(keys){
 	return keys.map(function(v){
-		return '/'+encodeKey(v);
+		return '/'+encodeURIComponent(v);
 	}).join('');
 }
 function computeSelf(base, path, schema){
@@ -110,14 +111,14 @@ function computeSelf(base, path, schema){
 
 function addPath(paths, baseId, key){
 	var subpath = {};
-	if(typeof baseId === 'string' && !subpath[baseId]){
-		subpath[baseId] = [];
-	}
 	// console.log('addPath', paths, key);
 	if(typeof key === 'string'){
 		for(var k in paths){
-			subpath[k] = paths[k].concat([encodeKey(key)]);
+			subpath[k] = paths[k].concat([key]);
 		}
+	}
+	if(typeof baseId === 'string' && !subpath[baseId]){
+		subpath[baseId] = [key];
 	}
 	return subpath;
 }
@@ -189,26 +190,36 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 	if(typeof schemaObject==='object'){
 		if(Array.isArray(schemaObject.items)){
 			schema.sequence = self.scanList(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
-		}else{
-			schema.itemValues = self.scanSchema(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
-		}
-		if(schemaObject.additionalItems){
-			schema.additionalItems = self.scanSchema(baseId, schemaObject.additionalItems, addPath(paths, baseId, 'additionalItems'));
+			if(schemaObject.additionalItems !== undefined){
+				schema.additionalItems = self.scanSchema(baseId, schemaObject.additionalItems, addPath(paths, baseId, 'additionalItems'));
+			}else if(schemaObject.additionalItems !== undefined){
+				throw new Error('Expected `additionalItems` to be a schema (object or boolean)');
+			}
+		}else if(isSchema(schemaObject.items)){
+			schema.additionalItems = self.scanSchema(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
+		}else if(schemaObject.items !== undefined){
+			throw new Error('Expected `items` to be a schema or array of schemas (object or boolean)');
 		}
 		if(schemaObject.properties){
 			schema.properties = self.scanMap(baseId, schemaObject.properties, addPath(paths, baseId, 'properties'));
 		}
-		if(schemaObject.additionalProperties){
+		if(isSchema(schemaObject.additionalProperties)){
 			schema.additionalProperties = self.scanSchema(baseId, schemaObject.additionalProperties, addPath(paths, baseId, 'additionalProperties'));
+		}else if(schemaObject.additionalProperties !== undefined){
+			throw new Error('Expected `additionalProperties` to be a schema (object or boolean)');
 		}
-		if(schemaObject.definitions){
+		if(isObject(schemaObject.definitions)){
 			schema.definitions = self.scanMap(baseId, schemaObject.definitions, addPath(paths, baseId, 'definitions'));
+		}else if(schemaObject.definitions !== undefined){
+			throw new Error('Expected `definitions` to be an object (string->schema map)');
 		}
 		if(schemaObject.$defs){
 			schema.$defs = self.scanMap(baseId, schemaObject.$defs, addPath(paths, baseId, '$defs'));
 		}
-		if(schemaObject.patternProperties){
+		if(isObject(schemaObject.patternProperties)){
 			schema.patternProperties = self.scanMap(baseId, schemaObject.patternProperties, addPath(paths, baseId, 'patternProperties'));
+		}else if(schemaObject.patternProperties !== undefined){
+			throw new Error('Expected `patternProperties` to be an object (string->schema map)');
 		}
 		if(schemaObject.dependencies){
 			schema.dependencies = self.scanMap(baseId, schemaObject.dependencies, addPath(paths, baseId, 'dependencies'));
@@ -216,34 +227,40 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 		if(schemaObject.disallow){
 			schema.disallow = self.scanSchema(baseId, schemaObject.disallow, addPath(paths, baseId, 'disallow'));
 		}
-		if(schemaObject.allOf){
+		if(Array.isArray(schemaObject.allOf)){
 			schema.allOf = self.scanList(baseId, schemaObject.allOf, addPath(paths, baseId, 'allOf'));
+		}else if(schemaObject.allOf !== undefined){
+			throw new Error('Expected `allOf` to be an array of schemas');
 		}
-		if(schemaObject.anyOf){
+		if(Array.isArray(schemaObject.anyOf)){
 			schema.anyOf = [ self.scanList(baseId, schemaObject.anyOf, addPath(paths, baseId, 'anyOf')) ];
+		}else if(schemaObject.anyOf !== undefined){
+			throw new Error('Expected `anyOf` to be an array of schemas');
 		}
 		if(schemaObject.oneOf){
 			schema.oneOf = [ self.scanList(baseId, schemaObject.oneOf, addPath(paths, baseId, 'oneOf')) ];
+		}else if(schemaObject.oneOf !== undefined){
+			throw new Error('Expected `oneOf` to be an array of schemas');
 		}
-		if(schemaObject.not){
+		if(isSchema(schemaObject.not)){
 			schema.not =  [ self.scanSchema(baseId, schemaObject.not, addPath(paths, baseId, 'not')) ];
+		}else if(schemaObject.not !== undefined){
+			throw new Error('Expected `not` to be a schema');
 		}
 		// obsolete keyword
 		if(schemaObject.extends){
 			schema.extends = self.scanSchema(baseId, schemaObject.extends, addPath(paths, baseId, 'extends'));
 		}
-		if(schemaObject.$ref!==undefined){
-			if(typeof schemaObject.$ref==='string'){
-				var refUri = uriResolve(baseId, schemaObject.$ref);
-				if(self.seen[refUri]){
-					//throw new Error('Already imported: '+refUri);
-				}else{
-					self.seen[refUri] = schemaObject;
-					self.pending.push([refUri, schemaObject]);
-				}
+		if(typeof schemaObject.$ref==='string'){
+			var refUri = uriResolve(baseId, schemaObject.$ref);
+			if(self.seen[refUri]){
+				//throw new Error('Already imported: '+refUri);
 			}else{
-				throw new Error('Expected $ref to be a string');
+				self.seen[refUri] = schemaObject;
+				self.pending.push([refUri, schemaObject]);
 			}
+		}else if(schemaObject.$ref !== undefined){
+			throw new Error('Expected $ref to be a string');
 		}
 	}else if(typeof schemaObject==='boolean'){
 		// void
@@ -334,17 +351,21 @@ SchemaRegistry.prototype.lookup = function lookup(id){
 	// Try to decend the property path, if any
 	if(self.source[idBase] && idFrag && idFrag[0]==='/'){
 		var resolved = self.source[idBase] || self.source[idBase + '#'];
-		var path = idBase + '#';
+		var path = [];
 		if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(idBase));
 		var hier = self.resolveFragment(idFrag);
 		for(var i=0; i<hier.length; i++){
 			var key = hier[i];
-			path += '/' + encodeURIComponent(key);
+			path.push(key);
 			resolved = resolved[key];
-			if(!resolved) throw new Error('Could not resolve schema '+JSON.stringify(path));
+			if(resolved===undefined) throw new Error('Could not resolve schema <'+idBase + '#' + buildPropertyPathFragment(path)+'>');
 		}
-		self.parsed[path] = new Schema(path, resolved, self);
-		return self.parsed[path];
+		// const resolvedUri = idBase + '#' + buildPropertyPathFragment(path);
+		if(self.parsed[id]){
+			throw new Error('Assertion fail: schema already defined');
+		}
+		self.parsed[id] = new Schema(id, resolved, self);
+		return self.parsed[id];
 	}
 	throw new Error(`Could not resolve schema <${id}>`);
 };
@@ -452,39 +473,16 @@ function Schema(id, schema, registry){
 	}
 
 	self.properties = {};
-	if(schema.properties!==undefined){
-		for(const k in schema.properties){
-			const subschema = schema.properties[k];
-			if(isSchema(subschema)){
-				self.properties[k] = self.registry.resolve(self.id, subschema);
-			}else{
-				throw new Error('Expected a schema for properties[k]');
-			}
-		}
-	}
 
 	self.patternProperties = {};
 	self.patternPropertiesRegExp = {};
 	if(schema.patternProperties!==undefined){
 		for(const k in schema.patternProperties){
-			const subschema = schema.patternProperties[k];
-			if(isSchema(subschema)){
-				self.patternProperties[k] = self.registry.resolve(self.id, subschema);
-				self.patternPropertiesRegExp[k] = new RegExp(k);
-			}else{
-				throw new Error('Expected a schema for patternProperties[k]');
-			}
+			self.patternPropertiesRegExp[k] = new RegExp(k);
 		}
 	}
 
 	self.additionalProperties = null;
-	if(schema.additionalProperties!==undefined){
-		if(isSchema(schema.additionalProperties)){
-			self.additionalProperties = self.registry.resolve(self.id, schema.additionalProperties);
-		}else{
-			throw new Error('Expected a schema for additionalProperties');
-		}
-	}
 
 	self.minProperties = null;
 	if(schema.minProperties !== undefined){
@@ -509,19 +507,9 @@ function Schema(id, schema, registry){
 
 	// Array
 
-	self.itemValues = null;
-	self.sequence = [null];
+	self.sequence = [];
 	self.additionalItems = null;
-	if(Array.isArray(schema.items)){
-		schema.items.forEach(function(s2, i){
-			self.sequence[i] = self.registry.resolve(self.id, s2);
-		});
-		if(isSchema(schema.additionalItems)){
-			self.additionalItems = self.registry.resolve(self.id, schema.additionalItems);
-		}
-	}else if(isSchema(schema.items)){
-		self.itemValues = self.registry.resolve(self.id, schema.items);
-	}
+
 	self.minItems = null;
 	if(schema.minItems !== undefined){
 		if(typeof schema.minItems === 'number' && schema.minItems%1===0 && schema.minItems >= 0){
@@ -664,12 +652,10 @@ function Schema(id, schema, registry){
 	}
 
 	// $ref
-	if(schema.$ref !== undefined){
-		if(typeof schema.$ref === 'string'){
-			self.$ref = uriResolve(self.id, schema.$ref);
-		}else{
-			throw new Error("Expected $ref to provide a string URI Reference");
-		}
+	if(typeof schema.$ref === 'string'){
+		self.$ref = uriResolve(self.id, schema.$ref);
+	}else if(schema.$ref !== undefined){
+		throw new Error("Expected $ref to provide a string URI Reference");
 	}
 }
 
@@ -749,19 +735,6 @@ Schema.prototype.exportRules = function exportRules(){
 			if(schema.constType!=='array') return (new ValidationError('Unexpected array', layer, schema, 'const', schema.constType, 'array'));
 		});
 	}
-	if(schema.itemValues){
-		validators.EndArray.push(function testTypeArray(layer){
-			const length = layer.length;
-			if(length < schema.minItems) return (new ValidationError('Too few items', layer, schema, 'minItems', schema.minItems, length));
-		});
-	}
-	if(schema.sequence){
-		validators.EndArray.push(function testTypeArray(layer){
-			const length = layer.length;
-			if(length < schema.minItems) return (new ValidationError('Too few items', layer, schema, 'minItems', schema.minItems, length));
-		});
-	}
-
 	if(typeof schema.minItems=='number'){
 		validators.EndArray.push(function testTypeArray(layer){
 			const length = layer.length;
@@ -806,6 +779,7 @@ Schema.prototype.exportRules = function exportRules(){
 	}
 
 	// Number
+	// TODO refactor this into an if(schema.allowNumber === true) {} else {}
 	if(schema.allowNumber===false){
 		validators.StartNumber.push(function number(layer){
 			return new ValidationError(expectedType('number', schema.allowedTypes), layer, schema, 'type', schema.allowedTypes, 'number');
@@ -836,7 +810,7 @@ Schema.prototype.exportRules = function exportRules(){
 			if(n / schema.multipleOf % 1) return (new ValidationError('Number not multiple of', layer, schema, 'multipleOf', schema.multipleOf, n));
 		});
 	}
-	if(schema.allowFraction===false){
+	if(schema.allowNumber===true && schema.allowFraction===false){
 		validators.EndNumber.push(function testTypeInteger(layer, n){
 			if(n%1) return (new ValidationError('Expected an integer', layer, schema, 'type', schema.type, 'integer'));
 		});
@@ -925,19 +899,15 @@ function ValidateLayer(schema, errors){
 	}
 
 	// process anyOf/oneOf/not
-	// A set of schemas that anyOf/oneOf/not in turn depend on
-	validator.side = [];
 	// an array
 	validator.allOf = schema.allOf.map(function(s){
 		var subvalidator = new ValidateLayer(s, validator.errors);
-		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		return subvalidator;
 	});
 	// array of arrays
 	validator.anyOf = schema.anyOf.map(function(arr){
 		return arr.map(function(s){
 			var subvalidator = new ValidateLayer(s);
-			subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 			return subvalidator;
 		});
 	});
@@ -945,42 +915,40 @@ function ValidateLayer(schema, errors){
 	validator.oneOf = schema.oneOf.map(function(arr){
 		return arr.map(function(s){
 			var subvalidator = new ValidateLayer(s);
-			subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 			return subvalidator;
 		});
 	});
 	// just one array of not
 	validator.not = schema.not.map(function(s){
 		var subvalidator = new ValidateLayer(s);
-		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		return subvalidator;
 	});
 	// array of allowed literal values
 	if(schema.enum) validator.enum = schema.enum.map(function(s){
 		var subvalidator = new ValidateLayer(s);
-		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		return subvalidator;
 	});
 	// external reference to parse
 	if(schema.$ref){
-		const subschemaURI = uriResolve(schema.id, schema.$ref);
-		const subschema = schema.registry.lookup(subschemaURI);
+		const subschemaURI = schema.$ref;
+		// const subschemaURI = uriResolve(schema.id, schema.$ref);
+		const subschema = schema.registry.lookup(schema.$ref);
 		if(!subschema) throw new Error('Could not lookup schema <'+subschemaURI+'>');
 		const subvalidator = new ValidateLayer(subschema, validator.errors);
-		subvalidator.getAll().forEach(function(v){ validator.side.push(v); });
 		validator.$ref = subvalidator;
 	}
 }
 
+// Return the set of validators that must receive parser events
 ValidateLayer.prototype.getAll = function getAll() {
 	var list = [this];
-	this.side.forEach(function(v){ list.push(v); });
-	this.allOf.forEach(function(v){ list.push(v); });
-	this.anyOf.forEach(function(arr){ arr.forEach(function(v){ list.push(v); }); });
-	this.oneOf.forEach(function(arr){ arr.forEach(function(v){ list.push(v); }); });
-	this.not.forEach(function(v){ list.push(v); });
+	this.allOf.forEach(function(v){ v.getAll().forEach(function(w){ list.push(w); }); });
+	this.anyOf.forEach(function(arr){ arr.forEach(function(v){ v.getAll().forEach(function(w){ list.push(w); }); }); });
+	this.oneOf.forEach(function(arr){ arr.forEach(function(v){ v.getAll().forEach(function(w){ list.push(w); }); }); });
+	this.not.forEach(function(v){ v.getAll().forEach(function(w){ list.push(w); }); });
 	if(this.enum) this.enum.forEach(function(v){ list.push(v); });
-	if(this.$ref) list.push(this.$ref);
+	if(this.$ref){ this.$ref.getAll().forEach(function(w){ list.push(w); }); }
+	// console.log('getAll', this.schema.id, list.length);
 	return list;
 };
 
@@ -1032,12 +1000,8 @@ ValidateLayer.prototype.initItem = function initItem(k){
 	var patterns = [];
 	if(schema.sequence && schema.sequence[k]){
 		patterns.push(schema.sequence[k]);
-		self.addErrorList();
 	}else if(schema.additionalItems){
 		patterns.push(schema.additionalItems);
-	}
-	if(schema.itemValues){
-		patterns.push(schema.itemValues);
 	}
 	if(patterns.length==0) return [];
 	if(patterns.length==1) return patterns[0].validate(self.errors);
