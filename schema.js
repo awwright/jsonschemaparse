@@ -84,30 +84,6 @@ function buildPropertyPathFragment(keys){
 		return '/'+encodeURIComponent(v);
 	}).join('');
 }
-function computeSelf(base, path, schema){
-	const idKeyword = schema.$id || schema.id || base;
-	const selfUri = uriResolve(base, idKeyword);
-	const documentUri = selfUri.split('#', 1)[0];
-	const pathUri = documentUri + '#' + buildPropertyPathFragment(path);
-	// If documentUri is a # and additional characters, it cannot co-exist with $anchir
-	if(schema.$anchor && selfUri > documentUri.length+1){
-		throw new Error('Schema cannot have both $anchor and an $id fragment');
-	}
-	if(schema.$anchor){
-		return { base:documentUri, pathUri, documentUri, anchor:schema.$anchor, id:documentUri+'#'+schema.$anchor };
-	}
-	if(selfUri[documentUri.length]==='#'){
-		if(selfUri[documentUri.length+1]==='/'){
-			throw new Error('Invalid property path in fragment');
-		}else{
-			const anchor = selfUri.substring(documentUri.length+1);
-			return { base:documentUri, pathUri, documentUri, anchor, id:documentUri+'#'+anchor };
-		}
-	}else if(schema.$id || schema.id){
-		return { base:documentUri, pathUri, documentUri, anchor:null, id:documentUri };
-	}
-	return { base:documentUri, pathUri };
-}
 
 function addPath(paths, baseId, key){
 	var subpath = {};
@@ -308,27 +284,6 @@ SchemaRegistry.prototype.scanList = function scanList(base, schemaList, paths){
 	});
 };
 
-// Add a schema to the Registry under a specific `id`
-// Don't scan subschemas, I guess
-SchemaRegistry.prototype.register = function registerSchema(id, schemaObject){
-	const self = this;
-	// console.log(`register <${id}>`);
-	if(self.source[id]){
-		const oldSchema = JSON.stringify(self.source[id]);
-		const newSchema = JSON.stringify(schemaObject);
-		if(oldSchema!==newSchema) throw new Error('Schema already defined: <'+id+'>');
-		// At this point, this schema is already imported with an identical definition
-	}
-	if(this.parsed[id]){
-		// console.log('Define '+id, schema);
-		return this.parsed[id];
-	}
-	const schema = new Schema(id, schemaObject, self);
-	this.source[id] = schemaObject;
-	this.parsed[id] = schema;
-	return schema;
-};
-
 SchemaRegistry.prototype.lookup = function lookup(id){
 	const self = this;
 	if(typeof id!=='string') throw new Error('`id` must be a string');
@@ -364,7 +319,8 @@ SchemaRegistry.prototype.lookup = function lookup(id){
 		if(self.parsed[id]){
 			throw new Error('Assertion fail: schema already defined');
 		}
-		self.parsed[id] = new Schema(id, resolved, self);
+		self.source[id] = resolved;
+		self.parsed[id] = self.scanSchema(id, resolved);
 		return self.parsed[id];
 	}
 	throw new Error(`Could not resolve schema <${id}>`);
