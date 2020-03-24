@@ -90,7 +90,7 @@ describe('Schema tests', function(){
 	validationTestFiles.forEach(function(filename){
 		var label = filename;
 		var filepath = __dirname+'/vendor-schema-suite/tests/' + filename;
-		describe(label, function(done){
+		describe(label, function(){
 			var schemas = require(filepath);
 			schemas.forEach(function(schemaTest){
 				var tests = schemaTest.tests;

@@ -227,11 +227,9 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 		if(schemaObject.extends){
 			schema.extends = self.scanSchema(baseId, schemaObject.extends, addPath(paths, baseId, 'extends'));
 		}
-		if(typeof schemaObject.$ref==='string'){
-			var refUri = uriResolve(baseId, schemaObject.$ref);
-			if(self.seen[refUri]){
-				//throw new Error('Already imported: '+refUri);
-			}else{
+		if(typeof schemaObject.$ref === 'string'){
+			const refUri = uriResolve(baseId, schemaObject.$ref);
+			if(!self.seen[refUri]){
 				self.seen[refUri] = schemaObject;
 				self.pending.push([refUri, schemaObject]);
 			}
@@ -613,8 +611,65 @@ function Schema(id, schema, registry){
 	}else if(schema.$ref !== undefined){
 		throw new Error("Expected $ref to provide a string URI Reference");
 	}
-}
 
+	// $recursiveRef
+	if(typeof schema.$recursiveRef === 'string'){
+		self.$recursiveRef = uriResolve(self.id, schema.$recursiveRef);
+	}else if(schema.$recursiveRef !== undefined){
+		throw new Error("Expected $recursiveRef to provide a string URI Reference");
+	}
+
+	const known = {
+		$schema: null,
+		$vocabulary: null, // unsupported
+		$id: null,
+		$anchor: null,
+		$ref: null,
+		$recursiveRef: null, // unsupported
+		$recursiveAnchor: null, // unsupported
+		$comment: null,
+		$defs: null,
+		additionalItems: null,
+		additionalProperties: null,
+		allOf: null,
+		anchor: null,
+		anyOf: null,
+		const: null, // unsupported
+		default: null,
+		definitions: null,
+		description: null, // annotate
+		enum: null, // unsupported
+		exclusiveMaximum: null,
+		exclusiveMinimum: null,
+		format: null,
+		items: null,
+		links: null,
+		maxItems: null,
+		maxLength: null,
+		maxProperties: null,
+		maximum: null,
+		minItems: null,
+		minLength: null,
+		minProperties: null,
+		minimum: null,
+		multipleOf: null,
+		not: null,
+		oneOf: null,
+		pattern: null,
+		patternProperties: null,
+		properties: null,
+		propertyNames: null, // unsupported
+		required: null,
+		title: null, // annotate
+		type: null,
+		uniqueItems: null, // unsupported
+	};
+	self.unknown = [];
+	for(const k in schema){
+		if(!(k in known)) self.unknown.push(k);
+		// if(!(k in known)) throw new Error("Unknown keyword: "+JSON.stringify(k));
+	}
+}
 
 Schema.prototype.createParser = function createParser(options){
 	return new Parse.StreamParser(this, options);
