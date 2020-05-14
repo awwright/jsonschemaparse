@@ -251,7 +251,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 	if(this.charset==='string'){
 		if(typeof block!=='string') throw new Error('Expected arguments[0] `block` to be a string');
 	}else if(this.charset==='ASCII'){
-		if(!Buffer.isBuffer(block)) throw new Error('Expected arguments[0] `block` to be a Buffer with ASCII data');
+		if(!Buffer.isBuffer(block) && typeof block!=='string') throw new Error('Expected arguments[0] `block` to be a Buffer with ASCII data');
 	}else if(this.charset==='UTF-8'){
 		// TODO UTF-8 isn't actually supported yet
 		if(!Buffer.isBuffer(block)) throw new Error('Expected arguments[0] `block` to be a Buffer with UTF-8 data');

@@ -12,8 +12,12 @@ module.exports = {
 		"no-unused-vars": [ "warn" ],
 		"no-unreachable": [ "warn" ],
 		"linebreak-style": [  "error", "unix" ],
-		//"semi": [ "error", "always" ],
+		"semi": [ "error", "always" ],
 		"comma-dangle": [ "error", "always-multiline" ],
+		// "comma-spacing": ["error", { "before":false, "after": true }],
+		"comma-style": ["error", "last"],
 		"no-console": [ "warn" ],
+		// "no-mixed-spaces-and-tabs": "off",
+		"array-bracket-newline": ["error", "consistent"],
 	}
 };
