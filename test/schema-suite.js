@@ -80,7 +80,6 @@ var validationTestFiles = [
 	// 'draft2019-09/optional/format/uri-reference.json',
 	// 'draft2019-09/optional/format/uri-template.json',
 	// 'draft2019-09/optional/format/uri.json',
-	'draft2019-09/optional/zeroTerminatedFloats.json',
 ];
 
 describe('Schema tests', function(){
