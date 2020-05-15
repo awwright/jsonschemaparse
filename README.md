@@ -1,4 +1,6 @@
-JSONSchemaParse: Parse a JSON Document into an object structure, validating it against a JSON Schema
+ # JSONSchemaParse
+ 
+ Parse a JSON Document into an object structure, validating it against a JSON Schema
 
 Features:
 
@@ -13,7 +15,81 @@ Features:
 	- Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate
 
-## class: Parser
+## API
+
+### parse(text)
+
+Parses _text_ and turns it into a native value.
+
+For reading a Uint8Array/Buffer, specify `charset` in the options (see the `parse(text, options)` form below).
+
+
+### parse(text, reviver)
+
+Parses _text_ and turns it into a native value. The _reviver_ argument is applied to each value, compatible with ECMAScript `JSON.parse`.
+
+Equivelant to ECMAScript `JSON.parse(text, reviver)`.
+
+
+### parse(text, schema)
+
+Parses _text_ while validating it against the schema rules specified by a Schema instance in the _schema_ argument. Parsing will terminate at the first validation error.
+
+```javascript
+try {
+	const schema = new lib.Schema({ type: 'string' });
+	const value = lib.parse(jsonText, schema);
+}catch(e){
+	// handle SchemaError or ValidationError
+}
+```
+
+
+### parse(text, options)
+
+Parses _text_, and accepts an object _options_:
+
+* schema: a Schema instance, or schema object, specifiying validation rules to apply to the text.
+* reviver: An ECMAScript `JSON.parse` compatible reviving function.
+* charset: The character set, if `text` is a Uint8Array/Buffer. `ASCII` and `UTF-8` values permitted.
+
+```javascript
+try {
+	const value = lib.parse(jsonText, {
+		schema: { type: 'string' },
+		charset: 'UTF-8',
+	});
+}catch(e){
+	// handle SchemaError or ValidationError
+}
+```
+
+
+### parseDOM(text, options)
+
+Parses _text_ and returns an Instance instance. Use it when you need to know additional information about the JSON document, including JSON Schema annotations on each value, or the line/character position information of each value.
+
+`options` is an object with any of the following properties:
+
+* schema: a Schema instance, or an object representing a parsed schema document
+* annotations: true/false to collect or ignore annotations. Default true.
+* 
+
+
+The returned object will have the following properties:
+
+* type: object/array/string/number/boolean/null, depending on the type
+* native: the JSON.parse equivelant value
+* annotations: A list of all the JSON Schema annotations collected for this instance
+* links: A list of all the links collected through JSON Hyper-schema. Unlike "annotations", each rel= in a single link produces a new item in this list.
+* properties: if instance is an object, contains a list of PropertyInstance items.
+* keys: if instance is an object, contains a map of key names to PropertyInstance items.
+* key: if instance is a PropertyInstance, this contains a StringInstance holding the key of the property.
+* items: if instance is an array, contains a list of Instance items.
+* map: a Map of all the child objects/arrays in the instnce, mapped to their corresponding Instance
+
+
+### class: Parser
 
 Parser is a transforming stream that accepts a byte stream or string stream, and outputs events.
 
@@ -45,7 +121,6 @@ var parser = Parser.parse(
 	fs.readFileSync('file.json') );
 console.log(parser.errors);
 console.log(parser.value);
-
 ```
 
 ### Parser#errors
@@ -194,6 +269,61 @@ Called when the parser has fully consumed the Boolean. Provides the parsed value
 Called when the parser has begun consuming a null.
 ### Validator#endNull(layer, value)
 Called when the parser has fully consumed the Null. Provides the parsed value.
+
+
+## Migrating from other parsers
+
+
+### ECMAScript builtin JSON.parse
+
+Use `lib.parse` in place of `JSON.parse`.
+
+This library only parses, so there is no equivelant to `JSON.stringify`
+
+
+### JSON5
+
+Homepage: <https://github.com/json5/json5>
+
+JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.
+
+In place of `JSON5.parse`, use `lib.parse` as follows:
+
+```
+const JSON5opts = {
+	syntaxUnquotedKeys: true,
+	syntaxTrailingComma: true,
+	syntaxSingleQuote: true,
+	syntaxEscapeLF: true,
+	syntaxHexadecimal: true,
+	syntaxBareDecimal: true,
+	syntaxInf: true,
+	syntaxNaN: true,
+	syntaxPlus: true,
+}
+const parsed = lib.parse(text, JSON5Opts);
+```
+
+If you need the reviver function, add a "reviver" property to the options.
+
+This library only parses, so there is no equivelant to `JSON5.stringify`.
+
+
+### Clarinet.js
+
+Homepage: https://github.com/dscape/clarinet
+
+Clarinet is a SAX-like streaming parser for JSON.
+
+
+### Oboe.js
+
+Homepage: http://oboejs.com/
+
+Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retreival over the network, and an API to batch SAX events into subdocuments, for easier processing by the application.
+
+This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use `fs.createReadStream`.
+
 
 ## Table of Files
 

@@ -62,6 +62,28 @@ function collapseArray(arr, cb){
 }
 
 
+module.exports.parse = parse;
+function parse(text, options){
+	if(options===undefined){
+		options = {};
+	}else if(typeof options==='function'){
+		options = {reviver: options};
+	}else if(options instanceof Schema){
+		options = {schema: options};
+	}
+	if(typeof options.schema === 'object' && !(options instanceof Schema)){
+		options.schema = new Schema(options.schema);
+	}
+	var parser = new StreamParser(options.schema, {
+		charset: options.charset || 'string',
+	});
+	parser.keepValue = true;
+	parser.annotations = null;
+	parser.parse(text);
+	return parser.native;
+}
+
+
 module.exports.SyntaxError = SyntaxError;
 function SyntaxError(message, propertyPath, position, expected, actual){
 	this.message = message;
@@ -233,13 +255,6 @@ StreamParser.prototype._flush = StreamParser.prototype._final = function _flush(
 		return void callback(e);
 	}
 	callback();
-};
-
-StreamParser.parse = function parse(schema, options, block){
-	var parser = new StreamParser(schema, options);
-	parser.keepValue = true;
-	parser.parse(block);
-	return parser;
 };
 
 StreamParser.prototype.parse = function parse(block){
