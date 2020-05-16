@@ -68,19 +68,24 @@ function parse(text, options){
 		options = {};
 	}else if(typeof options==='function'){
 		options = {reviver: options};
-	}else if(options instanceof Schema){
+	}else if(options instanceof Schema.Schema){
 		options = {schema: options};
 	}
-	if(typeof options.schema === 'object' && !(options instanceof Schema)){
-		options.schema = new Schema(options.schema);
+	if(typeof options.schema === 'object' && !(options.schema instanceof Schema.Schema)){
+		options.schema = new Schema.Schema('vnd.schema:', options.schema);
 	}
-	var parser = new StreamParser(options.schema, {
+	const schema = options.schema || new Schema.Schema('about:blank', true);
+	var parser = new StreamParser(schema, {
 		charset: options.charset || 'string',
+		keepValue: true,
 	});
 	parser.keepValue = true;
 	parser.annotations = null;
 	parser.parse(text);
-	return parser.native;
+	if(parser.errors && parser.errors.length){
+		throw parser.errors[0];
+	}
+	return parser.value;
 }
 
 
