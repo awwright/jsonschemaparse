@@ -89,6 +89,12 @@ function JSONparse(text, options){
 	return parser.value;
 }
 
+module.exports.parseInfo = parseInfo;
+function parseInfo(text, opts){
+	const parser = new StreamParser(opts);
+	parser.parse(text);
+	return parser;
+}
 
 module.exports.SyntaxError = SyntaxError;
 function SyntaxError(message, propertyPath, position, expected, actual){
@@ -135,7 +141,7 @@ function StreamParser(options) {
 	}
 
 	// Line number tracking
-	this.charset = 'charset' in options ? options.charset : 'ASCII';
+	this.charset = 'charset' in options ? options.charset : 'UTF-8';
 	this.characters = 0;
 	this.lineNumber = 0;
 	this.lineOffset = 0;
@@ -144,6 +150,7 @@ function StreamParser(options) {
 	// Object stack stuff
 	this.stack = [];
 	this.errors = [];
+	this.annotations = options.parseAnnotations ? [] : null;
 
 	// for parsing
 	this.value = undefined;
@@ -157,7 +164,7 @@ function StreamParser(options) {
 	this.push('');
 	this.layer.state = VOID;
 	// Start parsing a value
-	this.push('', schema && schema.validate(this.errors));
+	this.push('', schema && schema.validate(this));
 }
 util.inherits(StreamParser, stream.Writable);
 

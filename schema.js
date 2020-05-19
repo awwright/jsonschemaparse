@@ -380,7 +380,6 @@ function Schema(id, schema, registry){
 
 	// General
 
-
 	if(schema.type===undefined){
 		self.allowNumber = self.allowFraction = self.allowString = self.allowBoolean = self.allowNull = self.allowObject = self.allowArray = true;
 	}else if(typeof schema.type==='string'){
@@ -619,6 +618,11 @@ function Schema(id, schema, registry){
 		throw new Error("Expected $recursiveRef to provide a string URI Reference");
 	}
 
+	// Annotation
+	if(schema.title !== undefined){
+		self.title = schema.title;
+	}
+
 	const known = {
 		$schema: null,
 		$vocabulary: null, // unsupported
@@ -708,17 +712,16 @@ Schema.prototype.parseInfo = function parseInfo(text, options){
 
 // Create a state for validating an instance.
 // If `errors` is supplied, errors will be pushed to that array instead.
-Schema.prototype.validate = function validate(errors) {
+Schema.prototype.validate = function validate(root) {
 	//return [new ValidateLayer(this, errors)];
 	const schema = this;
-	return new ValidateLayer(schema, errors).getAll();
+	return new ValidateLayer(schema, root).getAll();
 };
 
 Schema.prototype.exportRules = function exportRules(){
 	const schema = this;
 	if(this.validators) return this.validators;
 	const validators = {
-		Finish: [],
 		StartObject: [],
 		EndKey: [],
 		ValidateProperty: [],
@@ -733,6 +736,8 @@ Schema.prototype.exportRules = function exportRules(){
 		StartBoolean: [],
 		EndBoolean: [],
 		StartNull: [],
+		Finish: [],
+		Annotations: [],
 	};
 
 	// Object
@@ -882,6 +887,13 @@ Schema.prototype.exportRules = function exportRules(){
 		});
 	}
 
+	// Annotations
+	if(schema.title){
+		validators.Annotations.push(function collectTitle(layer){
+			return {title: schema.title};
+		});
+	}
+
 	return validators;
 };
 
@@ -899,7 +911,7 @@ Schema.stringTestPattern = function stringTestPattern(pattern, layer, instance){
 
 // Stores information about this instance for parsing the given schema
 module.exports.ValidateLayer = ValidateLayer;
-function ValidateLayer(schema, errors){
+function ValidateLayer(schema, root){
 	const validator = this;
 	if(!(schema instanceof Schema)) throw new Error('Expected `schema` to be a Schema');
 
@@ -921,13 +933,16 @@ function ValidateLayer(schema, errors){
 	validator.validateStartBoolean = rules.StartBoolean;
 	validator.validateEndBoolean = rules.EndBoolean;
 	validator.validateStartNull = rules.StartNull;
+	validator.validateAnnotations = rules.Annotations;
 
 	// Where to store errors
-	// If `errors` is given, it probably points to `StreamParser#errors`
-	if(errors){
-		validator.errors = errors;
+	// If `root` is given, it probably points to the StreamParser
+	if(root){
+		validator.errors = root.errors;
+		validator.annotations = root.annotations;
 	}else{
 		validator.errors = [];
+		validator.annotations = [];
 	}
 
 	// process required properties
@@ -1004,6 +1019,20 @@ ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
 			});
 		}else{
 			self.errors.push(errs);
+		}
+	}
+};
+
+ValidateLayer.prototype.addAnnotationList = function addAnnotationList(annotations) {
+	var self = this;
+	if(annotations){
+		if(Array.isArray(annotations)){
+			annotations.forEach(function(error){
+				// `self.errors` might be a reference, so don't replace
+				self.annotations.push(error);
+			});
+		}else{
+			self.annotations.push(annotations);
 		}
 	}
 };
@@ -1224,6 +1253,12 @@ ValidateLayer.prototype.finish = function finish(layer){
 		const enumValid = self.enum.filter(function(v){ return v.errors.length===0; });
 		if(enumValid.length===0){
 			self.addErrorList(new ValidationError('Expected "enum" to have at least one matching value', layer, self, 'enum', 1, enumValid.length));
+		}
+	}
+
+	if(self.annotations && self.errors.length===0){
+		for(let i=0; i<self.validateAnnotations.length; i++){
+			self.addAnnotationList(self.validateAnnotations[i].call(self, layer));
 		}
 	}
 

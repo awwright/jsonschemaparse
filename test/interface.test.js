@@ -120,16 +120,37 @@ describe('parse(text, options)', function(){
 	});
 });
 
-describe('parse(text, {parseAnnotations})', function(){
-	it('parse(text, {}) (default)');
-	it('parse(text, {parseAnnotations: false}) (disabled)');
-	it('parse(text, {parseAnnotations: true}) (enabled)');
+describe('parseInfo(text, {parseValue})', function(){
+	it('parseInfo(text, {parseValue: false}) (disabled)', function(){
+		const ret = lib.parseInfo('"string"', {parseValue: false});
+		assert.strictEqual(ret.value, undefined);
+	});
+	it('parseInfo(text, {parseValue: true}) (enabled)', function(){
+		const ret = lib.parseInfo('"string"', {parseValue: true});
+		assert.strictEqual(ret.value, "string");
+	});
 });
 
-describe('parse(text, {parseInfo})', function(){
-	it('parse(text, {}) (default)');
-	it('parse(text, {parseInfo: false}) (disabled)');
-	it('parse(text, {parseInfo: true}) (enabled)');
+describe('parseInfo(text, {parseAnnotations})', function(){
+	it('parseInfo(text, {parseAnnotations: false}) (disabled)', function(){
+		const schema = new lib.Schema('http://example.com/schema', {type:'string', title:'Label'});
+		const ret = lib.parseInfo('"string"', {parseAnnotations: false, schema});
+		assert.strictEqual(ret.errors.length, 0);
+		assert.strictEqual(ret.annotations, null);
+	});
+	it('parseInfo(text, {parseAnnotations: true}) (enabled)', function(){
+		const schema = new lib.Schema('http://example.com/schema', {type:'string', title:'Label'});
+		const ret = lib.parseInfo('"string"', {parseAnnotations: true, schema});
+		assert.strictEqual(ret.errors.length, 0);
+		assert.strictEqual(ret.annotations.length, 1);
+		assert.strictEqual(ret.annotations[0].title, "Label");
+	});
+});
+
+describe('parseInfo(text, {parseInfo})', function(){
+	it('parseInfo(text, {}) (default)');
+	it('parseInfo(text, {parseInfo: false}) (disabled)');
+	it('parseInfo(text, {parseInfo: true}) (enabled)');
 });
 
 describe('parse(text, {syntax})', function(){
