@@ -14,22 +14,22 @@ window.JSONLint = function JSONLint(schema_editor, text) {
 		}
 		return found;
 	}
-	var schema = null;
+	// First, parse the schema
 	if(schema_editor){
 		try {
-			var parse = JSONSchemaParse.parse(null, {charset:'string', parseValue:true}, schema_editor.getValue());
+			var schemaObject = JSONSchemaParse.parse(schema_editor.getValue());
 		} catch(e) {
 			console.error(e);
 		}
-		var value = parse.value;
-		if(value !== undefined){
-			var schema = new JSONSchemaParse.Schema('_:root', value);
+		if(schemaObject !== undefined){
+			var schema = new JSONSchemaParse.Schema('_:root', schemaObject);
 		}
 	}
+	// Now, parse the instance against the schema
 	var found = [];
 	try {
-		var parse = new JSONSchemaParse.StreamParser(schema, {charset:'string', parseValue:true});
-		parse.parse(text);
+		var parse = JSONSchemaParse.parseInfo(text, {parseValue:true, schema:schema});
+		console.log(parse);
 	} catch(err) {
 		var loc = err.position || {};
 		found.push({
@@ -49,5 +49,5 @@ window.JSONLint = function JSONLint(schema_editor, text) {
 		});
 	});
 	return found;
-}
+};
 
