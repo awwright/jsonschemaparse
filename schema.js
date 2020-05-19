@@ -48,6 +48,18 @@ ValidationError.prototype.toString = function toString(){
 		+ '\n\t' + JSON.stringify(this.actual);
 };
 
+module.exports.Annotation = Annotation;
+function Annotation(value, layer, schema, keyword){
+	this.value = value;
+	this.path = layer.path;
+	this.layer = layer;
+	this.position = {line:layer.beginLine, column:layer.beginColumn};
+	this.to = {line:layer.endLine, column:layer.endColumn};
+	//this.schema = schema;
+	this.schemaId = schema.id;
+	this.keyword = keyword;
+}
+
 module.exports.isSchema = isSchema;
 function isSchema(s){
 	// Is an object, but not an array, and not a schema reference with $ref
@@ -325,7 +337,7 @@ SchemaRegistry.prototype.lookup = function lookup(id){
 };
 
 SchemaRegistry.prototype.resolve = function resolve(base, schema){
-	var self = this;
+	const self = this;
 	if(typeof base!=='string' || base.indexOf(':')===-1) throw new Error('`base` must be a URI string');
 	if(isSchema(schema)){
 		return new Schema(base, schema, self);
@@ -335,7 +347,7 @@ SchemaRegistry.prototype.resolve = function resolve(base, schema){
 };
 
 SchemaRegistry.prototype.getUnresolved = function(){
-	var self = this;
+	const self = this;
 	return Object.keys(self.seen)
 		.filter(function(v){ return !self.source[v]; });
 };
@@ -344,7 +356,7 @@ SchemaRegistry.prototype.getUnresolved = function(){
 module.exports.Schema = Schema;
 function Schema(id, schema, registry){
 	// console.log('Schema', id);
-	var self = this;
+	const self = this;
 	self.id = id;
 
 	// Core
@@ -890,7 +902,7 @@ Schema.prototype.exportRules = function exportRules(){
 	// Annotations
 	if(schema.title){
 		validators.Annotations.push(function collectTitle(layer){
-			return {title: schema.title};
+			return new Annotation(schema.title, layer, schema, 'title');
 		});
 	}
 
@@ -958,7 +970,7 @@ function ValidateLayer(schema, root){
 	// process anyOf/oneOf/not
 	// an array
 	validator.allOf = schema.allOf.map(function(s){
-		var subvalidator = new ValidateLayer(s, validator.errors);
+		var subvalidator = new ValidateLayer(s, validator);
 		return subvalidator;
 	});
 	// array of arrays
@@ -991,7 +1003,7 @@ function ValidateLayer(schema, root){
 		// const subschemaURI = uriResolve(schema.id, schema.$ref);
 		const subschema = schema.registry.lookup(schema.$ref);
 		if(!subschema) throw new Error('Could not lookup schema <'+subschemaURI+'>');
-		const subvalidator = new ValidateLayer(subschema, validator.errors);
+		const subvalidator = new ValidateLayer(subschema, validator);
 		validator.$ref = subvalidator;
 	}
 }
@@ -1010,7 +1022,7 @@ ValidateLayer.prototype.getAll = function getAll() {
 };
 
 ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
-	var self = this;
+	const self = this;
 	if(errs){
 		if(Array.isArray(errs)){
 			errs.forEach(function(error){
@@ -1024,12 +1036,12 @@ ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
 };
 
 ValidateLayer.prototype.addAnnotationList = function addAnnotationList(annotations) {
-	var self = this;
+	const self = this;
 	if(annotations){
 		if(Array.isArray(annotations)){
-			annotations.forEach(function(error){
+			annotations.forEach(function(v){
 				// `self.errors` might be a reference, so don't replace
-				self.annotations.push(error);
+				self.annotations.push(v);
 			});
 		}else{
 			self.annotations.push(annotations);
@@ -1041,7 +1053,7 @@ ValidateLayer.prototype.addAnnotationList = function addAnnotationList(annotatio
 // (array item, object property key, or object property value)
 
 ValidateLayer.prototype.initProperty = function initProperty(key){
-	var self = this;
+	const self = this;
 	// for(let i=0; i<self.validateNewProperty.length; i++){
 	// 	self.addErrorList(self.validateNewProperty[i].call(self));
 	// }
@@ -1057,9 +1069,9 @@ ValidateLayer.prototype.initProperty = function initProperty(key){
 			patterns.push(schema.patternProperties[regexp]);
 		}
 	}
-	if(patterns.length==0 && schema.additionalProperties) return schema.additionalProperties.validate(self.errors);
-	if(patterns.length==1) return patterns[0].validate(self.errors);
-	return collapseArray(patterns, function(v){ return v.validate(self.errors); });
+	if(patterns.length==0 && schema.additionalProperties) return schema.additionalProperties.validate(self);
+	if(patterns.length==1) return patterns[0].validate(self);
+	return collapseArray(patterns, function(v){ return v.validate(self); });
 };
 
 ValidateLayer.prototype.initItem = function initItem(k){
@@ -1075,8 +1087,8 @@ ValidateLayer.prototype.initItem = function initItem(k){
 		patterns.push(schema.additionalItems);
 	}
 	if(patterns.length==0) return [];
-	if(patterns.length==1) return patterns[0].validate(self.errors);
-	return collapseArray(patterns, function(v){ return v.validate(self.errors); });
+	if(patterns.length==1) return patterns[0].validate(self);
+	return collapseArray(patterns, function(v){ return v.validate(self); });
 };
 
 ValidateLayer.prototype.getKeySchema = function getKeySchema(n){

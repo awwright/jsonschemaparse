@@ -149,6 +149,8 @@ function StreamParser(options) {
 
 	// Object stack stuff
 	this.stack = [];
+
+	// JSON Schema info collection
 	this.errors = [];
 	this.annotations = options.parseAnnotations ? [] : null;
 

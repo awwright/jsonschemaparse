@@ -143,7 +143,8 @@ describe('parseInfo(text, {parseAnnotations})', function(){
 		const ret = lib.parseInfo('"string"', {parseAnnotations: true, schema});
 		assert.strictEqual(ret.errors.length, 0);
 		assert.strictEqual(ret.annotations.length, 1);
-		assert.strictEqual(ret.annotations[0].title, "Label");
+		assert.strictEqual(ret.annotations[0].keyword, "title");
+		assert.strictEqual(ret.annotations[0].value, "Label");
 	});
 });
 
