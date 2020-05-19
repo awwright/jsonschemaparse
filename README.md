@@ -33,7 +33,7 @@ Equivalent to ECMAScript `JSON.parse(text, reviver)`.
 
 ### parse(text, schema)
 
-Parses _text_ while validating it against the schema rules specified by a Schema instance in the _schema_ argument. Parsing will terminate at the first validation error.
+Parses _text_ while validating it against the Schema instance in the _schema_ argument. Parsing will terminate at the first validation error.
 
 ```javascript
 try {

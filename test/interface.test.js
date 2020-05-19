@@ -79,17 +79,13 @@ describe('parse(text, options)', function(){
 			lib.parse(text, {schema: schema});
 		});
 	});
-	it('parse(text, {reviver}) (valid)', function(){
-		function reviver(k, v){
-			if(v && v.$Date) return new Date(v.$Date);
-			return v;
-		}
-		const text = '{"begin": {"$Date": "2020-05-15T21:39:22.626Z"}}';
-		const v = lib.parse(text, reviver);
-		assert(typeof v==='object');
-		assert(v.begin);
-		assert(v.begin instanceof Date);
+	it('parse(text, {invalid}) (invalid)', function(){
+		const text = '{}';
+		assert.throws(function(){
+			lib.parse(text, {type: "string"});
+		});
 	});
+	it('parse(text, {reviver}) (valid)');
 	it('parse(text, {charset}) (valid ASCII)');
 	it('parse(text, {charset}) (invalid ASCII)');
 	it('parse(text, {charset}) (valid UTF-8)');
@@ -116,54 +112,48 @@ describe('parseAnnotated(text, options)', function(){
 	it('parse ref');
 });
 
-describe('Parser', function(){
-	it('new Parser()', function(){
-		var registry = new SchemaRegistry;
-		// This passes just one test
-		var schema = registry.import('http://localhost/this.json', {});
-		var stream = schema.createParser({charset:'string', keepValue:true});
+describe('StreamParser', function(){
+	it('StreamParser#parse', function(){
+		var stream = new lib.StreamParser();
 		stream.on("openobject", function (node) {
 			// same object as above
 		});
 		// pipe is supported, and it's readable/writable
 		// same chunks coming in also go out.
-		createReadStream("file.json").pipe(stream);
+		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
 		return new Promise(function(done){ stream.on('finish', done); });
 	});
-	it('new Parser({schema})');
-	it('new Parser({charset})');
-	it('new Parser({reviver})');
-	it('new Parser({parseValue})');
-	it('new Parser({parseAnnotations})');
-	it('new Parser({parseInfo})');
-	it('new Parser({maxKeyLength})');
-	it('new Parser({maxStringLength})');
-	it('new Parser({maxNumberLength})');
-	it('new Parser({maxItems})');
-	it('new Parser({maxProperties})');
-	it('new Parser({maxUniqueItems})');
-	it('new Parser({interoperable})');
-	it('new Parser({bigNumber})');
-	it('new Parser({niceNumber})');
-	it('new Parser({syntaxLineComment})');
-	it('new Parser({syntaxHashComment})');
-	it('new Parser({syntaxBlockComment})');
-	it('new Parser({syntaxNestedComment})');
-	it('new Parser({syntaxUnquotedKeys})');
-	it('new Parser({syntaxTrailingComma})');
-	it('new Parser({syntaxSingleQuote})');
-	it('new Parser({syntaxEscapeLF})');
-	it('new Parser({syntaxUTF32})');
-	it('new Parser({syntaxHexadecimal})');
-	it('new Parser({syntaxBareDecimal})');
-	it('new Parser({syntaxInf})');
-	it('new Parser({syntaxNaN})');
-	it('new Parser({syntaxPlus})');
-	it('Parser#parse', function(){
-		var registry = new SchemaRegistry;
-		// This passes just one test
-		var schema = registry.import('http://localhost/this.json', {});
-		var stream = schema.createParser({charset:'string', keepValue:true});
+	it('new StreamParser({schema})');
+	it('new StreamParser({charset})');
+	it('new StreamParser({reviver})');
+	it('new StreamParser({parseValue})');
+	it('new StreamParser({parseAnnotations})');
+	it('new StreamParser({parseInfo})');
+	it('new StreamParser({maxKeyLength})');
+	it('new StreamParser({maxStringLength})');
+	it('new StreamParser({maxNumberLength})');
+	it('new StreamParser({maxItems})');
+	it('new StreamParser({maxProperties})');
+	it('new StreamParser({maxUniqueItems})');
+	it('new StreamParser({interoperable})');
+	it('new StreamParser({bigNumber})');
+	it('new StreamParser({niceNumber})');
+	it('new StreamParser({syntaxLineComment})');
+	it('new StreamParser({syntaxHashComment})');
+	it('new StreamParser({syntaxBlockComment})');
+	it('new StreamParser({syntaxNestedComment})');
+	it('new StreamParser({syntaxUnquotedKeys})');
+	it('new StreamParser({syntaxTrailingComma})');
+	it('new StreamParser({syntaxSingleQuote})');
+	it('new StreamParser({syntaxEscapeLF})');
+	it('new StreamParser({syntaxUTF32})');
+	it('new StreamParser({syntaxHexadecimal})');
+	it('new StreamParser({syntaxBareDecimal})');
+	it('new StreamParser({syntaxInf})');
+	it('new StreamParser({syntaxNaN})');
+	it('new StreamParser({syntaxPlus})');
+	it('StreamParser#parse', function(){
+		var stream = new lib.StreamParser({});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});
@@ -182,7 +172,7 @@ describe('Parser', function(){
 		});
 		// pipe is supported, and it's readable/writable
 		// same chunks coming in also go out.
-		createReadStream("file.json").pipe(stream);
+		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
 		return new Promise(function(done){ stream.on('finish', done); });
 
 	});
@@ -199,3 +189,18 @@ describe('Parser', function(){
 	});
 });
 
+describe('SchemaRegistry', function(){
+	it('SchemaRegistry#import', function(){
+		var registry = new SchemaRegistry;
+		// This passes just one test
+		var schema = registry.import('http://localhost/this.json', {});
+		var stream = schema.createParser({charset:'string', keepValue:true});
+		stream.on("openobject", function (node) {
+			// same object as above
+		});
+		// pipe is supported, and it's readable/writable
+		// same chunks coming in also go out.
+		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
+		return new Promise(function(done){ stream.on('finish', done); });
+	});
+});

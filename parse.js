@@ -62,8 +62,8 @@ function collapseArray(arr, cb){
 }
 
 
-module.exports.parse = parse;
-function parse(text, options){
+module.exports.parse = JSONparse;
+function JSONparse(text, options){
 	if(options===undefined){
 		options = {};
 	}else if(typeof options==='function'){
@@ -71,16 +71,12 @@ function parse(text, options){
 	}else if(options instanceof Schema.Schema){
 		options = {schema: options};
 	}
-	if(typeof options.schema === 'object' && !(options.schema instanceof Schema.Schema)){
-		options.schema = new Schema.Schema('vnd.schema:', options.schema);
-	}
-	const schema = options.schema || new Schema.Schema('about:blank', true);
-	var parser = new StreamParser(schema, {
-		charset: options.charset || 'string',
-		keepValue: true,
+	const opts = Object.assign({}, options, {
+		parseValue: true,
+		parseAnnotations: false,
+		parseInfo: false,
 	});
-	parser.keepValue = true;
-	parser.annotations = null;
+	const parser = new StreamParser(opts);
 	parser.parse(text);
 	if(parser.errors && parser.errors.length){
 		throw parser.errors[0];
@@ -101,25 +97,36 @@ function SyntaxError(message, propertyPath, position, expected, actual){
 
 
 module.exports.StreamParser = StreamParser;
-function StreamParser(schema, options) {
+function StreamParser(options) {
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
+
 	stream.Writable.call(this, {
 		decodeStrings: false,
 	});
 
 	if(!options) options = {};
+	// Try and detect silly people passing a schema object as options
+	if(options.$id || options.$schema || options.type){
+		throw new Error('Use the "schema" option for passing a schema');
+	}
 
 	// Configurable parsing options
 	// Store parsed value in `this.value`?
-	this.keepValue = 'keepValue' in options ? options.keepValue : false;
+	this.parseValue = 'parseValue' in options ? options.parseValue : false;
 	// dunno what this is
 	this.key = false;
 	// Allow trailing commas/comma terminated properties?
 	this.trailingComma = false;
 	this.multipleValue = false;
 
+	var schema = options.schema || null;
 	if(schema){
-		if(!(schema instanceof Schema.Schema)) throw new Error('schema must be instance of Schema');
+		if(typeof schema==='object' && (Object.getPrototypeOf(schema)===Object.prototype || Object.getPrototypeOf(schema)===null)){
+			schema = new Schema.Schema('vnd.schema:', schema);
+		}
+		if(!(schema instanceof Schema.Schema)){
+			throw new Error('schema must be instance of Schema');
+		}
 	}
 
 	// Line number tracking
@@ -179,7 +186,7 @@ StreamParser.prototype.push = function push(k, validator) {
 		//path: k ? this.layer.path.concat(k) : (this.layer&&this.layer.path),
 		path: k ? path+'/'+k : path,
 		key: null,
-		keepValue: this.keepValue,
+		parseValue: this.parseValue,
 		value: undefined,
 		beginChar: this.characters,
 		beginLine: this.lineNumber,
@@ -229,7 +236,7 @@ StreamParser.prototype.pop = function pop(){
 	layer.endLine = self.lineNumber;
 	layer.endColumn = self.characters-self.lineOffset;
 	self.validateInstance(function(s){ return s.finish(layer); });
-	if(layer.keepValue) self.value = layer.value;
+	if(layer.parseValue) self.value = layer.value;
 	self.layer = self.stack[this.stack.length-1];
 	return layer;
 };
@@ -324,12 +331,12 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			case 0x7b: // `{`
 				this.startObject();
 				this.layer.state = OBJECT1;
-				if(this.layer.keepValue) this.layer.value = {};
+				if(this.layer.parseValue) this.layer.value = {};
 				continue;
 			case 0x5b: // `[`
 				this.startArray();
 				this.layer.state = ARRAY1;
-				if(this.layer.keepValue) this.layer.value = [];
+				if(this.layer.parseValue) this.layer.value = [];
 				continue;
 			case 0x74: // `t`
 				this.startBoolean();
@@ -396,7 +403,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// Parse the next characters as a new value
 				this.push();
 				this.layer.state = STRING1;
-				this.layer.keepValue = true;
+				this.layer.parseValue = true;
 				this.layer.key = true;
 				continue;
 			case 0x7d: // `}`
@@ -433,7 +440,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case OBJECT4:
 			// Process parsed value
-			if(this.layer.keepValue) this.layer.value[this.layer.key] = this.value;
+			if(this.layer.parseValue) this.layer.value[this.layer.key] = this.value;
 			this.layer.length++;
 			this.layer.state = OBJECT5;
 			// fall through to OBJECT5
@@ -477,7 +484,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// Parse the next characters as a new value
 				this.push();
 				this.layer.state = STRING1;
-				this.layer.keepValue = true;
+				this.layer.parseValue = true;
 				this.layer.key = true;
 				continue;
 			}
@@ -503,14 +510,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.startObject();
 				this.layer.state = OBJECT1;
-				if(this.layer.keepValue) this.layer.value = {};
+				if(this.layer.parseValue) this.layer.value = {};
 				continue;
 			case 0x5b: // `[`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
 				this.startArray();
 				this.layer.state = ARRAY1;
-				if(this.layer.keepValue) this.layer.value = [];
+				if(this.layer.parseValue) this.layer.value = [];
 				continue;
 			case 0x74: // `t`
 				this.layer.state = ARRAY2;
@@ -575,7 +582,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case ARRAY2:
 			// push item to array value
-			if(this.layer.keepValue) this.layer.value[this.layer.length] = this.value;
+			if(this.layer.parseValue) this.layer.value[this.layer.length] = this.value;
 			this.layer.length++;
 			this.layer.state = ARRAY3;
 			// fall through to next state
@@ -617,14 +624,14 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.pushItem(this.layer.length);
 				this.startObject();
 				this.layer.state = OBJECT1;
-				if(this.layer.keepValue) this.layer.value = {};
+				if(this.layer.parseValue) this.layer.value = {};
 				continue;
 			case 0x5b: // `[`
 				this.layer.state = ARRAY2;
 				this.pushItem(this.layer.length);
 				this.startArray();
 				this.layer.state = ARRAY1;
-				if(this.layer.keepValue) this.layer.value = [];
+				if(this.layer.parseValue) this.layer.value = [];
 				continue;
 			case 0x74: // `t`
 				this.layer.state = ARRAY2;
@@ -823,7 +830,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case TRUE3:
 			if (chrcode === 0x65) { // e
 				this.layer.state = VOID;
-				if(this.layer.keepValue) this.layer.value = true;
+				if(this.layer.parseValue) this.layer.value = true;
 				this.endBoolean();
 				continue;
 			}
@@ -853,7 +860,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case FALSE4:
 			if (chrcode === 0x65) { // e
 				this.layer.state = VOID;
-				if(this.layer.keepValue) this.layer.value = false;
+				if(this.layer.parseValue) this.layer.value = false;
 				this.endBoolean();
 				continue;
 			}
@@ -876,7 +883,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case NULL3:
 			if (chrcode === 0x6c) { // l
 				this.layer.state = VOID;
-				if(this.layer.keepValue) this.layer.value = null;
+				if(this.layer.parseValue) this.layer.value = null;
 				this.endNull();
 				continue;
 			}
@@ -885,7 +892,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case STRING1: // After open quote
 			switch (chrcode) {
 			case 0x22: // `"`
-				if(this.layer.keepValue) this.layer.value = this.readBuffer(block, i);
+				if(this.layer.parseValue) this.layer.value = this.readBuffer(block, i);
 				if(this.layer.key) this.endKey();
 				else this.endString();
 				continue;
@@ -1026,7 +1033,7 @@ StreamParser.prototype.onNumber = function onNumber(){
 	var self = this;
 	var value = JSON.parse(self.buffer);
 	if(typeof value!=='number') throw new Error('Failed assertion');
-	if(self.layer.keepValue) this.layer.value = JSON.parse(self.buffer);
+	if(self.layer.parseValue) this.layer.value = JSON.parse(self.buffer);
 	self.event('number', value);
 	self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
 	self.pop();
