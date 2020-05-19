@@ -72,6 +72,8 @@ Parses _text_ and returns an Instance instance. Use it when you need to know add
 `options` is an object with any of the following properties:
 
 * schema: a Schema instance, or an object representing a parsed schema document
+* reviver: An ECMAScript `JSON.parse` compatible reviving function.
+* charset: The character set, if `text` is a Uint8Array/Buffer. `ASCII` and `UTF-8` values permitted.
 * annotations: true/false to collect or ignore annotations. Default true.
 
 
@@ -88,9 +90,27 @@ The returned object will have the following properties:
 * map: a Map of all the child objects/arrays in the instance, mapped to their corresponding Instance
 
 
-### class: Parser
+### new Parser(options)
 
 Parser is a writable stream that accepts a byte stream or string stream, and outputs events.
+
+options is an object with any of the following properties:
+
+* `schema`: A schema instance or plain object, to be validated against the incoming document.
+* `parseValue`: if `true`, return value will include a `value` property with the JSON.parse equivelant parsed value. Default `false`.
+* `parseAnnotations`: If `true`, return value will include annotations/links properties, with JSON Schema annotations (e.g. the "title", "description" keywords.)
+* `parseInfo`: If `true`, return value will include properties/keys/map properties with Parser output from child instances.
+* `syntaxUnquotedKeys`: Permits a bare, unqouted ECMAScript 5.1 IdentifierName as a property key
+* `syntaxTrailingComma`: Allows arrays and objects to end with a trailing comma (by configuring the parser so a comma doesn't imply another property/item)
+* `syntaxSingleQuote`: Permits single quotes for strings, including property keys
+* `syntaxEscapeLF`: A backslash linefeed sequence (i.e. a backslash as the last character on a line) will ignore the newline. (The backslash and LF character will both be discarded entirely.) This allows a ␊ character to be encoded as the four-character sequence `"\n\␊"`
+* `syntaxHexadecimal`: Permits numbers starting with `0x` to be interperted as hexadeciamal. Only integers can be expressed with this form.
+* `syntaxBareDecimal`: Permits numbers to start or end with a decimal (otherwise, a `0` would have to come before or after it).
+* `syntaxInf`: Permits `Infinity` and `-Infinity`. This is not compatible with JSON Schema, use with caution.
+* `syntaxNaN`: Permits `NaN` as a number value. This is not compatible with JSON Schema, use with caution.
+* `syntaxPlus`: Permits a leading + before a number.
+* `syntaxUTF32`: Permits `\Uxxxxxxxx` or `\u{x...}` sequences (where `x` is a hex digit) for representing Unicode code points outside the BMP (Basic Multilingual Plane), that would normally only be escaped via a UTF-16 surrogate pair.
+
 
 ```javascript
 var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {keepValue:true});
