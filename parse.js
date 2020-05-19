@@ -61,6 +61,11 @@ function collapseArray(arr, cb){
 	return res;
 }
 
+function isUint8Array(v){
+	if(util.type && util.types.isUint8Array) return util.type.Uint8Array(v);
+	if(v instanceof Uint8Array) return true;
+}
+
 
 module.exports.parse = JSONparse;
 function JSONparse(text, options){
@@ -275,22 +280,24 @@ StreamParser.prototype.parse = function parse(block){
 };
 
 StreamParser.prototype.parseBlock = function parseBlock(block){
-	if(this.charset==='string'){
-		if(typeof block!=='string') throw new Error('Expected arguments[0] `block` to be a string');
-	}else if(this.charset==='ASCII'){
-		if(!Buffer.isBuffer(block) && typeof block!=='string') throw new Error('Expected arguments[0] `block` to be a Buffer with ASCII data');
-	}else if(this.charset==='UTF-8'){
-		// TODO UTF-8 isn't actually supported yet
-		if(!Buffer.isBuffer(block)) throw new Error('Expected arguments[0] `block` to be a Buffer with UTF-8 data');
-	}else{
-		throw new Error('Unknown encoding '+JSON.stringify(this.charset));
+	const isByte = Buffer.isBuffer(block) || isUint8Array(block);
+	//const isShort = false;
+	//const isLong = false;
+	const isStr = typeof block==="string";
+	if(isByte){
+		if(this.charset==='string'){
+			throw new Error('Expected arguments[0] `block` to be a string');
+		}else if(this.charset!=='ASCII' && this.charset!=='UTF-8'){
+			throw new Error('Unknown `charset`, expected "ASCII" or "UTF-8"');
+		}
+	}else if(!isStr){
+		throw new Error('Unknown block type');
 	}
 	for (var i = 0; i < block.length; i++, this.characters++) {
-		var chrcode = (typeof block==='string') ? block.charCodeAt(i) : block[i] ;
+		const chrcode = (typeof block==='string') ? block.charCodeAt(i) : block[i] ;
 		if(typeof chrcode !== 'number') throw new Error('Expected numeric codepoint value');
-		if(this.charset==='ASCII' && chrcode>=0x80) throw new Error('Unexpected high-byte character');
 		// Verify UTF-16 surrogate pairs
-		if(this.charset==='string' && chrcode>=0xD800 && chrcode<=0xDFFF){
+		if(isStr && chrcode>=0xD800 && chrcode<=0xDFFF){
 			if(chrcode<0xDC00){
 				// This is a UTF-16 high (first) surrogate
 				if(this.utf16_high) this.charError(block, i, 'UTF-16-low-surrogate');
@@ -301,6 +308,8 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// var utf16_high = this.utf16_high;
 				this.utf16_high = null;
 			}
+		}else if(isByte && this.charset==='ASCII' && chrcode>=0x80){
+			throw new Error('Unexpected high-byte character');
 		}
 		this.codepointStart = i;
 		switch (this.layer.state) {

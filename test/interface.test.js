@@ -86,8 +86,24 @@ describe('parse(text, options)', function(){
 		});
 	});
 	it('parse(text, {reviver}) (valid)');
-	it('parse(text, {charset}) (valid ASCII)');
-	it('parse(text, {charset}) (invalid ASCII)');
+	it('parse(text, {charset:ASCII}) (native string input)', function(){
+		// A native string is already decoded, so this shouldn't trigger anything
+		const val = lib.parse('"🐲"', {charset:'ASCII'});
+		assert.strictEqual(val, "\uD83D\uDC32");
+	});
+	it('parse(text, {charset:ASCII}) (ASCII input)', function(){
+		// Escapes are all cool
+		const text = Buffer.from('"\\uD83D\\uDC32"', 'UTF-8');
+		const val = lib.parse(text, {charset:'ASCII'});
+		assert.strictEqual(val, "🐲");
+	});
+	it('parse(text, {charset:ASCII}) (UTF-8 input)', function(){
+		// High-byte characters are not ASCII
+		const text = Buffer.from('"🐲"', 'UTF-8');
+		assert.throws(function(){
+			lib.parse(text, {charset:'ASCII'});
+		});
+	});
 	it('parse(text, {charset}) (valid UTF-8)');
 	it('parse(text, {charset}) (invalid UTF-8)');
 });
