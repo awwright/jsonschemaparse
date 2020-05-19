@@ -675,6 +675,37 @@ Schema.prototype.createParser = function createParser(options){
 	return new Parse.StreamParser(this, options);
 };
 
+Schema.prototype.parse = function parse(text, options){
+	if(options===undefined){
+		options = {};
+	}else if(typeof options==='function'){
+		options = {reviver: options};
+	}
+	const opts = Object.assign({}, options, {
+		parseValue: true,
+		parseAnnotations: false,
+		parseInfo: false,
+		schema: this,
+	});
+	const parser = new Parse.StreamParser(opts);
+	parser.parse(text);
+	if(parser.errors && parser.errors.length){
+		throw parser.errors[0];
+	}
+	return parser.value;
+};
+
+Schema.prototype.parseInfo = function parseInfo(text, options){
+	if(options===undefined){
+		options = {};
+	}else if(typeof options==='function'){
+		options = {reviver: options};
+	}
+	const opts = Object.assign({parseInfo: true}, options, {schema: this});
+	const parser = new Parse.StreamParser(opts);
+	return parser;
+};
+
 // Create a state for validating an instance.
 // If `errors` is supplied, errors will be pushed to that array instead.
 Schema.prototype.validate = function validate(errors) {

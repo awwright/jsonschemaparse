@@ -30,7 +30,7 @@ describe('Syntax tests', function(){
 		it(label + ' (UTF-8 buffer)', function(done){
 			var error = null;
 			var t = fs.createReadStream(filepath);
-			var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
+			var p = new Parser({parseValue:true, charset:'UTF-8'});
 			t.pipe(p);
 			p.on('error', function(err){
 				done(err);
@@ -43,7 +43,7 @@ describe('Syntax tests', function(){
 		it(label + ' (UTF-8 each-character)', function(done){
 			var error = null;
 			var t = fs.readFile(filepath, function(err, data){
-				var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
+				var p = new Parser({parseValue:true, charset:'UTF-8'});
 				for(var i=0; i<data.length; i++){
 					p.write(new Uint8Array([data[i]]));
 				}
@@ -57,7 +57,7 @@ describe('Syntax tests', function(){
 		it(label + ' (string)', function(done){
 			var error = null;
 			var t = fs.createReadStream(filepath, {encoding:'UTF-8'});
-			var p = new Parser(null, {keepValue:true, charset:'string'});
+			var p = new Parser({parseValue:true, charset:'string'});
 			t.pipe(p);
 			p.on('error', function(err){
 				done(err);
@@ -75,7 +75,7 @@ describe('Syntax tests', function(){
 			//console.log('\n\n'+filepath);
 			var error = null;
 			var t = fs.createReadStream(filepath);
-			var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
+			var p = new Parser({parseValue:true, charset:'UTF-8'});
 			//t.pipe(p);
 //			p.on('error', function(err){
 //				console.log('error');
@@ -93,7 +93,7 @@ describe('Syntax tests', function(){
 			//console.log('\n\n'+filepath);
 			var error = null;
 			var t = fs.createReadStream(filepath, {encoding:'UTF-8'});
-			var p = new Parser(null, {keepValue:true, charset:'string'});
+			var p = new Parser({parseValue:true, charset:'string'});
 //			t.pipe(p);
 //			p.on('error', function(err){
 //				//console.log('error');

@@ -102,14 +102,15 @@ describe('Schema tests', function(){
 							metaschemas.forEach(function(v){ registry.scan(v); });
 							var schema = registry.import('http://localhost/'+filename+'/'+i+'/schema', schemaTest.schema);
 							assert(schema instanceof Schema);
-							var p = schema.createParser({charset:'string'});
-							p.parse(tjson);
 							if(t.valid){
+								var p = schema.parseInfo(tjson);
 								if(p.errors.length) console.error(p.errors.map(function(v){ return v.toString(); }));
 								assert.strictEqual(p.errors.length, 0);
-								// assert.deepEqual(p.errors, []);
 							}else{
-								assert.notEqual(p.errors.length, 0);
+								assert.throws(function(){
+									schema.parse(tjson);
+								});
+								// assert.notEqual(p.errors.length, 0);
 							}
 						});
 					});

@@ -152,21 +152,22 @@ describe('StreamParser', function(){
 	it('new StreamParser({syntaxInf})');
 	it('new StreamParser({syntaxNaN})');
 	it('new StreamParser({syntaxPlus})');
-	it('StreamParser#parse', function(){
+	it('StreamParser#parse (valid)', function(){
 		var stream = new lib.StreamParser({});
-		stream.on("openobject", function (node) {
-			// same object as above
+		stream.parse("{}");
+		assert.strictEqual(stream.errors.length, 0);
+	});
+	it('StreamParser#parse (invalid)', function(){
+		var stream = new lib.StreamParser({});
+		assert.throws(function(){
+			stream.parse("{");
 		});
-		// pipe is supported, and it's readable/writable
-		// same chunks coming in also go out.
-		createReadStream("file.json").pipe(stream);
-		return new Promise(function(done){ stream.on('finish', done); });
 	});
 	it('parse valid', function(){
 		var registry = new SchemaRegistry;
 		// This passes just one test
 		var schema = registry.import('http://localhost/this.json', {});
-		var stream = schema.createParser({charset:'string', keepValue:true});
+		var stream = schema.createParser({charset:'string', parseValue:true});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});
@@ -194,7 +195,7 @@ describe('SchemaRegistry', function(){
 		var registry = new SchemaRegistry;
 		// This passes just one test
 		var schema = registry.import('http://localhost/this.json', {});
-		var stream = schema.createParser({charset:'string', keepValue:true});
+		var stream = schema.createParser({charset:'string', parseValue:true});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});

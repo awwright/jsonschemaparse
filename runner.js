@@ -1,5 +1,5 @@
 
-
+"use strict";
 var fs = require('fs');
 var SchemaRegistry = require('./index.js').SchemaRegistry;
 var Schema = require('./index.js').Schema;
@@ -104,7 +104,7 @@ function runSyntaxTest(filename, done){
 	else return void done(new Error('Unknown test type'));
 	var testError = null;
 	var t = fs.createReadStream(filepath);
-	var p = new Parser(null, {keepValue:true, charset:'UTF-8'});
+	var p = new Parser(null, {parseValue:true, charset:'UTF-8'});
 	t.pipe(p);
 	p.on('error', function(err){
 		if(!err) return;

@@ -1,4 +1,4 @@
-
+"use strict";
 var CodeMirror = window.CodeMirror = require('codemirror');
 var JSONSchemaParse = window.JSONSchemaParse = require('..');
 var modes = [
@@ -17,7 +17,7 @@ window.JSONLint = function JSONLint(schema_editor, text) {
 	var schema = null;
 	if(schema_editor){
 		try {
-			var parse = JSONSchemaParse.parse(null, {charset:'string', keepValue:true}, schema_editor.getValue());
+			var parse = JSONSchemaParse.parse(null, {charset:'string', parseValue:true}, schema_editor.getValue());
 		} catch(e) {
 			console.error(e);
 		}
@@ -28,7 +28,7 @@ window.JSONLint = function JSONLint(schema_editor, text) {
 	}
 	var found = [];
 	try {
-		var parse = new JSONSchemaParse.StreamParser(schema, {charset:'string', keepValue:true});
+		var parse = new JSONSchemaParse.StreamParser(schema, {charset:'string', parseValue:true});
 		parse.parse(text);
 	} catch(err) {
 		var loc = err.position || {};

@@ -133,7 +133,7 @@ Values for "bigNumber" (all these options are performed after JSON Schema valida
 * `properfraction`: will return an array with three BitInt numbers: the whole part, the fractional part numerator, and the fractional part denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.
 
 ```javascript
-var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {keepValue:true});
+var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {parseValue:true});
 
 fs.createReadStream('file.json')
 	.pipe(parser)
@@ -151,7 +151,7 @@ Parsing will end when an error is detected, not all errors in the document may b
 
 ### Parser#value
 
-If `keepValue: true` was passed in `options`, the parsed value will be available here.
+If `parseValue: true` was passed in `options`, the parsed value will be available here.
 
 
 ### Parser#on('startObject', function() )
@@ -197,7 +197,7 @@ Emitted when the incoming stream has ended and has been processed. Guarenteed to
 
 ```javascript
 var schema = new Schema('http://localhost/schema.json', { type: 'array' });
-var parser = schema.createParser({keepValue:true});
+var parser = schema.createParser({parseValue:true});
 
 fs.createReadStream('file.json')
 	.pipe(parser)
@@ -227,7 +227,7 @@ var baseSchema = registry.import('http://localhost/schema.json', { type: 'array'
 var stringSchema = registry.import('http://localhost/item.json', { type: 'string' });
 // Alternatively:
 // var schema = new Schema('http://localhost/schema.json', { type: 'array' }, registry);
-var parser = baseSchema.createParser({keepValue:true});
+var parser = baseSchema.createParser({parseValue:true});
 
 fs.createReadStream('file.json')
 	.pipe(parser)

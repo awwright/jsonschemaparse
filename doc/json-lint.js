@@ -1,4 +1,5 @@
 // declare global: JSONLint
+"use strict";
 function JSONLint(schema_editor, text) {
 	if (!window.JSONSchemaParse) {
 		if (window.console) {
@@ -9,7 +10,7 @@ function JSONLint(schema_editor, text) {
 	var schema = null;
 	if(schema_editor){
 		try {
-			var parse = JSONSchemaParse.parse(null, {charset:'string', keepValue:true}, schema_editor.getValue());
+			var parse = JSONSchemaParse.parse(null, {charset:'string', parseValue:true}, schema_editor.getValue());
 		} catch(e) {
 			console.error(e);
 		}
@@ -20,7 +21,7 @@ function JSONLint(schema_editor, text) {
 	}
 	var found = [];
 	try {
-		var parse = new JSONSchemaParse.StreamParser(schema, {charset:'string', keepValue:true});
+		var parse = new JSONSchemaParse.StreamParser(schema, {charset:'string', parseValue:true});
 		parse.parse(text);
 	} catch(err) {
 		var loc = err.position || {};
