@@ -104,8 +104,20 @@ describe('parse(text, options)', function(){
 			lib.parse(text, {charset:'ASCII'});
 		});
 	});
-	it('parse(text, {charset}) (valid UTF-8)');
-	it('parse(text, {charset}) (invalid UTF-8)');
+	it('parse(text, {charset:UTF-8}) (UTF-8 input)', function(){
+		// High-byte characters are not ASCII
+		const text = Buffer.from('"🐲"', 'UTF-8');
+		const val = lib.parse(text, {charset:'UTF-8'});
+		assert.strictEqual(val, "🐲");
+	});
+	it('parse(text, {charset:UTF-8}) (invalid UTF-8)', function(){
+		// High-byte characters are not ASCII
+		// bytes are backwards
+		const text = Buffer.from([0x22, 0xb2, 0x90, 0x9f, 0xf0, 0x22]);
+		assert.throws(function(){
+			lib.parse(text, {charset:'UTF-8'});
+		});
+	});
 });
 
 describe('parse(text, {parseAnnotations})', function(){

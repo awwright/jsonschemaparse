@@ -912,9 +912,11 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			// UTF-8 decoding
 			if (this.charset==='UTF-8' && chrcode>=0b11000000 && chrcode<=0b11110111) {
 				this.unicode = [chrcode];
-				if(chrcode>=0b11110000) this.layer.state = UTF8_2;
+				// State counts upward... for two-byte sequence, jump to UTF8_4 state, etc.
+				/**/ if(chrcode>=0b11110000) this.layer.state = UTF8_2;
 				else if(chrcode>=0b11100000) this.layer.state = UTF8_3;
-				else this.layer.state = UTF8_4;
+				else if(chrcode>=0b11000000) this.layer.state = UTF8_4;
+				else if(chrcode>=0b10000000) this.charError(block, i, 'Unexpected UTF-8 continuation character');
 				continue;
 			}
 			if (chrcode >= 0x20) {
