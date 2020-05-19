@@ -47,11 +47,7 @@ try {
 
 ### parse(text, options)
 
-Parses _text_, and accepts an object _options_:
-
-* schema: a Schema instance, or schema object, specifying validation rules to apply to the text.
-* reviver: An ECMAScript `JSON.parse` compatible reviving function.
-* charset: The character set, if `text` is a Uint8Array/Buffer. `ASCII` and `UTF-8` values permitted.
+Parses _text_, and accepts an object _options_ as found in Parser, except for the "parse" options, which are called with the following values: `parseValue:true, parseAnnotations:false, parseInfo:false`.
 
 ```javascript
 try {
@@ -97,20 +93,44 @@ Parser is a writable stream that accepts a byte stream or string stream, and out
 options is an object with any of the following properties:
 
 * `schema`: A schema instance or plain object, to be validated against the incoming document.
+* `charset`: The character set used to decode a Buffer/Uint8Array. Valid values: `ASCII`, `UTF-8`
+* `reviver`: A function that consumes and maps values immediately after validation (same interface as ECMAScript).
 * `parseValue`: if `true`, return value will include a `value` property with the JSON.parse equivelant parsed value. Default `false`.
 * `parseAnnotations`: If `true`, return value will include annotations/links properties, with JSON Schema annotations (e.g. the "title", "description" keywords.)
 * `parseInfo`: If `true`, return value will include properties/keys/map properties with Parser output from child instances.
+* `maxKeyLength`: Enforces a limit on object keys, in UTF-16 characters, for memory purposes
+* `maxStringLength`: Enforces a limit on strings (except keys), in UTF-16 characters, for memory purposes
+* `maxNumberLength`: Enforces a limit on the lexical representation of numbers, in characters, for memory purposes
+* `maxItems`: Enforces a limit on size of arrays (number of items), for memory purposes
+* `maxProperties`: Enforces a limit on size of objects (number of properties), for memory purposes
+* `maxUniqueItems`: Enforces a limit on size arrays tested by `uniqueItems` (since this is an O(n²) operation)
+* `interoperable`: Raise an error if the document is outside the I-JSON (RFC 7493) subset of JSON.
+* `bigNumber`: Determines behavior for numbers too large to represent in an ECMAScript number without loss of precision. See "bigNumber" section below for possible values.
+* `niceNumber`: Determines behavior for all other numbers (numbers accurately represented in an ECMAScript number).
+* `syntaxLineComment`: Treats `//` as whitespace until the end of the line
+* `syntaxHashComment`: Treats `#` as whitespace until the end of the line
+* `syntaxBlockComment`: Treats `/*` as whitespace until a `*/` sequence (no nested comments)
+* `syntaxNestedComment`: Treats `/*` as whitespace until a `*/` sequence (allows nesting, overrides syntaxBlockComment)
 * `syntaxUnquotedKeys`: Permits a bare, unqouted ECMAScript 5.1 IdentifierName as a property key
 * `syntaxTrailingComma`: Allows arrays and objects to end with a trailing comma (by configuring the parser so a comma doesn't imply another property/item)
 * `syntaxSingleQuote`: Permits single quotes for strings, including property keys
-* `syntaxEscapeLF`: A backslash linefeed sequence (i.e. a backslash as the last character on a line) will ignore the newline. (The backslash and LF character will both be discarded entirely.) This allows a ␊ character to be encoded as the four-character sequence `"\n\␊"`
+* `syntaxEscapeLF`: A backslash linefeed sequence (i.e. a backslash as the last character on a line) will ignore the newline. (The backslash and LF character will both be discarded entirely.) This allows a ␊ character to be broken across mutiple lines as the four-character string `"\n\␊"` (instead of the two character-string `"\n"` all on a single line).
+* `syntaxUTF32`: Permits `\Uxxxxxxxx` or `\u{x...}` sequences (where `x` is a hex digit) for representing Unicode code points outside the BMP (Basic Multilingual Plane), that would normally only be escaped via a UTF-16 surrogate pair.
 * `syntaxHexadecimal`: Permits numbers starting with `0x` to be interperted as hexadeciamal. Only integers can be expressed with this form.
 * `syntaxBareDecimal`: Permits numbers to start or end with a decimal (otherwise, a `0` would have to come before or after it).
 * `syntaxInf`: Permits `Infinity` and `-Infinity`. This is not compatible with JSON Schema, use with caution.
 * `syntaxNaN`: Permits `NaN` as a number value. This is not compatible with JSON Schema, use with caution.
 * `syntaxPlus`: Permits a leading + before a number.
-* `syntaxUTF32`: Permits `\Uxxxxxxxx` or `\u{x...}` sequences (where `x` is a hex digit) for representing Unicode code points outside the BMP (Basic Multilingual Plane), that would normally only be escaped via a UTF-16 surrogate pair.
 
+Values for "bigNumber" (all these options are performed after JSON Schema validation):
+
+* `default`: Use nearest floating point representation, same behavior as JSON.parse
+* `error`: Treat as a validation error
+* function: Pass a function `function(json, validator)` that returns the value to use.
+* `json`: Use the raw JSON in a string. This may be in exponential notation, depending on how it was present in the original document.
+* `string`: Cast to a decimal number. There will be an optional minus sign, one or more digits, a decimal point, and one or more digits. The `maxNumberLength` will be enforced on this new string, if present.
+* `fraction`: will return an array with two BitInt numbers: the numerator, and denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.
+* `properfraction`: will return an array with three BitInt numbers: the whole part, the fractional part numerator, and the fractional part denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.
 
 ```javascript
 var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {keepValue:true});
