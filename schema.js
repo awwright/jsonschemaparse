@@ -630,9 +630,12 @@ function Schema(id, schema, registry){
 		throw new Error("Expected $recursiveRef to provide a string URI Reference");
 	}
 
-	// Annotation
+	// Annotations
 	if(schema.title !== undefined){
 		self.title = schema.title;
+	}
+	if(schema.description !== undefined){
+		self.description = schema.description;
 	}
 
 	const known = {
@@ -903,6 +906,11 @@ Schema.prototype.exportRules = function exportRules(){
 	if(schema.title){
 		validators.Annotations.push(function collectTitle(layer){
 			return new Annotation(schema.title, layer, schema, 'title');
+		});
+	}
+	if(schema.description){
+		validators.Annotations.push(function collectTitle(layer){
+			return new Annotation(schema.description, layer, schema, 'description');
 		});
 	}
 

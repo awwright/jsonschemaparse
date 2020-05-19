@@ -154,14 +154,6 @@ describe('parseInfo(text, {parseInfo})', function(){
 	it('parseInfo(text, {parseInfo: true}) (enabled)');
 });
 
-describe('parse(text, {syntax})', function(){
-});
-
-describe('parseAnnotated(text, options)', function(){
-	it('parse valid');
-	it('parse ref');
-});
-
 describe('StreamParser', function(){
 	it('StreamParser#parse', function(){
 		var stream = new lib.StreamParser();
