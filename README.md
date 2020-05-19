@@ -11,7 +11,7 @@ Features:
 	- Syntax errors
 * Validates the JSON document against a JSON Schema
 	- Provides line/character information of error
-* Parse JSON instances into an instance of an arbritrary object - parse dates directly into Date, integers into arbritrary precision object, objects into Immutable Map, etc.
+* Parse JSON instances into an instance of an arbitrary object - parse dates directly into Date, integers into arbitrary precision object, objects into Immutable Map, etc.
 	- Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.
    - Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate
 
@@ -28,7 +28,7 @@ For reading a Uint8Array/Buffer, specify `charset` in the options (see the `pars
 
 Parses _text_ and turns it into a native value. The _reviver_ argument is applied to each value, compatible with ECMAScript `JSON.parse`.
 
-Equivelant to ECMAScript `JSON.parse(text, reviver)`.
+Equivalent to ECMAScript `JSON.parse(text, reviver)`.
 
 
 ### parse(text, schema)
@@ -49,7 +49,7 @@ try {
 
 Parses _text_, and accepts an object _options_:
 
-* schema: a Schema instance, or schema object, specifiying validation rules to apply to the text.
+* schema: a Schema instance, or schema object, specifying validation rules to apply to the text.
 * reviver: An ECMAScript `JSON.parse` compatible reviving function.
 * charset: The character set, if `text` is a Uint8Array/Buffer. `ASCII` and `UTF-8` values permitted.
 
@@ -65,7 +65,7 @@ try {
 ```
 
 
-### parseDOM(text, options)
+### parseAnnotated(text, options)
 
 Parses _text_ and returns an Instance instance. Use it when you need to know additional information about the JSON document, including JSON Schema annotations on each value, or the line/character position information of each value.
 
@@ -73,25 +73,24 @@ Parses _text_ and returns an Instance instance. Use it when you need to know add
 
 * schema: a Schema instance, or an object representing a parsed schema document
 * annotations: true/false to collect or ignore annotations. Default true.
-* 
 
 
 The returned object will have the following properties:
 
 * type: object/array/string/number/boolean/null, depending on the type
-* native: the JSON.parse equivelant value
+* native: the JSON.parse equivalent value
 * annotations: A list of all the JSON Schema annotations collected for this instance
 * links: A list of all the links collected through JSON Hyper-schema. Unlike "annotations", each rel= in a single link produces a new item in this list.
 * properties: if instance is an object, contains a list of PropertyInstance items.
 * keys: if instance is an object, contains a map of key names to PropertyInstance items.
 * key: if instance is a PropertyInstance, this contains a StringInstance holding the key of the property.
 * items: if instance is an array, contains a list of Instance items.
-* map: a Map of all the child objects/arrays in the instnce, mapped to their corresponding Instance
+* map: a Map of all the child objects/arrays in the instance, mapped to their corresponding Instance
 
 
 ### class: Parser
 
-Parser is a transforming stream that accepts a byte stream or string stream, and outputs events.
+Parser is a writable stream that accepts a byte stream or string stream, and outputs events.
 
 ```javascript
 var parser = new Parser(new Schema('http://localhost/schema.json', {type: 'array'}), {keepValue:true});
@@ -104,25 +103,6 @@ fs.createReadStream('file.json')
 	});
 ```
 
-### Parser.parse(schema, options, document)
-
-Shortcut for parsing a one-off block of JSON.
-
-* schema: Schema instance to be validated against
-* options: additional options for validating/parsing the JSON document
- * charset: Specifies how the Buffer or Uint8Array is encoded: "ASCII", "UTF-8", or "string" for a native string (UTF-16).
- * keepValue: If true, saves parsed value to `Parser#value`. Default `false`.
-* document: The entire JSON document to parse, provided as a string, Buffer, or Uint8Array.
-
-```javascript
-var parser = Parser.parse(
-	new Schema('http://localhost/schema.json', {type: 'array'}),
-	{},
-	fs.readFileSync('file.json') );
-console.log(parser.errors);
-console.log(parser.value);
-```
-
 ### Parser#errors
 
 An Array of ValidationError instances representing accumulated validation errors.
@@ -132,6 +112,7 @@ Parsing will end when an error is detected, not all errors in the document may b
 ### Parser#value
 
 If `keepValue: true` was passed in `options`, the parsed value will be available here.
+
 
 ### Parser#on('startObject', function() )
 Emitted when an object is opened (when `{` is observed).
@@ -169,7 +150,7 @@ Emitted when a null is parsed.
 Emitted when the incoming stream has ended and has been processed. Guarenteed to be called once. Indicates end of processing.
 
 
-## class: Schema(baseURI, schemaObject)
+### class: Schema(baseURI, schemaObject)
 
 * baseURI: The URI the schema was downloaded at, if any.
 * schemaObject: A parsed JSON schema. Must be an object, JSON Schema documents can simply be run through `JSON.parse` to generate a compatible object.
@@ -191,13 +172,14 @@ Create a `Parser` instance with the given options.
 The parser will validate the incoming stream against the Schema.
 
 
-## class: SchemaRegistry
+### class: SchemaRegistry
 
 Use SchemaRegistry if one schema references another.
 
-### SchemaRegistry#import
 
-Import a schema so that it's referencable by its given URI by other schemas.
+### SchemaRegistry#import(uri, schema)
+
+Import a schema so that it may be referenced by its given URI by other schemas.
 
 ```javascript
 var registry = new SchemaRegistry();
@@ -215,8 +197,8 @@ fs.createReadStream('file.json')
 	});
 ```
 
-## Interface: Validator
-A Validator is the fundemental paradigm that is used to process information from the JSON parser as it is streaming.
+### Interface: Validator
+A Validator is the paradigm used to validate information from the JSON parser as it is streaming. It validates a single instance against a single schema by reading SAX events from the parser, as well as listening to results from subordinate validators (Validator instances for child instances and subschemas), and comparing them to the range of events permitted by the schema.
 
 It is an ECMAScript object that consumes information about a single layer in the parser stack as it tokenizes input.
 A validator only evaluates over a single layer in the stack (like an object or a string), it is not notified of events that happen in children or grandchildren layers.
@@ -232,43 +214,24 @@ Optionally pass an outside array that errors will be pushed to.
 Normally, this will be the instance of Parser#errors, so that errors from all validators get gathered together at the parser.
 Otherwise, a local array will be created.
 
-### Validator#startObject(layer)
-Called when the parser has begun consuming a object.
-### Validator#endObject(layer)
-Called when the parser has fully consumed the Object.
-### Validator#validateProperty(k)
-Returns an array of Validators (usually just one) that will validate the value for the property with the given key _k_.
-### Validator#startKey(layer)
-Called when the parser has begun consuming a key.
-### Validator#endKey(layer, name)
-Called when the parser has fully consumed the Key. Provides the parsed value.
+The parser will call the following methods, depending on the tokens it encounters during parsing:
 
-### Validator#startArray(layer)
-Called when the parser has begun consuming an array.
-### Validator#endArray(layer)
-Called when the parser has fully consumed the Array.
-### Validator#validateItem(i)
-Returns an array of Validators (usually just one) that will validate the value for the property with the given index _i_.
-
-### Validator#startNumber(layer)
-Called when the parser has begun consuming a number.
-### Validator#endNumber(layer, value)
-Called when the parser has fully consumed the Number. Provides the parsed value.
-
-### Validator#startString(layer)
-Called when the parser has begun consuming a string.
-### Validator#endString(layer, value)
-Called when the parser has fully consumed the String. Provides the parsed value.
-
-### Validator#startBoolean(layer)
-Called when the parser has begun consuming a boolean.
-### Validator#endBoolean(layer, value)
-Called when the parser has fully consumed the Boolean. Provides the parsed value.
-
-### Validator#startNull(layer)
-Called when the parser has begun consuming a null.
-### Validator#endNull(layer, value)
-Called when the parser has fully consumed the Null. Provides the parsed value.
+* Validator#startObject(layer)
+* Validator#endObject(layer)
+* Validator#validateProperty(k)
+* Validator#startKey(layer)
+* Validator#endKey(layer, name)
+* Validator#startArray(layer)
+* Validator#endArray(layer)
+* Validator#validateItem(i)
+* Validator#startNumber(layer)
+* Validator#endNumber(layer, value)
+* Validator#startString(layer)
+* Validator#endString(layer, value)
+* Validator#startBoolean(layer)
+* Validator#endBoolean(layer, value)
+* Validator#startNull(layer)
+* Validator#endNull(layer, value)
 
 
 ## Migrating from other parsers
@@ -278,7 +241,7 @@ Called when the parser has fully consumed the Null. Provides the parsed value.
 
 Use `lib.parse` in place of `JSON.parse`.
 
-This library only parses, so there is no equivelant to `JSON.stringify`
+This library only parses, so there is no equivalent to `JSON.stringify`
 
 
 ### JSON5
@@ -306,7 +269,11 @@ const parsed = lib.parse(text, JSON5Opts);
 
 If you need the reviver function, add a "reviver" property to the options.
 
-This library only parses, so there is no equivelant to `JSON5.stringify`.
+This library only parses, so there is no equivalent to `JSON5.stringify`.
+
+### JSONStream
+
+
 
 
 ### Clarinet.js
@@ -320,7 +287,7 @@ Clarinet is a SAX-like streaming parser for JSON.
 
 Homepage: http://oboejs.com/
 
-Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retreival over the network, and an API to batch SAX events into subdocuments, for easier processing by the application.
+Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retrieval over the network, and an API to split a (potentially very large) document into subdocuments, for easier processing by the application.
 
 This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use `fs.createReadStream`.
 
