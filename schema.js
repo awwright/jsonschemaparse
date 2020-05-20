@@ -169,18 +169,6 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 	if(fullId){
 		idList.push(fullId);
 	}
-	const baseId = idList[0] || base;
-	// if(typeof schema==='string'){
-	// 	var baseId = uriResolve(base, schema);
-	// 	if(!this.source[baseId]) this.source[baseId] = null;
-	// 	this.seen[baseId] = true;
-	// }
-	if(typeof schemaObject==='object'){
-	}else if(typeof schemaObject==='boolean'){
-		// void
-	}else{
-		throw new Error('Unexpected value for schema (expected object or boolean)');
-	}
 	idList.forEach(function(id){
 		if(self.source[id]){
 			const oldSchema = JSON.stringify(self.source[id]);

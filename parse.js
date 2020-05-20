@@ -90,7 +90,13 @@ function JSONparse(text, options){
 }
 
 module.exports.parseInfo = parseInfo;
-function parseInfo(text, opts){
+function parseInfo(text, options){
+	const defaults = {
+		parseValue: true,
+		parseAnnotations: true,
+		parseInfo: true,
+	};
+	const opts = Object.assign(defaults, options);
 	const parser = new StreamParser(opts);
 	parser.parse(text);
 	return parser;
@@ -177,7 +183,7 @@ StreamParser.prototype.event = function (name, value) {
 StreamParser.prototype.charError = function (block, i, expecting) {
 	var actual = block[i];
 	if(typeof actual==='number') actual=String.fromCharCode(actual);
-	throw new SyntaxError(
+	const err = new SyntaxError(
 		"Unexpected "
 			+ JSON.stringify(actual)
 			+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
@@ -188,6 +194,8 @@ StreamParser.prototype.charError = function (block, i, expecting) {
 		expecting,
 		actual
 	);
+	this.errors.push(err);
+	throw err;
 };
 
 StreamParser.prototype.push = function push(k, validator) {
