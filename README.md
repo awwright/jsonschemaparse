@@ -103,9 +103,9 @@ options is an object with any of the following properties:
 * `maxKeyLength`: Enforces a limit on object keys, in UTF-16 characters, for memory purposes
 * `maxStringLength`: Enforces a limit on strings (except keys), in UTF-16 characters, for memory purposes
 * `maxNumberLength`: Enforces a limit on the lexical representation of numbers, in characters, for memory purposes when "bigNumber" is enabled.
-* `maxItems`: Enforces a limit on size of arrays (number of items), for memory purposes
-* `maxProperties`: Enforces a limit on size of objects (number of properties), for memory purposes
-* `maxUniqueItems`: Enforces a limit on size arrays tested by `uniqueItems` (since this is an O(n²) operation)
+* `maxItems`: Enforces a limit on number of items in each array, for memory purposes
+* `maxProperties`: Enforces a limit on number of properties in each object, for memory purposes
+* `maxUniqueItems`: Enforces a limit on size of all arrays tested by `uniqueItems` (since this is an O(n²) operation)
 * `interoperable`: Raise an error if the document is outside the I-JSON (RFC 7493) subset of JSON.
 * `bigNumber`: Determines behavior for numbers too large to represent in an ECMAScript number without loss of precision. See "bigNumber" section below for possible values.
 * `niceNumber`: Determines behavior for all other numbers (numbers accurately represented in an ECMAScript number).

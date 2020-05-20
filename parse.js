@@ -137,6 +137,8 @@ function StreamParser(options) {
 	this.maxKeyLength = options.maxKeyLength || null;
 	this.maxStringLength = options.maxStringLength || null;
 	this.maxNumberLength = options.maxNumberLength || null;
+	this.maxItems = options.maxItems || null;
+	this.maxProperties = options.maxProperties || null;
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -221,6 +223,7 @@ StreamParser.prototype.push = function push(k, validator) {
 		endLine: null,
 		endColumn: null,
 		length: 0,
+		maxLength: null, // setting to be mindful of memory usage
 		validator: validator || [],
 	};
 	this.stack.push(this.layer);
@@ -238,6 +241,17 @@ StreamParser.prototype.push = function push(k, validator) {
 StreamParser.prototype.pushProperty = function pushProperty(key) {
 	var list = this.layer.validator || [];
 	if(!Array.isArray(list)) throw new Error('Expected array');
+	if(this.layer.maxLength && this.layer.length > this.layer.maxLength){
+		const err = new SyntaxError(
+			"Too many properties in object"
+				+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
+				+ " in state " + toknam(this.layer.state),
+			this.layer.path,
+			{line:this.lineNumber, column:this.characters-this.lineOffset}
+		);
+		this.errors.push(err);
+		throw err;
+	}
 	var result = collapseArray(list, function(validator){
 		return validator.initProperty(key);
 	});
@@ -247,6 +261,17 @@ StreamParser.prototype.pushProperty = function pushProperty(key) {
 StreamParser.prototype.pushItem = function pushItem(k) {
 	var list = this.layer.validator || [];
 	if(!Array.isArray(list)) throw new Error('Expected array');
+	if(this.layer.maxLength && this.layer.length > this.layer.maxLength){
+		const err = new SyntaxError(
+			"Too many items in array"
+				+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
+				+ " in state " + toknam(this.layer.state),
+			this.layer.path,
+			{line:this.lineNumber, column:this.characters-this.lineOffset}
+		);
+		this.errors.push(err);
+		throw err;
+	}
 	var result = collapseArray(list, function(validator){
 		return validator.initItem(k);
 	});
@@ -416,6 +441,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case OBJECT1:
 			// Opened a curly brace, expecting a closing curly brace or a key
+			if(this.maxProperties && this.layer.maxLength===null) this.layer.maxLength = this.maxProperties;
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -464,6 +490,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// Once property value is parsed, we'll return to OBJECT4
 				this.layer.state = OBJECT4;
 				// But first, parse the next characters as a new value
+				this.layer.length++;
 				this.pushProperty(this.layer.key);
 				continue;
 			}
@@ -472,7 +499,6 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 		case OBJECT4:
 			// Process parsed value
 			if(this.layer.parseValue) this.layer.value[this.layer.key] = this.value;
-			this.layer.length++;
 			this.layer.state = OBJECT5;
 			// fall through to OBJECT5
 		case OBJECT5:
@@ -523,6 +549,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case ARRAY1:
 			// Finished reading open-array, expecting close-array or value
+			if(this.maxItems && this.layer.maxLength===null) this.layer.maxLength = this.maxItems;
 			switch (chrcode) {
 			case 0x0a:
 				this.lineOffset = i;
@@ -749,7 +776,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case NUMBER2:
 			// after initial zero
-			if(this.maxNumberLength && !this.layer.maxLength) this.layer.maxLength = this.maxNumberLength;
+			if(this.maxNumberLength && this.layer.maxLength===null) this.layer.maxLength = this.maxNumberLength;
 			// expecting a decimal or exponent
 			switch (chrcode) {
 			case 0x2e: // `.`
@@ -767,7 +794,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			continue;
 		case NUMBER3:
 			// After digit (before period)
-			if(this.maxNumberLength && !this.layer.maxLength) this.layer.maxLength = this.maxNumberLength;
+			if(this.maxNumberLength && this.layer.maxLength===null) this.layer.maxLength = this.maxNumberLength;
 			switch (chrcode) {
 			case 0x2e: // .
 				this.layer.state = NUMBER4;
@@ -924,7 +951,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			this.charError(block, i, 'l');
 			break;
 		case STRING1: // After open quote
-			if(this.maxStringLength && !this.layer.maxLength) this.layer.maxLength = this.maxStringLength;
+			if(this.maxStringLength && this.layer.maxLength===null) this.layer.maxLength = this.maxStringLength;
 			switch (chrcode) {
 			case 0x22: // `"`
 				if(this.layer.parseValue) this.layer.value = this.readBuffer(block, i);

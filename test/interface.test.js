@@ -219,8 +219,24 @@ describe('parse options', function(){
 			lib.parse(text, options);
 		});
 	});
-	it('parse({maxItems})');
-	it('parse({maxProperties})');
+	it('parse({maxItems})', function(){
+		const text = '{ "a": [0, 1, 2, 3, 4, 5] }';
+		const options = {
+			maxItems: 4,
+		};
+		assert.throws(function(){
+			lib.parse(text, options);
+		});
+	});
+	it('parse({maxProperties})', function(){
+		const text = '[ { "a":1, "b":2, "c":3 } ]';
+		const options = {
+			maxProperties: 2,
+		};
+		assert.throws(function(){
+			lib.parse(text, options);
+		});
+	});
 	it('parse({maxUniqueItems})');
 	it('parse({interoperable})');
 	it('parse({bigNumber})');
