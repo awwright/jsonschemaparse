@@ -132,7 +132,9 @@ function StreamParser(options) {
 	this.parseValue = 'parseValue' in options ? options.parseValue : false;
 	// dunno what this is
 	this.key = false;
-	// Allow trailing commas/comma terminated properties?
+
+	// Configurable parsing options
+	this.maxKeyLength = options.maxKeyLength || null;
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -431,6 +433,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				this.layer.state = STRING1;
 				this.layer.parseValue = true;
 				this.layer.key = true;
+				if(this.maxKeyLength) this.layer.maxLength = this.maxKeyLength;
 				continue;
 			case 0x7d: // `}`
 				this.endObject();
@@ -1106,6 +1109,17 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 		// Only increment if the character completes a code point
 		// i.e. exclude high surrogates
 		if(chrcode<0xD800 || chrcode>0xDBFF) this.layer.length++;
+	}
+	if(this.layer.maxLength && this.layer.length > this.layer.maxLength){
+		const err = new SyntaxError(
+			"String too long "
+				+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
+				+ " in state " + toknam(this.layer.state),
+			this.layer.path,
+			{line:this.lineNumber, column:this.characters-this.lineOffset}
+		);
+		this.errors.push(err);
+		throw err;
 	}
 };
 

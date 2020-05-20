@@ -187,6 +187,41 @@ describe('parseInfo(text, {parseInfo})', function(){
 	it('parseInfo(text, {parseInfo: true}) (enabled)');
 });
 
+describe('parse options', function(){
+	it('parse({maxKeyLength})', function(){
+		const text = '{"this is a very long key": true}';
+		const options = {maxKeyLength: 10};
+		assert.throws(function(){
+			lib.parse(text, options);
+		});
+	});
+	it('parse({maxStringLength})');
+	it('parse({maxNumberLength})');
+	it('parse({maxItems})');
+	it('parse({maxProperties})');
+	it('parse({maxUniqueItems})');
+	it('parse({interoperable})');
+	it('parse({bigNumber})');
+	it('parse({niceNumber})');
+});
+
+describe('syntax options', function(){
+	it('parse({syntaxLineComment})');
+	it('parse({syntaxHashComment})');
+	it('parse({syntaxBlockComment})');
+	it('parse({syntaxNestedComment})');
+	it('parse({syntaxUnquotedKeys})');
+	it('parse({syntaxTrailingComma})');
+	it('parse({syntaxSingleQuote})');
+	it('parse({syntaxEscapeLF})');
+	it('parse({syntaxUTF32})');
+	it('parse({syntaxHexadecimal})');
+	it('parse({syntaxBareDecimal})');
+	it('parse({syntaxInf})');
+	it('parse({syntaxNaN})');
+	it('parse({syntaxPlus})');
+});
+
 describe('StreamParser', function(){
 	it('StreamParser#parse', function(){
 		var stream = new lib.StreamParser();
