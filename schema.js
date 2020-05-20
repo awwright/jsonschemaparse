@@ -154,7 +154,7 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 	const schema = new Schema(schemaId, schemaObject, self);
 	const newSchema = JSON.stringify(schemaObject);
 	// if `id` is a reference and not a full URI, and there's no base to resolve it against, then throw an error
-	// Becuase a relative URI Reference needs a base to resolve against, and we don't want to assume one for the application
+	// Because a relative URI Reference needs a base to resolve against, and we don't want to assume one for the application
 	// the schema's id, as an unresolved URI Reference
 	if(typeof base !== 'string') throw new Error('Expected a string `base` argument');
 	var idRef = schemaObject.$id || schemaObject.id;
@@ -176,78 +176,6 @@ SchemaRegistry.prototype.scanSchema = function scanSchema(base, schemaObject, pa
 	// 	this.seen[baseId] = true;
 	// }
 	if(typeof schemaObject==='object'){
-		if(Array.isArray(schemaObject.items)){
-			schema.sequence = self.scanList(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
-			if(schemaObject.additionalItems !== undefined){
-				schema.additionalItems = self.scanSchema(baseId, schemaObject.additionalItems, addPath(paths, baseId, 'additionalItems'));
-			}else if(schemaObject.additionalItems !== undefined){
-				throw new Error('Expected `additionalItems` to be a schema (object or boolean)');
-			}
-		}else if(isSchema(schemaObject.items)){
-			schema.additionalItems = self.scanSchema(baseId, schemaObject.items, addPath(paths, baseId, 'items'));
-		}else if(schemaObject.items !== undefined){
-			throw new Error('Expected `items` to be a schema or array of schemas (object or boolean)');
-		}
-		if(schemaObject.properties){
-			schema.properties = self.scanMap(baseId, schemaObject.properties, addPath(paths, baseId, 'properties'));
-		}
-		if(isSchema(schemaObject.additionalProperties)){
-			schema.additionalProperties = self.scanSchema(baseId, schemaObject.additionalProperties, addPath(paths, baseId, 'additionalProperties'));
-		}else if(schemaObject.additionalProperties !== undefined){
-			throw new Error('Expected `additionalProperties` to be a schema (object or boolean)');
-		}
-		if(isObject(schemaObject.definitions)){
-			schema.definitions = self.scanMap(baseId, schemaObject.definitions, addPath(paths, baseId, 'definitions'));
-		}else if(schemaObject.definitions !== undefined){
-			throw new Error('Expected `definitions` to be an object (string->schema map)');
-		}
-		if(schemaObject.$defs){
-			schema.$defs = self.scanMap(baseId, schemaObject.$defs, addPath(paths, baseId, '$defs'));
-		}
-		if(isObject(schemaObject.patternProperties)){
-			schema.patternProperties = self.scanMap(baseId, schemaObject.patternProperties, addPath(paths, baseId, 'patternProperties'));
-		}else if(schemaObject.patternProperties !== undefined){
-			throw new Error('Expected `patternProperties` to be an object (string->schema map)');
-		}
-		if(schemaObject.dependencies){
-			schema.dependencies = self.scanMap(baseId, schemaObject.dependencies, addPath(paths, baseId, 'dependencies'));
-		}
-		if(schemaObject.disallow){
-			schema.disallow = self.scanSchema(baseId, schemaObject.disallow, addPath(paths, baseId, 'disallow'));
-		}
-		if(Array.isArray(schemaObject.allOf)){
-			schema.allOf = self.scanList(baseId, schemaObject.allOf, addPath(paths, baseId, 'allOf'));
-		}else if(schemaObject.allOf !== undefined){
-			throw new Error('Expected `allOf` to be an array of schemas');
-		}
-		if(Array.isArray(schemaObject.anyOf)){
-			schema.anyOf = [ self.scanList(baseId, schemaObject.anyOf, addPath(paths, baseId, 'anyOf')) ];
-		}else if(schemaObject.anyOf !== undefined){
-			throw new Error('Expected `anyOf` to be an array of schemas');
-		}
-		if(schemaObject.oneOf){
-			schema.oneOf = [ self.scanList(baseId, schemaObject.oneOf, addPath(paths, baseId, 'oneOf')) ];
-		}else if(schemaObject.oneOf !== undefined){
-			throw new Error('Expected `oneOf` to be an array of schemas');
-		}
-		if(isSchema(schemaObject.not)){
-			schema.not =  [ self.scanSchema(baseId, schemaObject.not, addPath(paths, baseId, 'not')) ];
-		}else if(schemaObject.not !== undefined){
-			throw new Error('Expected `not` to be a schema');
-		}
-		// obsolete keyword
-		if(schemaObject.extends){
-			schema.extends = self.scanSchema(baseId, schemaObject.extends, addPath(paths, baseId, 'extends'));
-		}
-		if(typeof schemaObject.$ref === 'string'){
-			const refUri = uriResolve(baseId, schemaObject.$ref);
-			if(!self.seen[refUri]){
-				self.seen[refUri] = schemaObject;
-				self.pending.push([refUri, schemaObject]);
-			}
-		}else if(schemaObject.$ref !== undefined){
-			throw new Error('Expected $ref to be a string');
-		}
 	}else if(typeof schemaObject==='boolean'){
 		// void
 	}else{
@@ -358,12 +286,36 @@ function Schema(id, schema, registry){
 	// console.log('Schema', id);
 	const self = this;
 	self.id = id;
+	const paths = [];
 
 	// Core
 	self.allOf = [];
+	if(Array.isArray(schema.allOf)){
+		self.allOf = registry.scanList(self.id, schema.allOf, addPath(paths, self.id, 'allOf'));
+	}else if(schema.allOf !== undefined){
+		throw new Error('Expected `allOf` to be an array of schemas');
+	}
+
 	self.anyOf = [];
+	if(Array.isArray(schema.anyOf)){
+		self.anyOf = [ registry.scanList(self.id, schema.anyOf, addPath(paths, self.id, 'anyOf')) ];
+	}else if(schema.anyOf !== undefined){
+		throw new Error('Expected `anyOf` to be an array of schemas');
+	}
+
 	self.oneOf = [];
+	if(schema.oneOf){
+		self.oneOf = [ registry.scanList(self.id, schema.oneOf, addPath(paths, self.id, 'oneOf')) ];
+	}else if(schema.oneOf !== undefined){
+		throw new Error('Expected `oneOf` to be an array of schemas');
+	}
+
 	self.not = [];
+	if(isSchema(schema.not)){
+		self.not =  [ registry.scanSchema(self.id, schema.not, addPath(paths, self.id, 'not')) ];
+	}else if(schema.not !== undefined){
+		throw new Error('Expected `not` to be a schema');
+	}
 
 	if(!registry) registry = new SchemaRegistry;
 	self.registry = registry;
@@ -438,16 +390,28 @@ function Schema(id, schema, registry){
 	}
 
 	self.properties = {};
+	if(schema.properties){
+		self.properties = registry.scanMap(self.id, schema.properties, addPath(paths, self.id, 'properties'));
+	}
 
 	self.patternProperties = {};
 	self.patternPropertiesRegExp = {};
-	if(schema.patternProperties!==undefined){
+	if(isObject(schema.patternProperties)){
 		for(const k in schema.patternProperties){
 			self.patternPropertiesRegExp[k] = new RegExp(k);
 		}
+		self.patternProperties = registry.scanMap(self.id, schema.patternProperties, addPath(paths, self.id, 'patternProperties'));
+	}else if(schema.patternProperties !== undefined){
+		throw new Error('Expected `patternProperties` to be an object (string->schema map)');
 	}
 
+
 	self.additionalProperties = null;
+	if(isSchema(schema.additionalProperties)){
+		self.additionalProperties = registry.scanSchema(self.id, schema.additionalProperties, addPath(paths, self.id, 'additionalProperties'));
+	}else if(schema.additionalProperties !== undefined){
+		throw new Error('Expected `additionalProperties` to be a schema (object or boolean)');
+	}
 
 	self.minProperties = null;
 	if(schema.minProperties !== undefined){
@@ -474,6 +438,18 @@ function Schema(id, schema, registry){
 
 	self.sequence = [];
 	self.additionalItems = null;
+	if(Array.isArray(schema.items)){
+		self.sequence = registry.scanList(self.id, schema.items, addPath(paths, self.id, 'items'));
+		if(schema.additionalItems !== undefined){
+			self.additionalItems = registry.scanSchema(self.id, schema.additionalItems, addPath(paths, self.id, 'additionalItems'));
+		}else if(schema.additionalItems !== undefined){
+			throw new Error('Expected `additionalItems` to be a schema (object or boolean)');
+		}
+	}else if(isSchema(schema.items)){
+		self.additionalItems = registry.scanSchema(self.id, schema.items, addPath(paths, self.id, 'items'));
+	}else if(schema.items !== undefined){
+		throw new Error('Expected `items` to be a schema or array of schemas (object or boolean)');
+	}
 
 	self.minItems = null;
 	if(schema.minItems !== undefined){
@@ -623,11 +599,43 @@ function Schema(id, schema, registry){
 		throw new Error("Expected $ref to provide a string URI Reference");
 	}
 
+	if(typeof schema.$ref === 'string'){
+		const refUri = uriResolve(self.id, schema.$ref);
+		if(!registry.seen[refUri]){
+			registry.seen[refUri] = schema;
+			registry.pending.push([refUri, schema]);
+		}
+	}else if(schema.$ref !== undefined){
+		throw new Error('Expected $ref to be a string');
+	}
+
+
 	// $recursiveRef
 	if(typeof schema.$recursiveRef === 'string'){
 		self.$recursiveRef = uriResolve(self.id, schema.$recursiveRef);
 	}else if(schema.$recursiveRef !== undefined){
 		throw new Error("Expected $recursiveRef to provide a string URI Reference");
+	}
+
+	// No-op
+	if(isObject(schema.definitions)){
+		self.definitions = registry.scanMap(self.id, schema.definitions, addPath(paths, self.id, 'definitions'));
+	}else if(schema.definitions !== undefined){
+		throw new Error('Expected `definitions` to be an object (string->schema map)');
+	}
+	if(schema.$defs){
+		self.$defs = registry.scanMap(self.id, schema.$defs, addPath(paths, self.id, '$defs'));
+	}
+
+	// obsolete keywords
+	if(schema.extends){
+		self.extends = registry.scanSchema(self.id, schema.extends, addPath(paths, self.id, 'extends'));
+	}
+	if(schema.dependencies){
+		self.dependencies = registry.scanMap(self.id, schema.dependencies, addPath(paths, self.id, 'dependencies'));
+	}
+	if(schema.disallow){
+		self.disallow = registry.scanSchema(self.id, schema.disallow, addPath(paths, self.id, 'disallow'));
 	}
 
 	// Annotations

@@ -148,6 +148,39 @@ describe('parseInfo(text, {parseAnnotations})', function(){
 	});
 });
 
+describe('parseInfo(text, {schema})', function(){
+	it('parseInfo(text, {schema: 1}) (fail)', function(){
+		const schemaObject = {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"_id": { "type": "string" },
+				},
+			},
+		};
+		const schema = new lib.Schema('_:root', schemaObject);
+		const text = '[ { "_id": "1" } ]';
+		const parse = lib.parseInfo(text, {parseAnnotations:true, parseInfo:true, schema:schema});
+		assert.strictEqual(parse.errors.length, 0);
+	});
+	it('parseInfo(text, {schema: 1}) (pass)', function(){
+		const schemaObject = {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"_id": { "type": "number" },
+				},
+			},
+		};
+		const schema = new lib.Schema('_:root', schemaObject);
+		const text = '[ { "_id": "1" } ]';
+		const parse = lib.parseInfo(text, {parseAnnotations:true, parseInfo:true, schema:schema});
+		assert.strictEqual(parse.errors.length, 1);
+	});
+});
+
 describe('parseInfo(text, {parseInfo})', function(){
 	it('parseInfo(text, {}) (default)');
 	it('parseInfo(text, {parseInfo: false}) (disabled)');
