@@ -190,12 +190,24 @@ describe('parseInfo(text, {parseInfo})', function(){
 describe('parse options', function(){
 	it('parse({maxKeyLength})', function(){
 		const text = '{"this is a very long key": true}';
-		const options = {maxKeyLength: 10};
+		const options = {
+			maxKeyLength: 10,
+			maxStringLength: 1000,
+		};
 		assert.throws(function(){
 			lib.parse(text, options);
 		});
 	});
-	it('parse({maxStringLength})');
+	it('parse({maxStringLength})', function(){
+		const text = '{"key": "this is a very long string"}';
+		const options = {
+			maxKeyLength: 1000,
+			maxStringLength: 10,
+		};
+		assert.throws(function(){
+			lib.parse(text, options);
+		});
+	});
 	it('parse({maxNumberLength})');
 	it('parse({maxItems})');
 	it('parse({maxProperties})');

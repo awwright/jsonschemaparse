@@ -135,6 +135,7 @@ function StreamParser(options) {
 
 	// Configurable parsing options
 	this.maxKeyLength = options.maxKeyLength || null;
+	this.maxStringLength = options.maxStringLength || null;
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -919,6 +920,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			this.charError(block, i, 'l');
 			break;
 		case STRING1: // After open quote
+			if(this.maxStringLength && !this.layer.maxLength) this.layer.maxLength = this.maxStringLength;
 			switch (chrcode) {
 			case 0x22: // `"`
 				if(this.layer.parseValue) this.layer.value = this.readBuffer(block, i);
