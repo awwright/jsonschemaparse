@@ -131,6 +131,7 @@ Values for "bigNumber" (all these options are performed after JSON Schema valida
 * function: Pass a function `function(json, validator)` that returns the value to use.
 * `json`: Use the raw JSON in a string. This may be in exponential notation, depending on how it was present in the original document.
 * `string`: Cast to a decimal number. There will be an optional minus sign, one or more digits, a decimal point, and one or more digits. The `maxNumberLength` will be enforced on this new string, if present.
+* `intstr`: Encode as a string, but only guarantees the accuracy of the integer part. This is best used with the `type: "integer"` keyword.
 * `fraction`: will return an array with two BitInt numbers: the numerator, and denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.
 * `properfraction`: will return an array with three BitInt numbers: the whole part, the fractional part numerator, and the fractional part denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.
 

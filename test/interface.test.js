@@ -239,7 +239,25 @@ describe('parse options', function(){
 	});
 	it('parse({maxUniqueItems})');
 	it('parse({interoperable})');
-	it('parse({bigNumber})');
+	it('parse({bigNumber:json})', function(){
+		const text = '123456789012345678';
+		const options = {
+			bigNumber: 'json',
+		};
+		const val = lib.parse(text, options);
+		assert.strictEqual(val, text);
+	});
+	it('parse({bigNumber:error})', function(){
+		const text = '123456789012345678';
+		const options = {
+			bigNumber: 'error',
+		};
+		assert.throws(function(){
+			lib.parse(text, options);
+		});
+	});
+	it('parse({bigNumber:function})');
+	it('parse({bigNumber:fraction})');
 	it('parse({niceNumber})');
 });
 

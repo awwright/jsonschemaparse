@@ -139,6 +139,7 @@ function StreamParser(options) {
 	this.maxNumberLength = options.maxNumberLength || null;
 	this.maxItems = options.maxItems || null;
 	this.maxProperties = options.maxProperties || null;
+	this.bigNumber = options.bigNumber || 'default';
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -1076,28 +1077,104 @@ StreamParser.prototype.endNumber = function endNumber(){
 	switch (this.layer.state) {
 	case NUMBER2: // * After initial zero
 		this.layer.state = VOID;
-		this.onNumber();
+		this.onNumber(NUMBER2);
 		break;
 	case NUMBER3: // * After digit (before period)
 		this.layer.state = VOID;
-		this.onNumber();
+		this.onNumber(NUMBER3);
 		break;
 	case NUMBER5: // * After digit (after period)
 		this.layer.state = VOID;
-		this.onNumber();
+		this.onNumber(NUMBER5);
 		break;
 	case NUMBER8: // * After digit (after +/-)
 		this.layer.state = VOID;
-		this.onNumber();
+		this.onNumber(NUMBER8);
 		break;
 	}
 };
 
-StreamParser.prototype.onNumber = function onNumber(){
-	var self = this;
-	var value = JSON.parse(self.buffer);
+StreamParser.prototype.onNumber = function onNumber(endstate){
+	const self = this;
+	const value = JSON.parse(self.buffer);
 	if(typeof value!=='number') throw new Error('Failed assertion');
-	if(self.layer.parseValue) this.layer.value = JSON.parse(self.buffer);
+	if(self.layer.parseValue){
+		if(this.bigNumber==='default'){
+			return goodCase();
+		}
+		// Most of this is logic to determine if the number is too big to represent in an ECMAScript IEEE binary64 number.
+		if(endstate===NUMBER8){
+			// While splitting, strip out the + if it exists
+			const [m, n] = val.split(/e\+?/i);
+			// value, decimal, magnitude
+			if(n.length>3){
+				return badCase();
+			}
+			const n_v = JSON.parse(n);
+			if(n_v>307){
+				return badCase();
+			}
+			const m_d = m.indexOf('.') + 1;
+			const m_m = (m_d ? m_d-1 : m.length) + n_v; // should be equal to floor(log10(abs(number)))
+			if(m_d===0 && m_m<16){
+				// Number is an integer less than 1e16
+				// The MAX_SAFE_INTEGER is ~9e16, far higher than a 32-bit integer
+				// Good
+				self.layer.value = value;
+				self.event('number', value);
+				self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
+				return void self.pop();
+			}
+			// decimal form
+			const precision =
+				(m.length) -
+				(m[0]==='-' ? 1 : 0) -
+				(m.indexOf('.') ? 1 : 0);
+			if(precision<16){
+				return goodCase();
+			}else{
+				return badCase();
+			}
+		}else{
+			// decimal form
+			const precision =
+				(self.buffer.length) -
+				(self.buffer[0]==='-' ? 1 : 0) -
+				(self.buffer.indexOf('.') ? 1 : 0);
+			if(precision<16){
+				return goodCase();
+			}else{
+				return badCase();
+			}
+		}
+	}
+	function goodCase(){
+		self.layer.value = value;
+		self.event('number', value);
+		self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
+		return void self.pop();
+	}
+	function badCase(){
+		if(self.bigNumber==='error'){
+			const err = new SyntaxError(
+				"Number too precise "
+					+ " at line " + self.lineNumber + ':' + (self.characters-self.lineOffset)
+					+ " in state " + toknam(self.layer.state),
+				self.layer.path,
+				{line:self.lineNumber, column:self.characters-self.lineOffset}
+			);
+			self.errors.push(err);
+			throw err;
+		}else if(self.bigNumber==='json'){
+			self.layer.value = self.buffer;
+		}else{
+			// if(self.bigNumber==='default'){
+			self.layer.value = value;
+		}
+		self.event('number', value);
+		self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
+		return void self.pop();
+	}
 	self.event('number', value);
 	self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
 	self.pop();
