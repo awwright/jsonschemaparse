@@ -136,6 +136,7 @@ function StreamParser(options) {
 	// Configurable parsing options
 	this.maxKeyLength = options.maxKeyLength || null;
 	this.maxStringLength = options.maxStringLength || null;
+	this.maxNumberLength = options.maxNumberLength || null;
 	this.trailingComma = false;
 	this.multipleValue = false;
 
@@ -748,6 +749,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case NUMBER2:
 			// after initial zero
+			if(this.maxNumberLength && !this.layer.maxLength) this.layer.maxLength = this.maxNumberLength;
 			// expecting a decimal or exponent
 			switch (chrcode) {
 			case 0x2e: // `.`
@@ -763,7 +765,9 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			i--, this.characters--; // this character is not a number
 			this.endNumber();
 			continue;
-		case NUMBER3: // * After digit (before period)
+		case NUMBER3:
+			// After digit (before period)
+			if(this.maxNumberLength && !this.layer.maxLength) this.layer.maxLength = this.maxNumberLength;
 			switch (chrcode) {
 			case 0x2e: // .
 				this.layer.state = NUMBER4;

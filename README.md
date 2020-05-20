@@ -102,7 +102,7 @@ options is an object with any of the following properties:
 * `parseInfo`: If `true`, return value will include properties/keys/map properties with StreamParser output from child instances.
 * `maxKeyLength`: Enforces a limit on object keys, in UTF-16 characters, for memory purposes
 * `maxStringLength`: Enforces a limit on strings (except keys), in UTF-16 characters, for memory purposes
-* `maxNumberLength`: Enforces a limit on the lexical representation of numbers, in characters, for memory purposes
+* `maxNumberLength`: Enforces a limit on the lexical representation of numbers, in characters, for memory purposes when "bigNumber" is enabled.
 * `maxItems`: Enforces a limit on size of arrays (number of items), for memory purposes
 * `maxProperties`: Enforces a limit on size of objects (number of properties), for memory purposes
 * `maxUniqueItems`: Enforces a limit on size arrays tested by `uniqueItems` (since this is an O(n²) operation)

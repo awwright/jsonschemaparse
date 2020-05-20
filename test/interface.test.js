@@ -208,7 +208,17 @@ describe('parse options', function(){
 			lib.parse(text, options);
 		});
 	});
-	it('parse({maxNumberLength})');
+	it('parse({maxNumberLength})', function(){
+		const text = '{"key": 123456781234.0123}';
+		const options = {
+			maxKeyLength: 1000,
+			maxStringLength: 1000,
+			maxNumberLength: 10,
+		};
+		assert.throws(function(){
+			lib.parse(text, options);
+		});
+	});
 	it('parse({maxItems})');
 	it('parse({maxProperties})');
 	it('parse({maxUniqueItems})');
