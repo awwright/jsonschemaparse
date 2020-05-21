@@ -318,7 +318,7 @@ describe('StreamParser methods', function(){
 	});
 	it('StreamParser#done (valid)', function(){
 		const stream = new lib.StreamParser({parseValue:true});
-		createReadStream(__dirname+'/syntax-options-cases/well-formed.json.json').pipe(stream);
+		createReadStream(__dirname+'/data/well-formed.json').pipe(stream);
 		return stream.done.then(function(){
 			assert(stream.value);
 		});

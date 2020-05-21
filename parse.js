@@ -241,7 +241,7 @@ StreamParser.prototype.push = function push(state, k, validator) {
 		state: state,
 		//path: k ? this.layer.path.concat(k) : (this.layer&&this.layer.path),
 		path: k ? path+'/'+k : path,
-		key: null,
+		key: null, // true if an object key
 		parseValue: this.parseValue,
 		value: undefined,
 		beginChar: this.characters,
