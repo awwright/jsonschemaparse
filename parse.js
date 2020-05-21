@@ -6,7 +6,7 @@ const util = require('util');
 const Schema = require('./schema.js');
 
 // Named constants with unique integer values
-var C = {};
+const C = {};
 // Tokenizer States
 var VOID    = C.VOID    = 11;
 var VALUE   = C.VALUE   = 12;
@@ -51,6 +51,14 @@ var UTF8_4 = C.UTF8_4 = 94;
 const promiseRef = typeof Symbol==='function' ? Symbol('_promiseRef') : '_promiseRef';
 const promiseDone = typeof Symbol==='function' ? Symbol('_promiseDone') : '_promiseDone';
 const promiseError = typeof Symbol==='function' ? Symbol('_promiseError') : '_promiseError';
+
+const matchString = /^([ !#-[\]-\uFFFF]|\\u([a-fA-F0-9]{4})|\\["\\/bfnrt])*/;
+const escapeSequence = /\\u([a-fA-F0-9]{4})|\\(.)/g;
+const escapeReplacements = {
+	// "\/bfnrt
+	'"':'"', "\\":"\\", '/':'/',
+	'b':'\b', 'f':'\f', 'n':'\n', 'r':'\r', 't':'\t',
+};
 
 var tokenNames = [];
 Object.keys(C).forEach(function(name){
@@ -204,7 +212,7 @@ StreamParser.prototype.charError = function (block, i, expecting) {
 			+ " in state " + toknam(this.layer.state)
 			+  ( expecting ? (" expecting one of: " + expecting) : '' ),
 		this.layer.path,
-		{line:this.lineNumber, column:this.characters-this.lineOffset},
+		{line:this.lineNumber, column:this.characters-this.lineOffset, characters:this.characters, i:i},
 		expecting,
 		actual
 	);
@@ -361,8 +369,9 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 	}else if(!isStr){
 		throw new Error('Unknown block type');
 	}
+	var chrcode = 0;
 	for (var i = 0; i < block.length; i++, this.characters++) {
-		const chrcode = (typeof block==='string') ? block.charCodeAt(i) : block[i] ;
+		chrcode = isStr ? block.charCodeAt(i) : block[i] ;
 		if(typeof chrcode !== 'number') throw new Error('Expected numeric codepoint value');
 		// Verify UTF-16 surrogate pairs
 		if(isStr && chrcode>=0xD800 && chrcode<=0xDFFF){
@@ -972,6 +981,29 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			break;
 		case STRING1: // After open quote
 			if(this.maxStringLength && this.layer.maxLength===null) this.layer.maxLength = this.maxStringLength;
+			if(isStr){
+				// When possible, just power through the whole buffer right now
+				const stringParts = block.slice(i).match(matchString);
+				if(stringParts && stringParts[0]){
+					const v = stringParts[0].replace(escapeSequence, function (sequence, unicode4, escapedChar) {
+						var charCode;
+						if (unicode4) {
+							charCode = parseInt(unicode4, 16);
+							return String.fromCharCode(charCode);
+						} else {
+							var replacement = escapeReplacements[escapedChar];
+							if (!replacement) throw new Error('Assertion');
+							return replacement;
+						}
+					});
+					this.buffer += v;
+					// console.log(`Read ${stringParts[0].length} characters into ${v.length} at once "${v}"`);
+					i += stringParts[0].length;
+					this.characters += stringParts[0].length;
+					chrcode = isStr ? block.charCodeAt(i) : block[i] ;
+					if(i >= block.length) continue;
+				}
+			}
 			switch (chrcode) {
 			case 0x22: // `"`
 				if(this.layer.parseValue) this.layer.value = this.readBuffer(block, i);
