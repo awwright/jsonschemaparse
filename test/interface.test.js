@@ -3,6 +3,8 @@
 const assert = require('assert');
 const lib = require('..');
 const createReadStream = require('fs').createReadStream;
+const readFile = require('fs').promises.readFile;
+const finished = require('util').promisify(require('stream').finished);
 
 const SchemaRegistry = lib.SchemaRegistry;
 
@@ -261,23 +263,6 @@ describe('parse options', function(){
 	it('parse({niceNumber})');
 });
 
-describe('syntax options', function(){
-	it('parse({syntaxLineComment})');
-	it('parse({syntaxHashComment})');
-	it('parse({syntaxBlockComment})');
-	it('parse({syntaxNestedComment})');
-	it('parse({syntaxUnquotedKeys})');
-	it('parse({syntaxTrailingComma})');
-	it('parse({syntaxSingleQuote})');
-	it('parse({syntaxEscapeLF})');
-	it('parse({syntaxUTF32})');
-	it('parse({syntaxHexadecimal})');
-	it('parse({syntaxBareDecimal})');
-	it('parse({syntaxInf})');
-	it('parse({syntaxNaN})');
-	it('parse({syntaxPlus})');
-});
-
 describe('StreamParser', function(){
 	it('StreamParser#parse', function(){
 		var stream = new lib.StreamParser();
@@ -318,6 +303,9 @@ describe('StreamParser', function(){
 	it('new StreamParser({syntaxInf})');
 	it('new StreamParser({syntaxNaN})');
 	it('new StreamParser({syntaxPlus})');
+});
+
+describe('StreamParser methods', function(){
 	it('StreamParser#parse (valid)', function(){
 		var stream = new lib.StreamParser({});
 		stream.parse("{}");
@@ -327,6 +315,35 @@ describe('StreamParser', function(){
 		var stream = new lib.StreamParser({});
 		assert.throws(function(){
 			stream.parse("{");
+		});
+	});
+	it('StreamParser#done (valid)', function(){
+		const stream = new lib.StreamParser({parseValue:true});
+		createReadStream(__dirname+'/syntax-options-cases/syntaxLineComment-01.json').pipe(stream);
+		return stream.done.then(function(){
+			assert(stream.value);
+		});
+	});
+	it('StreamParser#done (well-formed-invalid)', function(){
+		const stream = new lib.StreamParser({parseValue:true, throw:true, schema:{type:'string'}});
+		createReadStream(__dirname+'/syntax-options-cases/syntaxLineComment-01.json').pipe(stream);
+		return stream.done.then(function(){
+			throw new Error('Expected error');
+		}, function(e){
+			assert(e);
+		}).then(function(){
+			assert(stream.errors.length);
+		});
+	});
+	it('StreamParser#done (invalid)', function(){
+		const stream = new lib.StreamParser({parseValue:true});
+		createReadStream(__dirname+'/syntax-options-cases/syntaxLineComment-01.txt').pipe(stream);
+		return stream.done.then(function(){
+			throw new Error();
+		}, function(e){
+			assert(e);
+		}).then(function(){
+			assert(stream.errors.length);
 		});
 	});
 	it('parse valid', function(){
@@ -368,7 +385,7 @@ describe('SchemaRegistry', function(){
 		// pipe is supported, and it's readable/writable
 		// same chunks coming in also go out.
 		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
-		return new Promise(function(done){ stream.on('finish', done); });
+		return stream.done;
 	});
 });
 

@@ -146,6 +146,11 @@ fs.createReadStream('file.json')
 	});
 ```
 
+### StreamParser#done
+
+A Promise that resolves to the StreamParser when it parses and validates a document.
+
+
 ### StreamParser#errors
 
 An Array of ValidationError instances representing accumulated validation errors.

@@ -3,7 +3,7 @@
 const stream = require('stream');
 const util = require('util');
 
-var Schema = require('./schema.js');
+const Schema = require('./schema.js');
 
 // Named constants with unique integer values
 var C = {};
@@ -47,6 +47,10 @@ var STRING6 = C.STRING6 = 86;
 var UTF8_2 = C.UTF8_2 = 92;
 var UTF8_3 = C.UTF8_3 = 93;
 var UTF8_4 = C.UTF8_4 = 94;
+
+const promiseRef = typeof Symbol==='function' ? Symbol('_promiseRef') : '_promiseRef';
+const promiseDone = typeof Symbol==='function' ? Symbol('_promiseDone') : '_promiseDone';
+const promiseError = typeof Symbol==='function' ? Symbol('_promiseError') : '_promiseError';
 
 var tokenNames = [];
 Object.keys(C).forEach(function(name){
@@ -115,6 +119,7 @@ function SyntaxError(message, propertyPath, position, expected, actual){
 
 module.exports.StreamParser = StreamParser;
 function StreamParser(options) {
+	const self = this;
 	if (!(this instanceof StreamParser)) return new StreamParser(options);
 
 	stream.Writable.call(this, {
@@ -126,6 +131,9 @@ function StreamParser(options) {
 	if(options.$id || options.$schema || options.type){
 		throw new Error('Use the "schema" option for passing a schema');
 	}
+
+	self[promiseDone] = function(v){ self[promiseRef] = Promise.resolve(v); return self[promiseRef]; };
+	self[promiseError] = function(v){ self[promiseRef] = Promise.reject(v); return self[promiseRef]; };
 
 	// Configurable parsing options
 	// Store parsed value in `this.value`?
@@ -251,7 +259,8 @@ StreamParser.prototype.pushProperty = function pushProperty(key) {
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
 		this.errors.push(err);
-		throw err;
+		if(this[promiseRef]) this[promiseError](err);
+		else throw err;
 	}
 	var result = collapseArray(list, function(validator){
 		return validator.initProperty(key);
@@ -271,7 +280,8 @@ StreamParser.prototype.pushItem = function pushItem(k) {
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
 		this.errors.push(err);
-		throw err;
+		if(this[promiseRef]) this[promiseError](err);
+		else throw err;
 	}
 	var result = collapseArray(list, function(validator){
 		return validator.initItem(k);
@@ -1164,7 +1174,8 @@ StreamParser.prototype.onNumber = function onNumber(endstate){
 				{line:self.lineNumber, column:self.characters-self.lineOffset}
 			);
 			self.errors.push(err);
-			throw err;
+			if(this[promiseRef]) this[promiseError](err);
+			else throw err;
 		}else if(self.bigNumber==='json'){
 			self.layer.value = self.buffer;
 		}else{
@@ -1229,7 +1240,8 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
 		this.errors.push(err);
-		throw err;
+		if(this[promiseRef]) this[promiseError](err);
+		else throw err;
 	}
 };
 
@@ -1277,11 +1289,15 @@ StreamParser.prototype.eof = function eof() {
 	}
 	// EOF is only expected in a VOID, which is stack element 0
 	if(this.stack.length>1){
-		throw new SyntaxError(
+		const err = new SyntaxError(
 			'Unexpected end of document while parsing '+toknam(this.layer.state),
 			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset},
 			'', // FIXME provide an expected character set here
 			'EOF');
+		if(this[promiseRef]) this[promiseError](err);
+		else throw err;
+	}else{
+		if(this[promiseRef]) this[promiseDone](this);
 	}
 };
