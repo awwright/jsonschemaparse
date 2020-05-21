@@ -1,0 +1,6 @@
+{
+	// this is a line comment
+	"key":
+		// another line comment
+		"value"
+}

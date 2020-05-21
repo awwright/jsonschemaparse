@@ -4,7 +4,6 @@ const assert = require('assert');
 const lib = require('..');
 const createReadStream = require('fs').createReadStream;
 const readFile = require('fs').promises.readFile;
-const finished = require('util').promisify(require('stream').finished);
 
 const SchemaRegistry = lib.SchemaRegistry;
 
@@ -319,14 +318,14 @@ describe('StreamParser methods', function(){
 	});
 	it('StreamParser#done (valid)', function(){
 		const stream = new lib.StreamParser({parseValue:true});
-		createReadStream(__dirname+'/syntax-options-cases/syntaxLineComment-01.json').pipe(stream);
+		createReadStream(__dirname+'/syntax-options-cases/well-formed.json.json').pipe(stream);
 		return stream.done.then(function(){
 			assert(stream.value);
 		});
 	});
 	it('StreamParser#done (well-formed-invalid)', function(){
 		const stream = new lib.StreamParser({parseValue:true, throw:true, schema:{type:'string'}});
-		createReadStream(__dirname+'/syntax-options-cases/syntaxLineComment-01.json').pipe(stream);
+		createReadStream(__dirname+'/data/well-formed.json').pipe(stream);
 		return stream.done.then(function(){
 			throw new Error('Expected error');
 		}, function(e){
@@ -337,7 +336,7 @@ describe('StreamParser methods', function(){
 	});
 	it('StreamParser#done (invalid)', function(){
 		const stream = new lib.StreamParser({parseValue:true});
-		createReadStream(__dirname+'/syntax-options-cases/syntaxLineComment-01.txt').pipe(stream);
+		createReadStream(__dirname+'/data/invalid.json.txt').pipe(stream);
 		return stream.done.then(function(){
 			throw new Error();
 		}, function(e){
