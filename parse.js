@@ -210,8 +210,20 @@ StreamParser.prototype.charError = function (block, i, expecting) {
 		actual
 	);
 	this.errors.push(err);
-	throw err;
+	if(this[promiseRef]) this[promiseError](err);
+	else throw err;
 };
+
+Object.defineProperty(StreamParser.prototype, 'done', {
+	get: function(){
+		const self = this;
+		self[promiseRef] = self[promiseRef] || new Promise(function promiseBody(done, error){
+			self[promiseDone] = function(v){ done(v); };
+			self[promiseError] = function(v){ error(v); };
+		});
+		return self[promiseRef];
+	},
+});
 
 StreamParser.prototype.push = function push(k, validator) {
 	if(validator) validator.forEach(function(v){
