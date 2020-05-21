@@ -184,10 +184,9 @@ function StreamParser(options) {
 
 	// Begin creating stack
 	// Allow trailing whitespace at the end of the document
-	this.push('');
-	this.layer.state = VOID;
+	this.push(VOID, '');
 	// Start parsing a value
-	this.push('', schema && schema.validate(this));
+	this.push(VALUE, '', schema && schema.validate(this));
 }
 util.inherits(StreamParser, stream.Writable);
 
@@ -225,13 +224,13 @@ Object.defineProperty(StreamParser.prototype, 'done', {
 	},
 });
 
-StreamParser.prototype.push = function push(k, validator) {
+StreamParser.prototype.push = function push(state, k, validator) {
 	if(validator) validator.forEach(function(v){
 		if(!(v instanceof Schema.ValidateLayer)) throw new Error('NOT A VALIDATOR');
 	});
 	var path = this.layer && this.layer.path || '';
 	this.layer = {
-		state: VALUE,
+		state: state,
 		//path: k ? this.layer.path.concat(k) : (this.layer&&this.layer.path),
 		path: k ? path+'/'+k : path,
 		key: null,
@@ -277,7 +276,7 @@ StreamParser.prototype.pushProperty = function pushProperty(key) {
 	var result = collapseArray(list, function(validator){
 		return validator.initProperty(key);
 	});
-	return this.push(key, result);
+	return this.push(VALUE, key, result);
 };
 
 StreamParser.prototype.pushItem = function pushItem(k) {
@@ -298,7 +297,7 @@ StreamParser.prototype.pushItem = function pushItem(k) {
 	var result = collapseArray(list, function(validator){
 		return validator.initItem(k);
 	});
-	return this.push(k, result);
+	return this.push(VALUE, k, result);
 };
 
 
@@ -480,8 +479,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// When the new layer (created next) pops, be in the "finished parsing key" state
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
-				this.push();
-				this.layer.state = STRING1;
+				this.push(STRING1);
 				this.layer.parseValue = true;
 				this.layer.key = true;
 				if(this.maxKeyLength) this.layer.maxLength = this.maxKeyLength;
@@ -562,8 +560,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// When the new layer (created next) pops, be in the "finished parsing key" state
 				this.layer.state = OBJECT2;
 				// Parse the next characters as a new value
-				this.push();
-				this.layer.state = STRING1;
+				this.push(STRING1);
 				this.layer.parseValue = true;
 				this.layer.key = true;
 				continue;
