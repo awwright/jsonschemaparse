@@ -1,8 +1,8 @@
 "use strict";
-module.exports.StreamParser = require('./parse.js').StreamParser;
-module.exports.parse = require('./parse.js').parse;
-module.exports.parseInfo = require('./parse.js').parseInfo;
-module.exports.SyntaxError = require('./parse.js').SyntaxError;
-module.exports.ValidationError = require('./schema.js').ValidationError;
-module.exports.SchemaRegistry = require('./schema.js').SchemaRegistry;
-module.exports.Schema = require('./schema.js').Schema;
+module.exports.StreamParser = require('./lib/parse.js').StreamParser;
+module.exports.parse = require('./lib/parse.js').parse;
+module.exports.parseInfo = require('./lib/parse.js').parseInfo;
+module.exports.SyntaxError = require('./lib/parse.js').SyntaxError;
+module.exports.ValidationError = require('./lib/schema.js').ValidationError;
+module.exports.SchemaRegistry = require('./lib/schema.js').SchemaRegistry;
+module.exports.Schema = require('./lib/schema.js').Schema;
