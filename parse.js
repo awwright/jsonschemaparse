@@ -985,7 +985,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 				// When possible, just power through the whole buffer right now
 				const stringParts = block.slice(i).match(matchString);
 				if(stringParts && stringParts[0]){
-					const v = stringParts[0].replace(escapeSequence, function (sequence, unicode4, escapedChar) {
+					this.appendBuffer(stringParts[0].replace(escapeSequence, function (sequence, unicode4, escapedChar) {
 						var charCode;
 						if (unicode4) {
 							charCode = parseInt(unicode4, 16);
@@ -995,8 +995,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 							if (!replacement) throw new Error('Assertion');
 							return replacement;
 						}
-					});
-					this.buffer += v;
+					}));
 					// console.log(`Read ${stringParts[0].length} characters into ${v.length} at once "${v}"`);
 					i += stringParts[0].length;
 					this.characters += stringParts[0].length;
@@ -1147,7 +1146,8 @@ StreamParser.prototype.endNumber = function endNumber(){
 
 StreamParser.prototype.onNumber = function onNumber(endstate){
 	const self = this;
-	const value = JSON.parse(self.buffer);
+	const buf = self.buffer;
+	const value = JSON.parse(buf);
 	if(typeof value!=='number') throw new Error('Failed assertion');
 	if(self.layer.parseValue){
 		if(this.bigNumber==='default'){
@@ -1171,16 +1171,11 @@ StreamParser.prototype.onNumber = function onNumber(endstate){
 				// Number is an integer less than 1e16
 				// The MAX_SAFE_INTEGER is ~9e16, far higher than a 32-bit integer
 				// Good
-				self.layer.value = value;
-				self.event('number', value);
-				self.validateInstance(function(s){ return s.endNumber(self.layer, value); });
-				return void self.pop();
+				return goodCase();
 			}
 			// decimal form
-			const precision =
-				(m.length) -
-				(m[0]==='-' ? 1 : 0) -
-				(m.indexOf('.') ? 1 : 0);
+			// Count digits, but ignore minus sign and decimal point
+			const precision = (m.length) - (m[0]==='-' ? 1 : 0) - (m.indexOf('.') ? 1 : 0);
 			if(precision<16){
 				return goodCase();
 			}else{
@@ -1188,10 +1183,7 @@ StreamParser.prototype.onNumber = function onNumber(endstate){
 			}
 		}else{
 			// decimal form
-			const precision =
-				(self.buffer.length) -
-				(self.buffer[0]==='-' ? 1 : 0) -
-				(self.buffer.indexOf('.') ? 1 : 0);
+			const precision = (buf.length) - (buf[0]==='-' ? 1 : 0) - (buf.indexOf('.') ? 1 : 0);
 			if(precision<16){
 				return goodCase();
 			}else{
@@ -1252,6 +1244,25 @@ StreamParser.prototype.startString = function startString(){
 StreamParser.prototype.startBuffer = function startBuffer(block, i) {
 	this.blockOffset = i;
 	this.buffer = "";
+};
+
+StreamParser.prototype.appendBuffer = function appendBuffer(v){
+	if(typeof v !== 'string') throw new TypeError('Assertion');
+	this.buffer += v;
+	const surrogatePairs = v.match(/[\uD800-\uDBFF]/g);
+	this.layer.length += surrogatePairs ? (v.length - surrogatePairs.length) : v.length ;
+	if(this.layer.maxLength && this.layer.length > this.layer.maxLength){
+		const err = new SyntaxError(
+			"String too long "
+				+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
+				+ " in state " + toknam(this.layer.state),
+			this.layer.path,
+			{line:this.lineNumber, column:this.characters-this.lineOffset}
+		);
+		this.errors.push(err);
+		if(this[promiseRef]) this[promiseError](err);
+		else throw err;
+	}
 };
 
 StreamParser.prototype.readBuffer = function readBuffer(block, i) {
@@ -1336,6 +1347,7 @@ StreamParser.prototype.eof = function eof() {
 			{line:this.lineNumber, column:this.characters-this.lineOffset},
 			'', // FIXME provide an expected character set here
 			'EOF');
+		this.errors.push(err);
 		if(this[promiseRef]) this[promiseError](err);
 		else throw err;
 	}else{
