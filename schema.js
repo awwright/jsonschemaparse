@@ -954,10 +954,13 @@ function ValidateLayer(schema, root){
 	// Where to store errors
 	// If `root` is given, it probably points to the StreamParser
 	if(root){
+		validator.root = root;
 		validator.errors = root.errors;
+		validator.throw = root.throw;
 		validator.annotations = root.annotations;
 	}else{
 		validator.errors = [];
+		validator.throw = null;
 		validator.annotations = [];
 	}
 
@@ -1028,13 +1031,14 @@ ValidateLayer.prototype.getAll = function getAll() {
 ValidateLayer.prototype.addErrorList = function addErrorList(errs) {
 	const self = this;
 	if(errs){
-		if(Array.isArray(errs)){
-			errs.forEach(function(error){
-				// `self.errors` might be a reference, so don't replace
+		if(Array.isArray(errs) && errs.length){
+			if(self.root && self.throw) self.root.emitError(errs[0], errs.slice(1));
+			else errs.forEach(function(error){
 				self.errors.push(error);
 			});
 		}else{
-			self.errors.push(errs);
+			if(self.root && self.throw) self.root.emitError(errs);
+			else self.errors.push(errs);
 		}
 	}
 };

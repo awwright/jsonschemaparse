@@ -95,6 +95,7 @@ It outputs an "end" event when the document has been fully parsed.
 options is an object with any of the following properties:
 
 * `schema`: A schema instance or plain object, to be validated against the incoming document.
+* `throw`: Treat a validation error as a syntax error; stops consumption of the stream and emits the first ValidationError encountered.
 * `charset`: The character set used to decode a Buffer/Uint8Array. Valid values: `ASCII`, `UTF-8`
 * `reviver`: A function that consumes and maps values immediately after validation (same interface as ECMAScript).
 * `parseValue`: if `true`, return value will include a `value` property with the JSON.parse equivalent parsed value. Default `false`.

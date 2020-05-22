@@ -181,6 +181,7 @@ function StreamParser(options) {
 
 	// JSON Schema info collection
 	this.errors = [];
+	this.throw = options.throw;
 	this.annotations = options.parseAnnotations ? [] : null;
 
 	// for parsing
@@ -205,7 +206,7 @@ StreamParser.prototype.event = function (name, value) {
 StreamParser.prototype.charError = function (block, i, expecting) {
 	var actual = block[i];
 	if(typeof actual==='number') actual=String.fromCharCode(actual);
-	const err = new SyntaxError(
+	this.emitError(new SyntaxError(
 		"Unexpected "
 			+ JSON.stringify(actual)
 			+ " at line " + this.lineNumber + ':' + (this.characters-this.lineOffset)
@@ -215,8 +216,14 @@ StreamParser.prototype.charError = function (block, i, expecting) {
 		{line:this.lineNumber, column:this.characters-this.lineOffset, characters:this.characters, i:i},
 		expecting,
 		actual
-	);
+	));
+};
+
+StreamParser.prototype.emitError = function (err, additional) {
 	this.errors.push(err);
+	if(additional){
+		additional.forEach(function(v){ this.errors.push(v); });
+	}
 	if(this[promiseRef]) this[promiseError](err);
 	else throw err;
 };
@@ -268,7 +275,7 @@ StreamParser.prototype.push = function push(state, k, validator) {
 
 StreamParser.prototype.pushProperty = function pushProperty(key) {
 	var list = this.layer.validator || [];
-	if(!Array.isArray(list)) throw new Error('Expected array');
+	if(!Array.isArray(list)) throw new Error('Assert: Expected array');
 	if(this.layer.maxLength && this.layer.length > this.layer.maxLength){
 		const err = new SyntaxError(
 			"Too many properties in object"
@@ -277,9 +284,7 @@ StreamParser.prototype.pushProperty = function pushProperty(key) {
 			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
-		this.errors.push(err);
-		if(this[promiseRef]) this[promiseError](err);
-		else throw err;
+		this.emitError(err);
 	}
 	var result = collapseArray(list, function(validator){
 		return validator.initProperty(key);
@@ -298,9 +303,7 @@ StreamParser.prototype.pushItem = function pushItem(k) {
 			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
-		this.errors.push(err);
-		if(this[promiseRef]) this[promiseError](err);
-		else throw err;
+		this.emitError(err);
 	}
 	var result = collapseArray(list, function(validator){
 		return validator.initItem(k);
@@ -357,8 +360,8 @@ StreamParser.prototype.parse = function parse(block){
 
 StreamParser.prototype.parseBlock = function parseBlock(block){
 	const isByte = Buffer.isBuffer(block) || isUint8Array(block);
-	//const isShort = false;
-	//const isLong = false;
+	//const isShort = false; // UTF-16
+	//const isLong = false; // UTF-32
 	const isStr = typeof block==="string";
 	if(isByte){
 		if(this.charset==='string'){
@@ -367,12 +370,12 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 			throw new Error('Unknown `charset`, expected "ASCII" or "UTF-8"');
 		}
 	}else if(!isStr){
-		throw new Error('Unknown block type');
+		throw new Error('Assert: Unknown block type');
 	}
 	var chrcode = 0;
 	for (var i = 0; i < block.length; i++, this.characters++) {
 		chrcode = isStr ? block.charCodeAt(i) : block[i] ;
-		if(typeof chrcode !== 'number') throw new Error('Expected numeric codepoint value');
+		if(typeof chrcode !== 'number') throw new Error('Assert: Expected numeric codepoint value');
 		// Verify UTF-16 surrogate pairs
 		if(isStr && chrcode>=0xD800 && chrcode<=0xDFFF){
 			if(chrcode<0xDC00){
@@ -992,7 +995,7 @@ StreamParser.prototype.parseBlock = function parseBlock(block){
 							return String.fromCharCode(charCode);
 						} else {
 							var replacement = escapeReplacements[escapedChar];
-							if (!replacement) throw new Error('Assertion');
+							if (!replacement) throw new Error('Assert: unknown escape character');
 							return replacement;
 						}
 					}));
@@ -1148,7 +1151,7 @@ StreamParser.prototype.onNumber = function onNumber(endstate){
 	const self = this;
 	const buf = self.buffer;
 	const value = JSON.parse(buf);
-	if(typeof value!=='number') throw new Error('Failed assertion');
+	if(typeof value!=='number') throw new Error('Assert: number must be a number');
 	if(self.layer.parseValue){
 		if(this.bigNumber==='default'){
 			return goodCase();
@@ -1206,9 +1209,7 @@ StreamParser.prototype.onNumber = function onNumber(endstate){
 				self.layer.path,
 				{line:self.lineNumber, column:self.characters-self.lineOffset}
 			);
-			self.errors.push(err);
-			if(this[promiseRef]) this[promiseError](err);
-			else throw err;
+			this.emitError(err);
 		}else if(self.bigNumber==='json'){
 			self.layer.value = self.buffer;
 		}else{
@@ -1259,9 +1260,7 @@ StreamParser.prototype.appendBuffer = function appendBuffer(v){
 			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
-		this.errors.push(err);
-		if(this[promiseRef]) this[promiseError](err);
-		else throw err;
+		this.emitError(err);
 	}
 };
 
@@ -1291,9 +1290,7 @@ StreamParser.prototype.appendCodepoint = function appendCodepoint(chrcode){
 			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset}
 		);
-		this.errors.push(err);
-		if(this[promiseRef]) this[promiseError](err);
-		else throw err;
+		this.emitError(err);
 	}
 };
 
@@ -1346,10 +1343,9 @@ StreamParser.prototype.eof = function eof() {
 			this.layer.path,
 			{line:this.lineNumber, column:this.characters-this.lineOffset},
 			'', // FIXME provide an expected character set here
-			'EOF');
-		this.errors.push(err);
-		if(this[promiseRef]) this[promiseError](err);
-		else throw err;
+			'EOF'
+		);
+		this.emitError(err);
 	}else{
 		if(this[promiseRef]) this[promiseDone](this);
 	}
