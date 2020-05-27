@@ -32,7 +32,7 @@ var validationTestFiles = [
 	'draft2019-09/defs.json',
 	// 'draft2019-09/dependentRequired.json',
 	// 'draft2019-09/dependentSchemas.json',
-	// 'draft2019-09/enum.json',
+	'draft2019-09/enum.json',
 	'draft2019-09/exclusiveMaximum.json',
 	'draft2019-09/exclusiveMinimum.json',
 	'draft2019-09/format.json',
