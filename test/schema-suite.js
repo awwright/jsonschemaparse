@@ -26,7 +26,7 @@ var validationTestFiles = [
 	'draft2019-09/anchor.json',
 	'draft2019-09/anyOf.json',
 	'draft2019-09/boolean_schema.json',
-	// 'draft2019-09/const.json',
+	'draft2019-09/const.json',
 	// 'draft2019-09/contains.json',
 	'draft2019-09/default.json',
 	'draft2019-09/defs.json',
