@@ -386,6 +386,7 @@ describe('SchemaRegistry', function(){
 		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
 		return stream.done;
 	});
+	it('SchemaRegistry#pending');
 });
 
 describe('Schema', function(){
