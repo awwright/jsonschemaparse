@@ -36,7 +36,7 @@ var validationTestFiles = [
 	'draft2019-09/exclusiveMaximum.json',
 	'draft2019-09/exclusiveMinimum.json',
 	'draft2019-09/format.json',
-	// 'draft2019-09/if-then-else.json',
+	'draft2019-09/if-then-else.json',
 	'draft2019-09/items.json',
 	'draft2019-09/maxItems.json',
 	'draft2019-09/maxLength.json',
