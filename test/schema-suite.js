@@ -83,10 +83,22 @@ var validationTestFiles = [
 	// 'draft2019-09/optional/format/uri.json',
 ];
 
+function markPending(dir){
+	fs.readdirSync(__dirname+'/vendor-schema-suite/tests/'+dir).forEach(function(filename){
+		const filepath = dir + filename;
+		if(filepath.match(/\.json$/) && validationTestFiles.indexOf(filepath)<0){
+			it(filepath);
+		}
+	});
+}
+
 describe('Schema tests', function(){
 	it('meta', function(){
 		assert(validationTestFiles.length);
 	});
+	// Mark disabled files as pending
+	markPending('draft2019-09/');
+	markPending('draft2019-09/optional/');
 	validationTestFiles.forEach(function(filename){
 		var label = filename;
 		var filepath = __dirname+'/vendor-schema-suite/tests/' + filename;
@@ -106,7 +118,7 @@ describe('Schema tests', function(){
 							if(t.valid){
 								var p = schema.parseInfo(tjson);
 								if(p.errors.length) console.error(p.errors.map(function(v){ return v.toString(); }));
-								assert.strictEqual(p.errors.length, 0);
+								assert.strictEqual(p.errors.length, 0, 'Unexpected validation failure');
 							}else{
 								assert.throws(function(){
 									schema.parse(tjson);
