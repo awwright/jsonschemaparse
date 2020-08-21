@@ -1,0 +1,91 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" version="XHTML+RDFa 1.0" dir="ltr">
+<head>
+	<meta http-equiv="Content-Type" content="application/xhtml+xml;charset=utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Demo | jsonschemaparse</title>
+	<link type="text/css" rel="stylesheet" href="style.css"/>
+	<link type="text/css" rel="stylesheet" href="codemirror.css" />
+	<link type="text/css" rel="stylesheet" href="lint.css" />
+	<link rel="prev" href="api.xhtml"/>
+	<script type="application/ecmascript" src="app.bundle.js"></script>
+</head>
+<body class="pagewidth">
+	<div class="site-header">
+		<header>
+			<ul>
+				<li><h1><a href="index.xhtml">jsonschemaparse</a></h1></li>
+				<li><a href="usage.xhtml">Usage</a></li>
+				<li><a href="api.xhtml">API</a></li>
+				<li class="active"><a href="demo.xhtml">demo</a></li>
+			</ul>
+			<ul id="ext-links">
+				<li><a href="https://www.npmjs.com/package/jsonschemaparse">npm</a></li>
+				<li><a href="https://yarnpkg.com/package/jsonschemaparse">Yarn</a></li>
+				<li><a href="https://github.com/awwright/jsonschemaparse">GitHub</a></li>
+			</ul>
+		</header>
+	</div>
+	<main class="demo">
+
+		<h2>Demo/Playground</h2>
+
+		<p><textarea id="code-schema">{
+	"type": "array",
+	"items": {
+		"type": "object",
+		"properties": {
+			"_id": { "type": "string" },
+			"author": { "type": "string" },
+			"content": { "type": "string" },
+			"page_views": { "type": "number" }
+		}
+	}
+}
+</textarea></p>
+		
+			 <p><textarea id="code-instance">[
+	{
+	_id: "post 1",
+	"author": "Bob",
+	"content": "...",
+	"page_views": 5
+	},
+	{
+	"_id": "post 2",
+	"author": "Bob",
+	"content": "...",
+	"page_views": 9
+	},
+	{
+	"_id": "post 3",
+	"author": "Bob",
+	"content": "...",
+	"page_views": 8
+	}
+]
+</textarea></p>
+
+<script type="application/ecmascript">
+	var editor_schema = CodeMirror.fromTextArea(document.getElementById("code-schema"), {
+		indentWithTabs: true,
+		lineNumbers: true,
+		mode: "javascript",
+		gutters: ["CodeMirror-lint-markers"],
+		lint: JSONLint.bind(null, null),
+	});
+
+	var editor_instance = CodeMirror.fromTextArea(document.getElementById("code-instance"), {
+		indentWithTabs: true,
+		lineNumbers: true,
+		mode: "application/json",
+		gutters: ["CodeMirror-lint-markers"],
+		lint: JSONLint.bind(null, editor_schema),
+	});
+</script>
+
+	</main>
+	<footer>
+		<a rel="prev" href="api.xhtml">Previous: API</a>
+	</footer>
+</body>
+</html>

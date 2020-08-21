@@ -1,2 +1,3 @@
 /doc/JSONSchemaParse.js
 /node_modules/
+*.bundle.js

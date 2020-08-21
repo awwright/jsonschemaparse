@@ -1,21 +1,60 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" version="XHTML+RDFa 1.0" dir="ltr">
 <head>
-	<title>JSON Schema Parse Demo</title>
-	<meta charset="utf-8"/>
-	<link type="text/css" rel="stylesheet" href="theme.css" />
+	<meta http-equiv="Content-Type" content="application/xhtml+xml;charset=utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Home | jsonschemaparse</title>
+	<link rel="stylesheet" href="style.css"/>
+	<link rel="next" href="usage.xhtml"/>
 </head>
-<body>
-	<div id="nav">
-		<a href="index.xhtml"><h1>JSON Schema Parser</h1></a>
-		<ul>
-				<li><a class="active" href="index.xhtml">Overview</a></li>
-				<li><a href="lint.xhtml">Demo</a></li>
+<body class="pagewidth">
+	<div class="site-header">
+		<header>
+			<ul>
+				<li class="active"><h1><a href="index.xhtml">jsonschemaparse</a></h1></li>
+				<li><a href="usage.xhtml">Usage</a></li>
+				<li><a href="api.xhtml">API</a></li>
+				<li><a href="demo.xhtml">demo</a></li>
 			</ul>
+			<ul id="ext-links">
+				<li><a href="https://www.npmjs.com/package/jsonschemaparse">npm</a></li>
+				<li><a href="https://yarnpkg.com/package/jsonschemaparse">Yarn</a></li>
+				<li><a href="https://github.com/awwright/jsonschemaparse">GitHub</a></li>
+			</ul>
+		</header>
 	</div>
-	<article>
-		<h1>JSON Schema Parse Demo</h1>
-		<p></p>
+	<main>
 
-	</article>
+		<h1 id="jsonschemaparse">jsonschemaparse</h1>
+		<p>A streaming JSON parser with concurrent validation against a JSON Schema.</p>
+
+		<h2 id="features">Features</h2>
+
+		<p>Parse a JSON Document into an object structure, validating it against a JSON Schema</p>
+		<p>Features:</p>
+		<ul>
+			<li>Stream parse a JSON document</li>
+			<li>Provide useful feedback about JSON parse errors
+				<ul>
+					<li>Line numbers</li>
+					<li>Repeated keys</li>
+					<li>Syntax errors</li>
+				</ul>
+			</li>
+			<li>Validates the JSON document against a JSON Schema
+				<ul>
+					<li>Provides line/character information of error</li>
+				</ul>
+		</li>
+		<li>Parse JSON instances into an instance of an arbitrary object - parse dates directly into Date, integers into arbitrary precision object, objects into Immutable Map, etc.
+			<ul>
+				<li>Allow JSON values to be filtered through a filter after parsing, so strings can be cast to Dates, objects to Immutable objects, etc.</li>
+				<li>Filter based on schema URI, type, format, and non-trivial cases like too-big numbers, and whatever else is appropriate</li>
+			</ul>
+		</li>
+		</ul>
+</main>
+	<footer>
+		<a rel="next" href="usage.xhtml">Next: Usage</a>
+	</footer>
 </body>
 </html>

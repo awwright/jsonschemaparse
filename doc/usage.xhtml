@@ -1,0 +1,87 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" version="XHTML+RDFa 1.0" dir="ltr">
+<head>
+	<meta http-equiv="Content-Type" content="application/xhtml+xml;charset=utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Demo | URI Template Router</title>
+	<link rel="stylesheet" href="style.css"/>
+	<link rel="prev" href="index.xhtml"/>
+	<link rel="next" href="api.xhtml"/>
+</head>
+<body class="pagewidth">
+	<div class="site-header">
+		<header>
+			<ul>
+				<li><h1><a href="index.xhtml">jsonschemaparse</a></h1></li>
+				<li class="active"><a href="usage.xhtml">Usage</a></li>
+				<li><a href="api.xhtml">API</a></li>
+				<li><a href="demo.xhtml">demo</a></li>
+			</ul>
+			<ul id="ext-links">
+				<li><a href="https://www.npmjs.com/package/jsonschemaparse">npm</a></li>
+				<li><a href="https://yarnpkg.com/package/jsonschemaparse">Yarn</a></li>
+				<li><a href="https://github.com/awwright/jsonschemaparse">GitHub</a></li>
+			</ul>
+		</header>
+	</div>
+	<main>
+		<h1>Usage</h1>
+
+		<section id="usage-route">
+			<h3>Get a value from a JSON document</h3>
+			<p>The <a href="api.xhtml#api-route">parse</a> function may be used with all the same functionality as the ECMAScript builtin <code>JSON.parse</code>:</p>
+			<pre>
+const value = lib.parse('true');
+assert(value === true);
+</pre>
+		</section>
+
+		<section id="usage-route">
+			<h3>Tokenize a JSON document or get information about how its written</h3>
+			<p>The <a href="api.xhtml#api-route">parseInfo</a> function may be used like the <code>parse</code> function, but instead, it returns an object that has the document's parsed value as well as metadata including character position information, and annotations such as descriptions for each property. This is useful for cases like code completion.</p>
+			<pre>
+const info = lib.parseInfo('true', schema);
+assert(info.value === true);
+assert(info.description === 'Indicates if the switch is on');
+</pre>
+		</section>
+
+		<h2>Migrating from other parsers</h2>
+		<h3>ECMAScript builtin JSON.parse</h3>
+		<p>Use <code>lib.parse</code> in place of <code>JSON.parse</code>.</p>
+		<p>This library only parses, so there is no equivalent to <code>JSON.stringify</code></p>
+		<h3>JSON5</h3>
+		<p>Homepage: <a href="https://github.com/json5/json5">https://github.com/json5/json5</a></p>
+		<p>JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.</p>
+		<p>In place of <code>JSON5.parse</code>, use <code>lib.parse</code> as follows:</p>
+		<pre><code>const JSON5opts = {
+	syntaxUnquotedKeys: true,
+	syntaxTrailingComma: true,
+	syntaxSingleQuote: true,
+	syntaxEscapeLF: true,
+	syntaxHexadecimal: true,
+	syntaxBareDecimal: true,
+	syntaxInf: true,
+	syntaxNaN: true,
+	syntaxPlus: true,
+}
+const parsed = lib.parse(text, JSON5Opts);
+</code></pre>
+		<p>If you need the reviver function, add a "reviver" property to the options.</p>
+		<p>This library only parses, so there is no equivalent to <code>JSON5.stringify</code>.</p>
+		<h3>JSONStream</h3>
+		<h3>Clarinet.js</h3>
+		<p>Homepage: <a href="https://github.com/dscape/clarinet">https://github.com/dscape/clarinet</a></p>
+		<p>Clarinet is a SAX-like streaming parser for JSON.</p>
+		<h3>Oboe.js</h3>
+		<p>Homepage: <a href="http://oboejs.com/" rel="nofollow">http://oboejs.com/</a></p>
+		<p>Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retrieval over the network, and an API to split a (potentially very large) document into subdocuments, for easier processing by the application.</p>
+		<p>This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use <code>fs.createReadStream</code>.</p>
+
+
+	</main>
+	<footer>
+		<a rel="prev" href="index.xhtml">Previous: Introduction</a>
+		<a rel="next" href="api.xhtml">Next: API</a>
+	</footer>
+</body>
+</html>

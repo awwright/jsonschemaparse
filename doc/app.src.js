@@ -59,4 +59,3 @@ window.JSONLint = function JSONLint(schema_editor, text) {
 	}
 	return found;
 };
-

@@ -1,0 +1,285 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" version="XHTML+RDFa 1.0" dir="ltr">
+<head>
+	<meta http-equiv="Content-Type" content="application/xhtml+xml;charset=utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Demo | jsonschemaparse</title>
+	<link rel="stylesheet" href="style.css"/>
+	<link rel="prev" href="usage.xhtml"/>
+	<link rel="next" href="demo.xhtml"/>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
+	<script type="application/ecmascript">hljs.initHighlightingOnLoad();</script>
+</head>
+<body class="pagewidth">
+	<div class="site-header">
+		<header>
+			<ul>
+				<li><h1><a href="index.xhtml">jsonschemaparse</a></h1></li>
+				<li><a href="usage.xhtml">Usage</a></li>
+				<li class="active"><a href="api.xhtml">API</a></li>
+				<li><a href="demo.xhtml">demo</a></li>
+			</ul>
+			<ul id="ext-links">
+				<li><a href="https://www.npmjs.com/package/jsonschemaparse">npm</a></li>
+				<li><a href="https://yarnpkg.com/package/jsonschemaparse">Yarn</a></li>
+				<li><a href="https://github.com/awwright/jsonschemaparse">GitHub</a></li>
+			</ul>
+		</header>
+	</div>
+	<main>
+		<h1>JSONSchemaParse — API</h1>
+		<h2>Document parsing</h2>
+
+		<h3>parse(text)</h3>
+		<p>Parses <em>text</em> and turns it into a native value.</p>
+		<p>For reading a Uint8Array/Buffer, specify <code>charset</code> in the options (see the <code>parse(text, options)</code> form below).</p>
+
+		<h3>parse(text, reviver)</h3>
+		<p>Parses <em>text</em> and turns it into a native value. The <em>reviver</em> argument is applied to each value, compatible with ECMAScript <code>JSON.parse</code>.</p>
+		<p>Equivalent to ECMAScript <code>JSON.parse(text, reviver)</code>.</p>
+
+		<h3>parse(text, schema)</h3>
+		<p>Parses <em>text</em> while validating it against the Schema instance in the <em>schema</em> argument. Parsing will terminate at the first validation error.</p>
+		<pre><code>try {
+	const schema = new lib.Schema({ type: 'string' });
+	const value = lib.parse(jsonText, schema);
+}catch(e){
+	// handle SchemaError or ValidationError
+}</code></pre>
+
+		<h3>parse(text, options)</h3>
+		<p>Parses <em>text</em>, and accepts an object <em>options</em> as found in StreamParser, except for the "parse" options, which are called with the following values: <code>parseValue:true, parseAnnotations:false, parseInfo:false</code>.</p>
+		<pre><code>try {
+	const value = lib.parse(jsonText, {
+		schema: { type: 'string' },
+		charset: 'UTF-8',
+	});
+}catch(e){
+	// handle SchemaError or ValidationError
+}</code></pre>	
+		<h3>parseInfo(text, options)</h3>
+		<p>Parses <em>text</em> and returns an Instance instance. Use it when you need to know additional information about the JSON document, including JSON Schema annotations on each value, or the line/character position information of each value.</p>
+		<p><code>options</code> is an object with any of the following properties:</p>
+		<ul>
+		<li>schema: a Schema instance, or an object representing a parsed schema document</li>
+		<li>reviver: An ECMAScript <code>JSON.parse</code> compatible reviving function.</li>
+		<li>charset: The character set, if <code>text</code> is a Uint8Array/Buffer. <code>ASCII</code> and <code>UTF-8</code> values permitted.</li>
+		<li>annotations: true/false to collect or ignore annotations. Default true.</li>
+		</ul>
+		<p>The returned object will have the following properties:</p>
+		<ul>
+		<li>type: object/array/string/number/boolean/null, depending on the type</li>
+		<li>native: the JSON.parse equivalent value</li>
+		<li>annotations: A list of all the JSON Schema annotations collected for this instance</li>
+		<li>links: A list of all the links collected through JSON Hyper-schema. Unlike "annotations", each rel= in a single link produces a new item in this list.</li>
+		<li>properties: if instance is an object, contains a list of PropertyInstance items.</li>
+		<li>keys: if instance is an object, contains a map of key names to PropertyInstance items.</li>
+		<li>key: if instance is a PropertyInstance, this contains a StringInstance holding the key of the property.</li>
+		<li>items: if instance is an array, contains a list of Instance items.</li>
+		<li>map: a Map of all the child objects/arrays in the instance, mapped to their corresponding Instance</li>
+		</ul>
+		<h2>Stream Parsing</h2>
+
+		<h3>new StreamParser(options)</h3>
+		<p>StreamParser is a writable stream that accepts a byte stream or string stream, and outputs events.</p>
+		<p>It outputs an "end" event when the document has been fully parsed.</p>
+		<p>options is an object with any of the following properties:</p>
+		<ul>
+		<li><code>schema</code>: A schema instance or plain object, to be validated against the incoming document.</li>
+		<li><code>throw</code>: Treat a validation error as a syntax error; stops consumption of the stream and emits the first ValidationError encountered.</li>
+		<li><code>charset</code>: The character set used to decode a Buffer/Uint8Array. Valid values: <code>ASCII</code>, <code>UTF-8</code></li>
+		<li><code>reviver</code>: A function that consumes and maps values immediately after validation (same interface as ECMAScript).</li>
+		<li><code>parseValue</code>: if <code>true</code>, return value will include a <code>value</code> property with the JSON.parse equivalent parsed value. Default <code>false</code>.</li>
+		<li><code>parseAnnotations</code>: If <code>true</code>, return value will include annotations/links properties, with JSON Schema annotations (e.g. the "title", "description" keywords.)</li>
+		<li><code>parseInfo</code>: If <code>true</code>, return value will include properties/keys/map properties with StreamParser output from child instances.</li>
+		<li><code>maxKeyLength</code>: Enforces a limit on object keys, in UTF-16 characters, for memory purposes</li>
+		<li><code>maxStringLength</code>: Enforces a limit on strings (except keys), in UTF-16 characters, for memory purposes</li>
+		<li><code>maxNumberLength</code>: Enforces a limit on the lexical representation of numbers, in characters, for memory purposes when "bigNumber" is enabled.</li>
+		<li><code>maxItems</code>: Enforces a limit on number of items in each array, for memory purposes</li>
+		<li><code>maxProperties</code>: Enforces a limit on number of properties in each object, for memory purposes</li>
+		<li><code>maxUniqueItems</code>: Enforces a limit on size of all arrays tested by <code>uniqueItems</code> (since this is an O(n²) operation)</li>
+		<li><code>interoperable</code>: Raise an error if the document is outside the I-JSON (RFC 7493) subset of JSON.</li>
+		<li><code>bigNumber</code>: Determines behavior for numbers too large to represent in an ECMAScript number without loss of precision. See "bigNumber" section below for possible values.</li>
+		<li><code>niceNumber</code>: Determines behavior for all other numbers (numbers accurately represented in an ECMAScript number).</li>
+		<li><code>syntaxLineComment</code>: Treats <code>//</code> as whitespace until the end of the line</li>
+		<li><code>syntaxHashComment</code>: Treats <code>#</code> as whitespace until the end of the line</li>
+		<li><code>syntaxBlockComment</code>: Treats <code>/*</code> as whitespace until a <code>*/</code> sequence (no nested comments)</li>
+		<li><code>syntaxNestedComment</code>: Treats <code>/*</code> as whitespace until a <code>*/</code> sequence (allows nesting, overrides syntaxBlockComment)</li>
+		<li><code>syntaxUnquotedKeys</code>: Permits a bare, unqouted ECMAScript 5.1 IdentifierName as a property key</li>
+		<li><code>syntaxTrailingComma</code>: Allows arrays and objects to end with a trailing comma (by configuring the parser so a comma doesn't imply another property/item)</li>
+		<li><code>syntaxSingleQuote</code>: Permits single quotes for strings, including property keys</li>
+		<li><code>syntaxEscapeLF</code>: A backslash linefeed sequence (i.e. a backslash as the last character on a line) will ignore the newline. (The backslash and LF character will both be discarded entirely.) This allows a ␊ character to be broken across multiple lines as the four-character string <code>"\n\␊"</code> (instead of the two character-string <code>"\n"</code> all on a single line).</li>
+		<li><code>syntaxUTF32</code>: Permits <code>\Uxxxxxxxx</code> or <code>\u{x...}</code> sequences (where <code>x</code> is a hex digit) for representing Unicode code points outside the BMP (Basic Multilingual Plane), that would normally only be escaped via a UTF-16 surrogate pair.</li>
+		<li><code>syntaxHexadecimal</code>: Permits numbers starting with <code>0x</code> to be interpreted as hexadeciamal. Only integers can be expressed with this form.</li>
+		<li><code>syntaxBareDecimal</code>: Permits numbers to start or end with a decimal (otherwise, a <code>0</code> would have to come before or after it).</li>
+		<li><code>syntaxInf</code>: Permits <code>Infinity</code> and <code>-Infinity</code>. This is not compatible with JSON Schema, use with caution.</li>
+		<li><code>syntaxNaN</code>: Permits <code>NaN</code> as a number value. This is not compatible with JSON Schema, use with caution.</li>
+		<li><code>syntaxPlus</code>: Permits a leading + before a number.</li>
+		</ul>
+		<p>Values for "bigNumber" (all these options are performed after JSON Schema validation):</p>
+		<ul>
+		<li><code>default</code>: Use nearest floating point representation, same behavior as JSON.parse</li>
+		<li><code>error</code>: Treat as a validation error</li>
+		<li>function: Pass a function <code>function(json, validator)</code> that returns the value to use.</li>
+		<li><code>json</code>: Use the raw JSON in a string. This may be in exponential notation, depending on how it was present in the original document.</li>
+		<li><code>string</code>: Cast to a decimal number. There will be an optional minus sign, one or more digits, a decimal point, and one or more digits. The <code>maxNumberLength</code> will be enforced on this new string, if present.</li>
+		<li><code>intstr</code>: Encode as a string, but only guarantees the accuracy of the integer part. This is best used with the <code>type: "integer"</code> keyword.</li>
+		<li><code>fraction</code>: will return an array with two BitInt numbers: the numerator, and denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.</li>
+		<li><code>properfraction</code>: will return an array with three BitInt numbers: the whole part, the fractional part numerator, and the fractional part denominator. The denominator will always be a non-negative exponent of 10, with one zero for each number past the decimal point.</li>
+		</ul>
+		<pre><code>var parser = new StreamParser(new Schema('http://localhost/schema.json', {type: 'array'}), {parseValue:true});
+
+fs.createReadStream('file.json')
+	.pipe(parser)
+	.on('finish', function(err, res){
+		console.log(parser.errors);
+		console.log(parser.value);
+	});
+</code></pre>
+
+		<h3>StreamParser#done</h3>
+		<p>A Promise that resolves to the StreamParser when it parses and validates a document.</p>
+
+		<h3>StreamParser#errors</h3>
+		<p>An Array of ValidationError instances representing accumulated validation errors.
+		Parsing will end when an error is detected, not all errors in the document may be listed.</p>
+
+		<h3>StreamParser#value</h3>
+		<p>If <code>parseValue: true</code> was passed in <code>options</code>, the parsed value will be available here.</p>
+
+		<h3>StreamParser#on('startObject', function() )</h3>
+		<p>Emitted when an object is opened (when <code>{</code> is observed).</p>
+
+			<h3>StreamParser#on('endObject', function() )</h3>
+		<p>Emitted when an object is closed (when <code>}</code> is observed).</p>
+
+		<h3>StreamParser#on('startArray', function() )</h3>
+		<p>Emitted when an array is opened (when <code>[</code> is observed).</p>
+
+		<h3>StreamParser#on('endArray', function() )</h3>
+		<p>Emitted when an array is closed (when <code>]</code> is observed).</p>
+
+		<h3>StreamParser#on('key', function(name) )</h3>
+		<p>Emitted inside an object when a key is fully parsed.</p>
+
+		<h3>StreamParser#on('string', function(value) )</h3>
+		<p>Emitted when a string value is parsed.</p>
+
+		<h3>StreamParser#on('boolean', function(value) )</h3>
+		<p>Emitted when a boolean value is parsed.</p>
+
+		<h3>StreamParser#on('null', function(value) )</h3>
+		<p>Emitted when a null is parsed.</p>
+
+		<h3>StreamParser#on('end', function() )</h3>
+		<p>Emitted when the incoming stream been fully consumed, parsed, and a final result is available.</p>
+
+		<h2>JSON Schema</h2>
+
+		<h3>new Schema(baseURI, schemaObject)</h3>
+		<ul>
+		<li>baseURI: The URI the schema was downloaded at, if any.</li>
+		<li>schemaObject: A parsed JSON schema. Must be an object, JSON Schema documents can simply be run through <code>JSON.parse</code> to generate a compatible object.</li>
+		</ul>
+<pre><code>var schema = new Schema('http://localhost/schema.json', { type: 'array' });
+var parser = schema.createParser({parseValue:true});
+
+fs.createReadStream('file.json')
+	.pipe(parser)
+	.on('finish', function(err, res){
+		console.log(parser.errors);
+		console.log(parser.value);
+	});
+</code></pre>
+
+		<h3>Schema#parse(text, options)</h3>
+		<p>Parses the given string against the schema, into a native value. Throws on a validation or parse error.</p>
+		<p>Similar to the <code>parse(text, options)</code> function, but with the "schema" option set.</p>
+
+		<h3>Schema#parseInfo(text, options)</h3>
+		<p>Parses the given string against the schema, into a validation result.</p>
+		<p>Similar to the <code>parse(text, options)</code> function, with the "schema" option set.</p>
+
+		<h3>Schema#createParser(options)</h3>
+		<p>Create a <code>StreamParser</code> instance with the given options.
+		The parser will validate the incoming stream against the Schema.</p>
+
+		<h3>class: SchemaRegistry</h3>
+		<p>Use SchemaRegistry if one schema references another.</p>
+
+		<h3>SchemaRegistry#import(uri, schema)</h3>
+		<p>Import a schema so that it may be referenced by its given URI by other schemas.</p>
+		<pre><code>var registry = new SchemaRegistry();
+var baseSchema = registry.import('http://localhost/schema.json', {
+	type: 'array',
+	items: {$ref:'http://localhost/item.json'},
+});
+var stringSchema = registry.import('http://localhost/item.json', { type: 'string' });
+// Alternatively:
+// var schema = new Schema('http://localhost/schema.json', { type: 'array' }, registry);
+var parser = baseSchema.createParser({parseValue:true});
+
+fs.createReadStream('file.json')
+	.pipe(parser)
+	.on('finish', function(err, res){
+		console.log(parser.errors);
+		console.log(parser.value);
+	});
+</code></pre>
+
+		<h2>Results</h2>
+
+		<h3>ValidationError</h3>
+		<p>Stores information about a failed validation of a keyword against an instance. Contains the following properties:</p>
+		<ul>
+		<li>message: A human-readable, english message.</li>
+		<li>path: array of keys or array indexes leading to the instance.</li>
+		<li>layer: the current parse state of the current item in the stack</li>
+		<li>position: An object with line/column properties. Zero-indexed, and may vary depending on character set.</li>
+		<li>to: An object with line/column properties, indicating the position where the error ends.</li>
+		<li>schema: the Schema object that generated the error</li>
+		<li>schemaId: the URI address of the schema that generated the error</li>
+		<li>keyword: The keyword in the schema that generated the error</li>
+		<li>expected: The value of the keyword</li>
+		<li>actual: the value of the instance that failed validation</li>
+		</ul>
+
+		<h3>Interface: Validator</h3>
+		<p>A Validator is the paradigm used to validate information from the JSON parser as it is streaming. It validates a single instance against a single schema by reading SAX events from the parser, as well as listening to results from subordinate validators (Validator instances for child instances and subschemas), and comparing them to the range of events permitted by the schema.</p>
+		<p>It is an ECMAScript object that consumes information about a single layer in the parser stack as it tokenizes input.
+		A validator only evaluates over a single layer in the stack (like an object or a string), it is not notified of events that happen in children or grandchildren layers.
+		Instead, when a child is encountered (like an array item), a function is called requesting a list of validators that can process that sub-instance.
+		When the child finishes parsing, the validator can then examine the return value and act on it.</p>
+		<p>A new validator does not yet know the type of incoming value, and may not know until e.g. all whitespace is consumed. You must wait for a start{type} call.</p>
+
+		<h3>new Validator(options, errors)</h3>
+		<p>Called to create a validator, whenever a new layer in the parsing stack is entered.</p>
+		<p>Optionally pass an outside array that errors will be pushed to.
+		Normally, this will be the instance of StreamParser#errors, so that errors from all validators get gathered together at the parser.
+		Otherwise, a local array will be created.</p>
+		<p>The parser will call the following methods, depending on the tokens it encounters during parsing:</p>
+		<ul>
+		<li>Validator#startObject(layer)</li>
+		<li>Validator#endObject(layer)</li>
+		<li>Validator#validateProperty(k)</li>
+		<li>Validator#startKey(layer)</li>
+		<li>Validator#endKey(layer, name)</li>
+		<li>Validator#startArray(layer)</li>
+		<li>Validator#endArray(layer)</li>
+		<li>Validator#validateItem(i)</li>
+		<li>Validator#startNumber(layer)</li>
+		<li>Validator#endNumber(layer, value)</li>
+		<li>Validator#startString(layer)</li>
+		<li>Validator#endString(layer, value)</li>
+		<li>Validator#startBoolean(layer)</li>
+		<li>Validator#endBoolean(layer, value)</li>
+		<li>Validator#startNull(layer)</li>
+		<li>Validator#endNull(layer, value)</li>
+		</ul>
+	</main>
+	<footer>
+		<a rel="prev" href="usage.xhtml">Previous: Usage</a>
+		<a rel="next" href="demo.xhtml">Next: Demo</a>
+	</footer>
+</body>
+</html>
