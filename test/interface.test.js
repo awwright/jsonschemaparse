@@ -349,7 +349,7 @@ describe('StreamParser methods', function(){
 		var registry = new SchemaRegistry;
 		// This passes just one test
 		var schema = registry.import('http://localhost/this.json', {});
-		var stream = schema.createParser({charset:'string', parseValue:true});
+		var stream = new lib.StreamParser({charset:'string', parseValue:true, schema});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});
@@ -366,7 +366,7 @@ describe('StreamParser methods', function(){
 		var schema = registry.import('http://localhost/this.json', {
 			"$ref": "https://json-schema.org/draft/2019-09/schema",
 		});
-		var p = schema.createParser({charset:'string'});
+		var p = new lib.StreamParser({charset:'string', schema});
 		p.parse('{"bar": 1}');
 		assert(p.errors.length===0);
 	});
@@ -377,7 +377,7 @@ describe('SchemaRegistry', function(){
 		var registry = new SchemaRegistry;
 		// This passes just one test
 		var schema = registry.import('http://localhost/this.json', {});
-		var stream = schema.createParser({charset:'string', parseValue:true});
+		var stream = new lib.StreamParser({charset:'string', parseValue:true, schema});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});

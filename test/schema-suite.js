@@ -3,6 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 
+const lib = require('../index.js');
 const SchemaRegistry = require('../index.js').SchemaRegistry;
 const Schema = require('../index.js').Schema;
 const Parser = require('../index.js').StreamParser;
@@ -116,12 +117,12 @@ describe('Schema tests', function(){
 							var schema = registry.import('http://localhost/'+filename+'/'+i+'/schema', schemaTest.schema);
 							assert(schema instanceof Schema);
 							if(t.valid){
-								var p = schema.parseInfo(tjson);
+								var p = lib.parseInfo(tjson, schema);
 								if(p.errors.length) console.error(p.errors.map(function(v){ return v.toString(); }));
 								assert.strictEqual(p.errors.length, 0, 'Unexpected validation failure');
 							}else{
 								assert.throws(function(){
-									schema.parse(tjson);
+									lib.parse(tjson, schema);
 								});
 								// assert.notEqual(p.errors.length, 0);
 							}

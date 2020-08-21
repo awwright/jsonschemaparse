@@ -216,25 +216,6 @@ fs.createReadStream('file.json')
 	});
 ```
 
-### Schema#parse(text, options)
-
-Parses the given string against the schema, into a native value. Throws on a validation or parse error.
-
-Similar to the `parse(text, options)` function, but with the "schema" option set.
-
-
-### Schema#parseInfo(text, options)
-
-Parses the given string against the schema, into a validation result.
-
-Similar to the `parse(text, options)` function, with the "schema" option set.
-
-
-### Schema#createParser(options)
-Create a `StreamParser` instance with the given options.
-The parser will validate the incoming stream against the Schema.
-
-
 ### class: SchemaRegistry
 
 Use SchemaRegistry if one schema references another.
