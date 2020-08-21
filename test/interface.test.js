@@ -119,6 +119,18 @@ describe('parse(text, options)', function(){
 			lib.parse(text, {charset:'UTF-8'});
 		});
 	});
+	it('parse(text, {charset:UTF-8}) (string input)', function(){
+		// High-byte characters are not ASCII
+		const text = '"🐲"';
+		const val = lib.parse(text, {charset:'UTF-8'});
+		assert.strictEqual(val, "🐲");
+	});
+	it('parse(text, {charset:UTF-8}) (invalid string)', function(){
+		const text = '"🐲';
+		assert.throws(function(){
+			lib.parse(text, {charset:'UTF-8'});
+		});
+	});
 });
 
 describe('parseInfo(text, {parseValue})', function(){
@@ -349,7 +361,7 @@ describe('StreamParser methods', function(){
 		var registry = new SchemaRegistry;
 		// This passes just one test
 		var schema = registry.import('http://localhost/this.json', {});
-		var stream = new lib.StreamParser({charset:'string', parseValue:true, schema});
+		var stream = new lib.StreamParser({parseValue:true, schema});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});
@@ -366,7 +378,7 @@ describe('StreamParser methods', function(){
 		var schema = registry.import('http://localhost/this.json', {
 			"$ref": "https://json-schema.org/draft/2019-09/schema",
 		});
-		var p = new lib.StreamParser({charset:'string', schema});
+		var p = new lib.StreamParser({schema});
 		p.parse('{"bar": 1}');
 		assert(p.errors.length===0);
 	});
@@ -377,7 +389,7 @@ describe('SchemaRegistry', function(){
 		var registry = new SchemaRegistry;
 		// This passes just one test
 		var schema = registry.import('http://localhost/this.json', {});
-		var stream = new lib.StreamParser({charset:'string', parseValue:true, schema});
+		var stream = new lib.StreamParser({parseValue:true, schema});
 		stream.on("openobject", function (node) {
 			// same object as above
 		});
