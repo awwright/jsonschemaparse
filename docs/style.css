@@ -107,8 +107,8 @@ textarea, input {
 
 @media (prefers-color-scheme: dark) {
 	body {
-		background: black;
-		color: white;
+		background: #222;
+		color: #DDD;
 	}
 	h2 {
 		border-bottom: 1px solid #585858;
