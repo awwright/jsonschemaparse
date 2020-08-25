@@ -6,6 +6,9 @@
 	<link rel="stylesheet" href="style.css"/>
 	<link rel="prev" href="index.xhtml"/>
 	<link rel="next" href="api.xhtml"/>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
+	<script type="application/ecmascript">hljs.initHighlightingOnLoad();</script>
 </head>
 <body class="pagewidth">
 	<div class="site-header">
@@ -29,26 +32,44 @@
 		<section id="usage-route">
 			<h3>Get a value from a JSON document</h3>
 			<p>The <a href="api.xhtml#api-route">parse</a> function may be used with all the same functionality as the ECMAScript builtin <code>JSON.parse</code>:</p>
-			<pre>
+			<pre><code>
 const value = lib.parse('true');
 assert(value === true);
-</pre>
+</code></pre>
 		</section>
 
-		<section id="usage-route">
+		<section>
 			<h3>Tokenize a JSON document or get information about how its written</h3>
 			<p>The <a href="api.xhtml#api-route">parseInfo</a> function may be used like the <code>parse</code> function, but instead, it returns an object that has the document's parsed value as well as metadata including character position information, and annotations such as descriptions for each property. This is useful for cases like code completion.</p>
-			<pre>
+			<pre><code>
 const info = lib.parseInfo('true', schema);
 assert(info.value === true);
 assert(info.description === 'Indicates if the switch is on');
-</pre>
+</code></pre>
+		</section>
+
+		<section>
+			<h3>Stream parse a JSON document</h3>
+			<p>The <a href="api.xhtml#api-route">StreamParser</a> constructor may be used to create a streaming parser.</p>
+			<pre><code>
+const parser =  new lib.StreamParser({
+	parseValue: true,
+	schema: { type: 'array', items: { type: 'string' } },
+});
+fs.createReadStream('largefile.json').pipe(parser);
+parser.on('end', function(){
+	if(parser.errors.length) console.error(parser.errors.join('\n'));
+	console.log(parser.value);
+});
+</code></pre>
 		</section>
 
 		<h2>Migrating from other parsers</h2>
+
 		<h3>ECMAScript builtin JSON.parse</h3>
 		<p>Use <code>lib.parse</code> in place of <code>JSON.parse</code>.</p>
 		<p>This library only parses, so there is no equivalent to <code>JSON.stringify</code></p>
+
 		<h3>JSON5</h3>
 		<p>Homepage: <a href="https://github.com/json5/json5">https://github.com/json5/json5</a></p>
 		<p>JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.</p>
@@ -68,15 +89,17 @@ const parsed = lib.parse(text, JSON5Opts);
 </code></pre>
 		<p>If you need the reviver function, add a "reviver" property to the options.</p>
 		<p>This library only parses, so there is no equivalent to <code>JSON5.stringify</code>.</p>
+
 		<h3>JSONStream</h3>
+
 		<h3>Clarinet.js</h3>
 		<p>Homepage: <a href="https://github.com/dscape/clarinet">https://github.com/dscape/clarinet</a></p>
 		<p>Clarinet is a SAX-like streaming parser for JSON.</p>
+
 		<h3>Oboe.js</h3>
 		<p>Homepage: <a href="http://oboejs.com/" rel="nofollow">http://oboejs.com/</a></p>
 		<p>Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retrieval over the network, and an API to split a (potentially very large) document into subdocuments, for easier processing by the application.</p>
 		<p>This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use <code>fs.createReadStream</code>.</p>
-
 
 	</main>
 	<footer>
