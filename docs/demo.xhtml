@@ -47,10 +47,10 @@
 		<h3>Instance</h3>
 		<p><textarea id="code-instance">[
 	{
-	_id: "post 1",
+	"_id": "post 1",
 	"author": "Bob",
 	"content": "...",
-	"page_views": 5
+	"page_views": "5"
 	},
 	{
 	"_id": "post 2",
@@ -73,7 +73,7 @@
 		lineNumbers: true,
 		mode: "javascript",
 		gutters: ["CodeMirror-lint-markers"],
-		lint: JSONLint.bind(null, null),
+		lint: JSONSchemaLint,
 	});
 
 	var editor_instance = CodeMirror.fromTextArea(document.getElementById("code-instance"), {
