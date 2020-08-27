@@ -3,7 +3,6 @@
 const assert = require('assert');
 const lib = require('..');
 const createReadStream = require('fs').createReadStream;
-const readFile = require('fs').promises.readFile;
 
 const SchemaRegistry = lib.SchemaRegistry;
 
@@ -26,7 +25,7 @@ describe('parse(text)', function(){
 	});
 	it('parse invalid', function(){
 		assert.throws(function(){
-			const ret = lib.parse('tru');
+			lib.parse('tru');
 		});
 	});
 });
@@ -384,30 +383,11 @@ describe('StreamParser methods', function(){
 	});
 });
 
-describe('SchemaRegistry', function(){
-	it('SchemaRegistry#import', function(){
-		var registry = new SchemaRegistry;
-		// This passes just one test
-		var schema = registry.import('http://localhost/this.json', {});
-		var stream = new lib.StreamParser({parseValue:true, schema});
-		stream.on("openobject", function (node) {
-			// same object as above
-		});
-		// pipe is supported, and it's readable/writable
-		// same chunks coming in also go out.
-		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
-		return stream.done;
+describe('interface', function(){
+	it('SchemaRegistry', function(){
+		assert(lib.SchemaRegistry);
 	});
-	it('SchemaRegistry#pending');
-});
-
-describe('Schema', function(){
-	it('Schema#unknown', function(){
-		var registry = new lib.Schema('http://example.com/schema.json', {
-			type: "string",
-			foo: "baz",
-		});
-		assert.strictEqual(registry.unknown.length, 1);
-		assert.strictEqual(registry.unknown[0], 'foo');
+	it('Schema', function(){
+		assert(lib.Schema);
 	});
 });
