@@ -59,7 +59,7 @@ var validationTestFiles = [
 	'draft2019-09/required.json',
 	'draft2019-09/type.json',
 	// 'draft2019-09/unevaluatedItems.json',
-	// 'draft2019-09/unevaluatedProperties.json',
+	'draft2019-09/unevaluatedProperties.json',
 	// 'draft2019-09/uniqueItems.json',
 	'draft2019-09/optional/bignum.json',
 	// 'draft2019-09/optional/content.json',
