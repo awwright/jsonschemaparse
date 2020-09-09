@@ -3,6 +3,15 @@
 const assert = require('assert');
 const lib = require('..');
 
+describe('parseInfo(text)', function(){
+	it('parseInfo(text)', function(){
+		const ret = lib.parseInfo('"string"');
+		assert.strictEqual(ret.value, "string");
+		assert.strictEqual(ret.lineNumber, 0);
+		assert.strictEqual(ret.characters, 8);
+	});
+});
+
 describe('parseInfo(text, {parseValue})', function(){
 	it('parseInfo(text, {parseValue: false}) (disabled)', function(){
 		const ret = lib.parseInfo('"string"', {parseValue: false});
@@ -35,6 +44,20 @@ describe('parseInfo(text, schema)', function(){
 			return true;
 		});
 	});
+	it('forgetting Schema instance generates error', function(){
+		assert.throws(function(){
+			lib.parseInfo('true', { type: "string" });
+		}, function(err){
+			assert.match(err.message, /Use the "schema" option for passing a schema/);
+			return true;
+		});
+		assert.throws(function(){
+			lib.parseInfo('true', { $id: 'http://example.com/', minLength: 0 });
+		}, function(err){
+			assert.match(err.message, /Use the "schema" option for passing a schema/);
+			return true;
+		});
+	});
 });
 
 describe('parseInfo(text, {parseAnnotations})', function(){
@@ -55,33 +78,33 @@ describe('parseInfo(text, {parseAnnotations})', function(){
 });
 
 describe('parseInfo(text, {schema})', function(){
-	it('parseInfo(text, {schema: 1}) (fail)', function(){
-		const schemaObject = {
-			"type": "array",
-			"items": {
-				"type": "object",
-				"properties": {
-					"_id": { "type": "string" },
-				},
+	const schemaObject = {
+		"type": "array",
+		"items": {
+			"type": "object",
+			"properties": {
+				"_id": { "type": "string" },
 			},
-		};
+		},
+	};
+	it('parseInfo(text, {schema}) requires a schema', function(){
+		const text = '[ { "_id": "1" } ]';
+		assert.throws(function(){
+			lib.parseInfo(text, {schema:[]});
+		}, function(err){
+			assert.match(err.message, /schema must be instance of Schema/);
+			return true;
+		});
+	});
+	it('parseInfo(text, {schema}) (fail)', function(){
 		const schema = new lib.Schema('_:root', schemaObject);
 		const text = '[ { "_id": "1" } ]';
 		const parse = lib.parseInfo(text, {parseAnnotations:true, parseInfo:true, schema:schema});
 		assert.strictEqual(parse.errors.length, 0);
 	});
-	it('parseInfo(text, {schema: 1}) (pass)', function(){
-		const schemaObject = {
-			"type": "array",
-			"items": {
-				"type": "object",
-				"properties": {
-					"_id": { "type": "number" },
-				},
-			},
-		};
+	it('parseInfo(text, {schema}) (pass)', function(){
 		const schema = new lib.Schema('_:root', schemaObject);
-		const text = '[ { "_id": "1" } ]';
+		const text = '[ { "_id": 1 } ]';
 		const parse = lib.parseInfo(text, {parseAnnotations:true, parseInfo:true, schema:schema});
 		assert.strictEqual(parse.errors.length, 1);
 	});
