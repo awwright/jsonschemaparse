@@ -28,11 +28,19 @@ describe('parse(text, schema)', function(){
 	it('parse well-formed invalid', function(){
 		assert.throws(function(){
 			lib.parse('[]', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.match(err.message, /expected/);
+			return true;
 		});
 	});
 	it('parse non-well-formed', function(){
 		assert.throws(function(){
 			lib.parse('[', schema);
+		}, function(err){
+			assert(err instanceof lib.SyntaxError);
+			assert.match(err.message, /expected/);
+			return true;
 		});
 	});
 });

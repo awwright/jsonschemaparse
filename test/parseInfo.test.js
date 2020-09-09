@@ -14,6 +14,29 @@ describe('parseInfo(text, {parseValue})', function(){
 	});
 });
 
+describe('parseInfo(text, schema)', function(){
+	const schema = new lib.Schema('http://example.com/', { type: 'string' });
+	it('parse valid', function(){
+		const res = lib.parseInfo('""', schema);
+		assert.strictEqual(res.value, "");
+		assert.strictEqual(res.errors.length, 0);
+	});
+	it('parse well-formed invalid', function(){
+		const res = lib.parseInfo('true', schema);
+		assert.strictEqual(res.value, true);
+		assert.strictEqual(res.errors.length, 1);
+	});
+	it('parse non-well-formed', function(){
+		assert.throws(function(){
+			lib.parseInfo('"', schema);
+		}, function(err){
+			assert(err instanceof lib.SyntaxError);
+			assert.match(err.message, /Unexpected end of document/);
+			return true;
+		});
+	});
+});
+
 describe('parseInfo(text, {parseAnnotations})', function(){
 	it('parseInfo(text, {parseAnnotations: false}) (disabled)', function(){
 		const schema = new lib.Schema('http://example.com/schema', {type:'string', title:'Label'});
