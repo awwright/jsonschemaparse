@@ -2,3 +2,5 @@
 /docs/lint.css
 /node_modules/
 *.bundle.js
+/.stryker-tmp/
+/reports/
