@@ -26,9 +26,31 @@ describe('syntax tests', function(){
 			return true;
 		});
 	});
-	it('type: boolean', function(){
-	});
 	it('type: string', function(){
+		// valid
+		assert.strictEqual(lib.parse('"\\"\\\\/\\b\\f\\n\\r"'), "\"\\/\b\f\n\r");
+		assert.throws(function(){
+			lib.parse('" 1234');
+		}, function(err){
+			assert(err instanceof lib.SyntaxError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 7);
+			assert.match(err.message, /Unexpected end of document/);
+			return true;
+		});
+	});
+	it('type: number', function(){
+		// valid
+		assert.strictEqual(lib.parse('-0.0420e-2'), -0.00042);
+		assert.throws(function(){
+			lib.parse('.123');
+		}, function(err){
+			assert(err instanceof lib.SyntaxError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.match(err.message, /Unexpected "."/);
+			return true;
+		});
 	});
 });
 

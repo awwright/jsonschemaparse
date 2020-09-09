@@ -134,6 +134,9 @@ describe('parse options', function(){
 		};
 		assert.throws(function(){
 			lib.parse(text, options);
+		}, function(err){
+			assert.match(err.message, /String too long/);
+			return true;
 		});
 	});
 	it('parse({maxStringLength})', function(){
@@ -144,6 +147,9 @@ describe('parse options', function(){
 		};
 		assert.throws(function(){
 			lib.parse(text, options);
+		}, function(err){
+			assert.match(err.message, /String too long/);
+			return true;
 		});
 	});
 	it('parse({maxNumberLength})', function(){
@@ -155,6 +161,10 @@ describe('parse options', function(){
 		};
 		assert.throws(function(){
 			lib.parse(text, options);
+		}, function(err){
+			// TODO this should be "Number too long"
+			assert.match(err.message, /too long/);
+			return true;
 		});
 	});
 	it('parse({maxItems})', function(){
