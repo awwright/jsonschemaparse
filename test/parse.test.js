@@ -127,28 +127,26 @@ describe('parse(text, options)', function(){
 
 describe('parse options', function(){
 	it('parse({maxKeyLength})', function(){
-		const text = '{"this is a very long key": true}';
 		const options = {
-			maxKeyLength: 10,
+			maxKeyLength: 4,
 			maxStringLength: 1000,
 		};
-		assert.deepStrictEqual(lib.parse('{"short key": true}', options), {"short key": true});
+		assert.deepStrictEqual(lib.parse('{"0123": true}', options), {"0123": true});
 		assert.throws(function(){
-			lib.parse(text, options);
+			lib.parse('{"01234": true}', options);
 		}, function(err){
 			assert.match(err.message, /String too long/);
 			return true;
 		});
 	});
 	it('parse({maxStringLength})', function(){
-		const text = '{"key": "this is a very long string"}';
 		const options = {
 			maxKeyLength: 1000,
-			maxStringLength: 10,
+			maxStringLength: 5,
 		};
 		assert.deepStrictEqual(lib.parse('{"key": "short"}', options), {"key": "short"});
 		assert.throws(function(){
-			lib.parse(text, options);
+			lib.parse('{"key": "long45"}', options);
 		}, function(err){
 			assert.match(err.message, /String too long/);
 			return true;
@@ -170,21 +168,21 @@ describe('parse options', function(){
 		});
 	});
 	it('parse({maxItems})', function(){
-		const text = '{ "a": [0, 1, 2, 3, 4, 5] }';
 		const options = {
 			maxItems: 4,
 		};
+		assert.deepStrictEqual(lib.parse('{ "a": [0, 1, 2, 3] }', options), { "a": [0, 1, 2, 3] });
 		assert.throws(function(){
-			lib.parse(text, options);
+			lib.parse('{ "a": [0, 1, 2, 3, 4] }', options);
 		});
 	});
 	it('parse({maxProperties})', function(){
-		const text = '[ { "a":1, "b":2, "c":3 } ]';
 		const options = {
 			maxProperties: 2,
 		};
+		assert.deepStrictEqual(lib.parse('[ { "a":1 } ]', options), [ { "a":1 } ]);
 		assert.throws(function(){
-			lib.parse(text, options);
+			lib.parse('[ { "a":1, "b":2, "c":3 } ]', options);
 		});
 	});
 	it('parse({maxUniqueItems})');
