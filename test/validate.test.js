@@ -7,6 +7,7 @@ const lib = require('..');
 // These tests ensure the error messages and other metadata is correct
 
 describe('validate tests', function(){
+	// Boolean schemas
 	it('true', function(){
 		const schema = new lib.Schema('http://example.com/schema', true);
 		assert.deepStrictEqual(lib.parse('"a"', schema), "a");
@@ -23,6 +24,7 @@ describe('validate tests', function(){
 			return true;
 		});
 	});
+	// set keywords
 	it('allOf', function(){
 		const schema = new lib.Schema('http://example.com/schema', {
 			allOf: [
@@ -94,6 +96,7 @@ describe('validate tests', function(){
 			return true;
 		});
 	});
+	// type keyword
 	it('type: object', function(){
 		const schema = new lib.Schema('http://example.com/schema', {
 			type: 'object',
@@ -322,6 +325,54 @@ describe('validate tests', function(){
 			// FIXME this should be the item that went over
 			// assert.strictEqual(err.position.column, 0);
 			assert.equal(err.keyword, 'maxItems');
+			return true;
+		});
+	});
+	// String
+	it('minLength', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			minLength: 1,
+		});
+		assert.deepStrictEqual(lib.parse('"2"', schema), "2");
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('""', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'minLength');
+			return true;
+		});
+	});
+	it('maxLength', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			maxLength: 1,
+		});
+		assert.deepStrictEqual(lib.parse('"1"', schema), "1");
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('"12"', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'maxLength');
+			return true;
+		});
+	});
+	it('pattern', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			pattern: "^/",
+		});
+		assert.deepStrictEqual(lib.parse('"/12"', schema), "/12");
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('"12"', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.equal(err.keyword, 'pattern');
 			return true;
 		});
 	});

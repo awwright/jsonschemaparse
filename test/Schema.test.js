@@ -6,6 +6,7 @@ const lib = require('..');
 const Schema = lib.Schema;
 
 describe('Schema', function(){
+	// id argument
 	it('new Schema() with invalid URI', function(){
 		assert.throws(function(){
 			new lib.Schema(true, { type: 'string' });
@@ -23,6 +24,7 @@ describe('Schema', function(){
 			return true;
 		});
 	});
+	// schema argument: set keywords
 	it('new Schema() with invalid allOf', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
@@ -78,6 +80,7 @@ describe('Schema', function(){
 			return true;
 		});
 	});
+	// type keyword
 	// TODO test $id, $schema
 	it('new Schema() with invalid `type`', function(){
 		assert.throws(function(){
@@ -90,6 +93,7 @@ describe('Schema', function(){
 			return true;
 		});
 	});
+	// object keywords
 	it('new Schema() with invalid `required`', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
@@ -99,6 +103,18 @@ describe('Schema', function(){
 			assert(err instanceof Error);
 			assert.match(err.message, /required/);
 			assert.match(err.message, /array/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `properties`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				properties: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /properties/);
+			assert.match(err.message, /object/);
 			return true;
 		});
 	});
@@ -126,6 +142,228 @@ describe('Schema', function(){
 			return true;
 		});
 	});
+	it('new Schema() with invalid `unevaluatedProperties`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				unevaluatedProperties: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /unevaluatedProperties/);
+			assert.match(err.message, /object/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `minProperties`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minProperties: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minProperties/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `maxProperties`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxProperties: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxProperties/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+	});
+	// array keywords
+	it('new Schema() with invalid `items`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				items: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /items/);
+			assert.match(err.message, /schema or array of schemas/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `minItems`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minItems: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minItems/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `maxItems`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxItems: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxItems/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+	});
+	// string keywords
+	it('new Schema() with invalid `minLength`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minLength: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minLength/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `maxLength`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxLength: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxLength/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `pattern`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				pattern: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /pattern/);
+			assert.match(err.message, /string/);
+			return true;
+		});
+	});
+	// number keywords
+	it('new Schema() with invalid `minimum`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minimum: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minimum/);
+			assert.match(err.message, /number/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `maximum`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maximum: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maximum/);
+			assert.match(err.message, /number/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `exclusiveMinimum`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				exclusiveMinimum: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /exclusiveMinimum/);
+			assert.match(err.message, /number/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `exclusiveMaximum`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				exclusiveMaximum: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /exclusiveMaximum/);
+			assert.match(err.message, /number/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `multipleOf`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				multipleOf: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /multipleOf/);
+			assert.match(err.message, /number/);
+			return true;
+		});
+	});
+	// general keywords
+	it('new Schema() with invalid `enum`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				enum: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /enum/);
+			assert.match(err.message, /array/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `if`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				if: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /if/);
+			assert.match(err.message, /schema/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `then`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				then: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /then/);
+			assert.match(err.message, /schema/);
+			return true;
+		});
+	});
+	it('new Schema() with invalid `else`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				else: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /else/);
+			assert.match(err.message, /schema/);
+			return true;
+		});
+	});
+
+	// properties
 	it('Schema#unknown', function(){
 		var registry = new lib.Schema('http://example.com/schema.json', {
 			type: "string",
