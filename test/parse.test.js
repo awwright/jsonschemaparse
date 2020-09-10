@@ -132,6 +132,7 @@ describe('parse options', function(){
 			maxKeyLength: 10,
 			maxStringLength: 1000,
 		};
+		assert.deepStrictEqual(lib.parse('{"short key": true}', options), {"short key": true});
 		assert.throws(function(){
 			lib.parse(text, options);
 		}, function(err){
@@ -145,6 +146,7 @@ describe('parse options', function(){
 			maxKeyLength: 1000,
 			maxStringLength: 10,
 		};
+		assert.deepStrictEqual(lib.parse('{"key": "short"}', options), {"key": "short"});
 		assert.throws(function(){
 			lib.parse(text, options);
 		}, function(err){

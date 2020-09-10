@@ -3,8 +3,17 @@
 const assert = require('assert');
 const lib = require('..');
 
+function parseCharacters(json){
+	const parser = new lib.StreamParser({parseValue: true});
+	for(let i=0; i<json.length; i++){
+		parser.parseBlock(json[i]);
+	}
+	parser.eof();
+	return parser;
+}
+
 describe('syntax tests', function(){
-	it('type: object', function(){
+	it('object', function(){
 		assert.throws(function(){
 			lib.parse('{ a: "b" } ');
 		}, function(err){
@@ -15,33 +24,35 @@ describe('syntax tests', function(){
 			return true;
 		});
 	});
-	it('type: array', function(){
+	it('array', function(){
 		assert.throws(function(){
-			lib.parse('tru ');
+			lib.parse('[,]');
 		}, function(err){
 			assert(err instanceof lib.SyntaxError);
 			assert.strictEqual(err.position.line, 0);
-			assert.strictEqual(err.position.column, 3);
-			assert.match(err.message, /Unexpected " "/);
+			assert.strictEqual(err.position.column, 1);
+			assert.match(err.message, /Unexpected ","/);
 			return true;
 		});
 	});
-	it('type: string', function(){
+	it('string', function(){
 		// valid
-		assert.strictEqual(lib.parse('"\\"\\\\/\\b\\f\\n\\r"'), "\"\\/\b\f\n\r");
+		const json = '"\\"\\\\\\/\\b\\f\\n\\r"';
+		assert.strictEqual(lib.parse(json), "\"\\/\b\f\n\r");
+		assert.strictEqual(parseCharacters(json).value, "\"\\/\b\f\n\r");
 		assert.throws(function(){
-			lib.parse('" 1234');
+			lib.parse('"1234');
 		}, function(err){
 			assert(err instanceof lib.SyntaxError);
 			assert.strictEqual(err.position.line, 0);
-			assert.strictEqual(err.position.column, 7);
+			assert.strictEqual(err.position.column, 6);
 			assert.match(err.message, /Unexpected end of document/);
 			return true;
 		});
 	});
-	it('type: number', function(){
+	it('number', function(){
 		// valid
-		assert.strictEqual(lib.parse('-0.0420e-2'), -0.00042);
+		assert.strictEqual(lib.parse('-4.20e-3'), -0.0042);
 		assert.throws(function(){
 			lib.parse('.123');
 		}, function(err){
@@ -49,6 +60,17 @@ describe('syntax tests', function(){
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /Unexpected "."/);
+			return true;
+		});
+	});
+	it('boolean', function(){
+		assert.throws(function(){
+			lib.parse('tru ');
+		}, function(err){
+			assert(err instanceof lib.SyntaxError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 3);
+			assert.match(err.message, /Unexpected " "/);
 			return true;
 		});
 	});
