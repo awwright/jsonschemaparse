@@ -12,7 +12,15 @@ module.exports = {
 	coverageAnalysis: "perTest",
 	mochaOptions: {
 		// Optional mocha options
-		spec: [ 'test/interface.test.js', 'test/parse.test.js', 'test/parseInfo.test.js', 'test/validate.test.js', 'test/syntax-suite.test.js' ],
+		spec: [
+			'test/interface.test.js',
+			'test/parse.test.js',
+			'test/parseInfo.test.js',
+			'test/validate.test.js',
+			'test/syntax-suite.test.js',
+			'test/Schema.test.js',
+			// 'test/SchemaRegistry.test.js',
+		],
 	},
 	mutate: [
 		'index.js',
