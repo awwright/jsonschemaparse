@@ -7,6 +7,22 @@ const lib = require('..');
 // These tests ensure the error messages and other metadata is correct
 
 describe('validate tests', function(){
+	it('true', function(){
+		const schema = new lib.Schema('http://example.com/schema', true);
+		assert.deepStrictEqual(lib.parse('"a"', schema), "a");
+	});
+	it('true', function(){
+		const schema = new lib.Schema('http://example.com/schema', false);
+		assert.throws(function(){
+			lib.parse('1', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			// err.keyword should be `false` or something
+			return true;
+		});
+	});
 	it('allOf', function(){
 		const schema = new lib.Schema('http://example.com/schema', {
 			allOf: [
@@ -139,6 +155,177 @@ describe('validate tests', function(){
 			return true;
 		});
 	});
+	// Objects
+	it('required', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			required: ['a'],
+		});
+		assert.deepStrictEqual(lib.parse('{"a":"foo"}', schema), {"a":"foo"});
+		assert.deepStrictEqual(lib.parse('1', schema), 1);
+		assert.throws(function(){
+			lib.parse('{"b":"foo"}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'required');
+			return true;
+		});
+	});
+	it('properties', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			properties: {
+				'foo': { type: 'string' },
+			},
+		});
+		assert.deepStrictEqual(lib.parse('{"foo": "string"}', schema), {"foo": "string"});
+		assert.deepStrictEqual(lib.parse('{"bar": 2}', schema), {"bar": 2});
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('{"foo": 2}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 6);
+			assert.equal(err.keyword, 'type');
+			return true;
+		});
+	});
+	it('patternProperties', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			patternProperties: {
+				'^/': { type: 'string' },
+			},
+		});
+		assert.deepStrictEqual(lib.parse('{"/foo": "string"}', schema), {"/foo": "string"});
+		assert.deepStrictEqual(lib.parse('{"foo": 2}', schema), {"foo": 2});
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('{"/foo": 2}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 7);
+			assert.equal(err.keyword, 'type');
+			return true;
+		});
+	});
+	it('additionalProperties', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			additionalProperties: { type: 'string' },
+		});
+		assert.deepStrictEqual(lib.parse('{"foo": "string"}', schema), {"foo": "string"});
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('{"foo": 2}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 6);
+			assert.equal(err.keyword, 'type');
+			return true;
+		});
+	});
+	it('unevaluatedProperties', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			unevaluatedProperties: { type: 'string' },
+		});
+		assert.deepStrictEqual(lib.parse('{"foo": "string"}', schema), {"foo": "string"});
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('{"foo": 2}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 6);
+			assert.equal(err.keyword, 'type');
+			return true;
+		});
+	});
+	it('minProperties', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			minProperties: 1,
+		});
+		assert.deepStrictEqual(lib.parse('{"foo": "string"}', schema), {"foo": "string"});
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('{}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'minProperties');
+			return true;
+		});
+	});
+	it('maxProperties', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			maxProperties: 1,
+		});
+		assert.deepStrictEqual(lib.parse('{"foo": "string"}', schema), {"foo": "string"});
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('{"a":1, "b":2}', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'maxProperties');
+			return true;
+		});
+	});
+	// Array
+	it('additionalItems', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			items: [ { type: 'number' } ],
+			additionalItems: { type: 'string' },
+		});
+		assert.deepStrictEqual(lib.parse('[2, "string"]', schema), [2, "string"]);
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('[2, 2]', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 4);
+			assert.equal(err.keyword, 'type');
+			return true;
+		});
+	});
+	it('minItems', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			minItems: 1,
+		});
+		assert.deepStrictEqual(lib.parse('[2]', schema), [2]);
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('[]', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'minItems');
+			return true;
+		});
+	});
+	it('maxItems', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			maxItems: 1,
+		});
+		assert.deepStrictEqual(lib.parse('[1]', schema), [1]);
+		assert.strictEqual(lib.parse('null', schema), null);
+		assert.throws(function(){
+			lib.parse('[1, 2]', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			// FIXME this should be the item that went over
+			// assert.strictEqual(err.position.column, 0);
+			assert.equal(err.keyword, 'maxItems');
+			return true;
+		});
+	});
+	// Numbers
 	it('minimum', function(){
 		const schema = new lib.Schema('http://example.com/schema', {
 			minimum: 0,

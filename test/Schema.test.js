@@ -6,6 +6,23 @@ const lib = require('..');
 const Schema = lib.Schema;
 
 describe('Schema', function(){
+	it('new Schema() with invalid URI', function(){
+		assert.throws(function(){
+			new lib.Schema(true, { type: 'string' });
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /Expected `id` to be a string/);
+			return true;
+		});
+		assert.throws(function(){
+			// Space in id
+			new lib.Schema(' http://example.com/', { type: 'string' });
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /Illegal character in id/);
+			return true;
+		});
+	});
 	it('new Schema() with invalid allOf', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
