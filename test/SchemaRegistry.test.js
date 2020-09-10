@@ -2,23 +2,30 @@
 
 const assert = require('assert');
 const lib = require('..');
-const createReadStream = require('fs').createReadStream;
 
 const SchemaRegistry = lib.SchemaRegistry;
 
 describe('SchemaRegistry', function(){
 	it('SchemaRegistry#import', function(){
 		var registry = new SchemaRegistry;
-		// This passes just one test
-		var schema = registry.import('http://localhost/this.json', {});
-		var stream = new lib.StreamParser({parseValue:true, schema});
-		stream.on("openobject", function (node) {
-			// same object as above
-		});
-		// pipe is supported, and it's readable/writable
-		// same chunks coming in also go out.
-		createReadStream(__dirname+"/vendor-schema-suite/tests/draft2019-09/allOf.json").pipe(stream);
-		return stream.done;
+		const a1 = registry.import('http://localhost/a.json', {});
+		assert(a1 instanceof lib.Schema);
+		// Importing the same definition will return the previous instance
+		const a2 = registry.import('http://localhost/a.json', {});
+		assert.strictEqual(a1, a2);
 	});
-	it('SchemaRegistry#pending');
+	it('SchemaRegistry#seen', function(){
+		var registry = new SchemaRegistry;
+		registry.import('http://localhost/a.json', {
+			additionalProperties: { $ref: '#foo' },
+		});
+		assert(registry.seen.has('http://localhost/a.json#foo'));
+	});
+	it('SchemaRegistry#getUnresolved', function(){
+		var registry = new SchemaRegistry;
+		registry.import('http://localhost/a.json', {
+			additionalProperties: { $ref: '#foo' },
+		});
+		assert(registry.getUnresolved().indexOf('http://localhost/a.json#foo') >= 0);
+	});
 });
