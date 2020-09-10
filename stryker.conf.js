@@ -17,9 +17,10 @@ module.exports = {
 			'test/parse.test.js',
 			'test/parseInfo.test.js',
 			'test/validate.test.js',
-			'test/syntax-suite.test.js',
 			'test/Schema.test.js',
-			// 'test/SchemaRegistry.test.js',
+			'test/SchemaRegistry.test.js',
+			// 'test/syntax-suite.test.js',
+			// 'test/schema-suite.test.js',
 		],
 	},
 	mutate: [

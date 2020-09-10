@@ -202,11 +202,51 @@ describe('Schema', function(){
 			assert.match(err.message, /non-negative integer/);
 			return true;
 		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minItems: 0.5,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minItems/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minItems: -1,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minItems/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
 	});
 	it('new Schema() with invalid `maxItems`', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
 				maxItems: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxItems/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxItems: 0.5,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxItems/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxItems: -1,
 			});
 		}, function(err){
 			assert(err instanceof Error);
@@ -227,11 +267,51 @@ describe('Schema', function(){
 			assert.match(err.message, /non-negative integer/);
 			return true;
 		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minLength: 0.5,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minLength/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				minLength: -1,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /minLength/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
 	});
 	it('new Schema() with invalid `maxLength`', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
 				maxLength: [],
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxLength/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxLength: 0.5,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /maxLength/);
+			assert.match(err.message, /non-negative integer/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				maxLength: -1,
 			});
 		}, function(err){
 			assert(err instanceof Error);
@@ -309,7 +389,17 @@ describe('Schema', function(){
 		}, function(err){
 			assert(err instanceof Error);
 			assert.match(err.message, /multipleOf/);
-			assert.match(err.message, /number/);
+			assert.match(err.message, /positive number/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				multipleOf: -1,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /multipleOf/);
+			assert.match(err.message, /positive number/);
 			return true;
 		});
 	});
@@ -318,6 +408,16 @@ describe('Schema', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
 				enum: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /enum/);
+			assert.match(err.message, /array/);
+			return true;
+		});
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				enum: {},
 			});
 		}, function(err){
 			assert(err instanceof Error);

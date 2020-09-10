@@ -341,6 +341,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
+			assert.match(err.message, /too short/);
 			assert.equal(err.keyword, 'minLength');
 			return true;
 		});
@@ -357,6 +358,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
+			assert.match(err.message, /too long/);
 			assert.equal(err.keyword, 'maxLength');
 			return true;
 		});
@@ -495,7 +497,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 8);
-			// assert.match(err.message, /does not match one of the value/);
+			assert.match(err.message, /const/);
 			assert.equal(err.keyword, 'const');
 			return true;
 		});
@@ -511,7 +513,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 1);
-			// assert.match(err.message, /does not match one of the value/);
+			assert.match(err.message, /const/);
 			assert.equal(err.keyword, 'const');
 			return true;
 		});
@@ -527,7 +529,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			// assert.match(err.message, /does not match one of the value/);
+			assert.match(err.message, /string/);
 			assert.equal(err.keyword, 'const');
 			return true;
 		});
@@ -543,7 +545,8 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			// assert.match(err.message, /does not match one of the value/);
+			assert.match(err.message, /const/);
+			assert.match(err.message, /number/);
 			assert.equal(err.keyword, 'const');
 			return true;
 		});
@@ -559,7 +562,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			// assert.match(err.message, /does not match one of the value/);
+			assert.match(err.message, /const/);
 			assert.equal(err.keyword, 'const');
 			return true;
 		});
@@ -575,7 +578,7 @@ describe('validate tests', function(){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			// assert.match(err.message, /does not match one of the value/);
+			assert.match(err.message, /Expected null/);
 			assert.equal(err.keyword, 'const');
 			return true;
 		});
