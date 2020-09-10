@@ -29,7 +29,20 @@
 	<main>
 		<h1>Usage</h1>
 
-		<section id="usage-route">
+		<section id="usage-calling-the-parser">
+			<h2>Calling the parser</h2>
+			<p>
+				Three different options for parsing are available:
+			</p>
+			<ul>
+				<li><code>lib.parse(json, options)</code>, for parsing the value of a complete JSON document (similar to JSON.parse);</li>
+				<li><code>lib.parseInfo(json, options)</code>, for parsing the value and metadata of a complete JSON document; or</li>
+				<li><code>new lib.StreamParser(options)</code>, for streaming a JSON document.</li>
+			</ul>
+			<p>The options argument allows you to configure the syntax, validation, and the information that will be read.</p>
+		</section>
+
+		<section>
 			<h3>Get a value from a JSON document</h3>
 			<p>The <a href="api.xhtml#api-route">parse</a> function may be used with all the same functionality as the ECMAScript builtin <code>JSON.parse</code>:</p>
 			<pre><code>
