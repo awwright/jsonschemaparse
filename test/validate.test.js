@@ -334,6 +334,7 @@ describe('validate tests', function(){
 			minLength: 1,
 		});
 		assert.deepStrictEqual(lib.parse('"2"', schema), "2");
+		assert.deepStrictEqual(lib.parse('"🐲"', schema), "🐲");
 		assert.strictEqual(lib.parse('null', schema), null);
 		assert.throws(function(){
 			lib.parse('""', schema);
@@ -350,10 +351,22 @@ describe('validate tests', function(){
 		const schema = new lib.Schema('http://example.com/schema', {
 			maxLength: 1,
 		});
+		assert.deepStrictEqual(lib.parse('"🐲"', schema), "🐲");
+		assert.deepStrictEqual(lib.parse('"\\uD83D\\uDC32"', schema), "🐲");
 		assert.deepStrictEqual(lib.parse('"1"', schema), "1");
 		assert.strictEqual(lib.parse('null', schema), null);
 		assert.throws(function(){
 			lib.parse('"12"', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			assert.match(err.message, /too long/);
+			assert.equal(err.keyword, 'maxLength');
+			return true;
+		});
+		assert.throws(function(){
+			lib.parse('"🐉🐲"', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
 			assert.strictEqual(err.position.line, 0);

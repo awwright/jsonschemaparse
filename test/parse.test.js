@@ -13,6 +13,30 @@ describe('parse(text)', function(){
 	it('parse null', function(){
 		assert.strictEqual(lib.parse('null'), null);
 	});
+	it('parse numbers', function(){
+		assert.strictEqual(lib.parse('0'), 0);
+		assert.strictEqual(lib.parse('0E-0'), 0);
+		assert.strictEqual(lib.parse('0E0'), 0);
+		assert.strictEqual(lib.parse('0E+0'), 0);
+		assert.strictEqual(lib.parse('0e-0'), 0);
+		assert.strictEqual(lib.parse('0e0'), 0);
+		assert.strictEqual(lib.parse('0e+0'), 0);
+		assert.strictEqual(lib.parse('1.5e0'), 1.5);
+		assert.strictEqual(lib.parse('0.000000'), 0);
+		assert.strictEqual(lib.parse('10000000'), 10000000);
+		assert.strictEqual(lib.parse('1000.000'), 1000);
+		assert.strictEqual(lib.parse('-0'), -0);
+		assert.strictEqual(lib.parse('-0E-0'), -0);
+		assert.strictEqual(lib.parse('-0E0'), -0);
+		assert.strictEqual(lib.parse('-0E+0'), -0);
+		assert.strictEqual(lib.parse('-0e-0'), -0);
+		assert.strictEqual(lib.parse('-0e0'), -0);
+		assert.strictEqual(lib.parse('-0e+0'), -0);
+		assert.strictEqual(lib.parse('-1.5e0'), -1.5);
+		assert.strictEqual(lib.parse('-0.000000'), -0);
+		assert.strictEqual(lib.parse('-10000000'), -10000000);
+		assert.strictEqual(lib.parse('-1000.000'), -1000);
+	});
 	it('parse escape characters', function(){
 		const ret = lib.parse('"\\"\\\\\\/\\b\\f\\t\\r\\n"');
 		assert.strictEqual(ret, "\"\\/\b\f\t\r\n");

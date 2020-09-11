@@ -294,64 +294,6 @@ The parser will call the following methods, depending on the tokens it encounter
 * Validator#endNull(layer, value)
 
 
-## Migrating from other parsers
-
-
-### ECMAScript builtin JSON.parse
-
-Use `lib.parse` in place of `JSON.parse`.
-
-This library only parses, so there is no equivalent to `JSON.stringify`
-
-
-### JSON5
-
-Homepage: <https://github.com/json5/json5>
-
-JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.
-
-In place of `JSON5.parse`, use `lib.parse` as follows:
-
-```
-const JSON5opts = {
-	syntaxUnquotedKeys: true,
-	syntaxTrailingComma: true,
-	syntaxSingleQuote: true,
-	syntaxEscapeLF: true,
-	syntaxHexadecimal: true,
-	syntaxBareDecimal: true,
-	syntaxInf: true,
-	syntaxNaN: true,
-	syntaxPlus: true,
-}
-const parsed = lib.parse(text, JSON5Opts);
-```
-
-If you need the reviver function, add a "reviver" property to the options.
-
-This library only parses, so there is no equivalent to `JSON5.stringify`.
-
-### JSONStream
-
-
-
-
-### Clarinet.js
-
-Homepage: https://github.com/dscape/clarinet
-
-Clarinet is a SAX-like streaming parser for JSON.
-
-
-### Oboe.js
-
-Homepage: http://oboejs.com/
-
-Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retrieval over the network, and an API to split a (potentially very large) document into subdocuments, for easier processing by the application.
-
-This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use `fs.createReadStream`.
-
-
 ## Table of Files
 
 * index.js: Entry point for Node.js
