@@ -20,7 +20,7 @@ describe('Schema', function(){
 			new lib.Schema(' http://example.com/', { type: 'string' });
 		}, function(err){
 			assert(err instanceof Error);
-			assert.match(err.message, /Illegal character in id/);
+			assert.match(err.message, /Illegal character in `id`/);
 			return true;
 		});
 	});
@@ -32,7 +32,7 @@ describe('Schema', function(){
 			});
 		}, function(err){
 			assert(err instanceof Error);
-			assert.match(err.message, /Expected `allOf` to be an array/);
+			assert.match(err.message, /Expected .allOf. to be an array/);
 			return true;
 		});
 	});
@@ -43,7 +43,7 @@ describe('Schema', function(){
 			});
 		}, function(err){
 			assert(err instanceof Error);
-			assert.match(err.message, /Expected `anyOf` to be an array/);
+			assert.match(err.message, /Expected .anyOf. to be an array/);
 			return true;
 		});
 	});
@@ -54,7 +54,7 @@ describe('Schema', function(){
 			});
 		}, function(err){
 			assert(err instanceof Error);
-			assert.match(err.message, /Expected `oneOf` to be an array/);
+			assert.match(err.message, /Expected .oneOf. to be an array/);
 			return true;
 		});
 	});
@@ -65,7 +65,7 @@ describe('Schema', function(){
 			});
 		}, function(err){
 			assert(err instanceof Error);
-			assert.match(err.message, /Expected `oneOf` to be an array/);
+			assert.match(err.message, /Expected .oneOf. to be an array/);
 			return true;
 		});
 	});
@@ -76,7 +76,7 @@ describe('Schema', function(){
 			});
 		}, function(err){
 			assert(err instanceof Error);
-			assert.match(err.message, /Expected `not` to be a schema/);
+			assert.match(err.message, /Expected .not. to be a schema/);
 			return true;
 		});
 	});
@@ -90,6 +90,17 @@ describe('Schema', function(){
 		}, function(err){
 			assert(err instanceof Error);
 			assert.match(err.message, /Unexpected value for .type. keyword/);
+			return true;
+		});
+	});
+	it('new Schema() with unknown `type`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				type: 'foo',
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /Unknown "type"/);
 			return true;
 		});
 	});

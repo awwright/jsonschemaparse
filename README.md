@@ -297,10 +297,11 @@ The parser will call the following methods, depending on the tokens it encounter
 ## Table of Files
 
 * index.js: Entry point for Node.js
-* parse.js: JSON parser
-* schema.js: JSON validation logic & JSON Schema implementation
-* runner.js: Executable to run the parser & validator against test suites
+* lib/parse.js: JSON parser
+* lib/schema.js: JSON validation logic & JSON Schema implementation
 * package.json: npm metadata
 * UNLICENSE: Public Domain dedication
 * test/schema-suite: link to the official JSON Schema test suite
 * test/syntax-suite: link to a JSON parser test suite
+* test/bin/perf.js: Performance test the parser
+* test/bin/perf-native.js: Compare performance to the ECMAScript built-in parser

@@ -73,6 +73,8 @@ describe('parse(text, schema)', function(){
 		}, function(err){
 			assert(err instanceof lib.SyntaxError);
 			assert.match(err.message, /expected/);
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 1);
 			return true;
 		});
 	});

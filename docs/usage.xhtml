@@ -65,7 +65,7 @@ assert(info.description === 'Indicates if the switch is on');
 			<h3>Stream parse a JSON document</h3>
 			<p>The <a href="api.xhtml#api-route">StreamParser</a> constructor may be used to create a streaming parser.</p>
 			<pre><code>
-const parser =  new lib.StreamParser({
+const parser = new lib.StreamParser({
 	parseValue: true,
 	schema: { type: 'array', items: { type: 'string' } },
 });
@@ -77,42 +77,72 @@ parser.on('end', function(){
 </code></pre>
 		</section>
 
-		<h2>Migrating from other parsers</h2>
-
-		<h3>ECMAScript builtin JSON.parse</h3>
-		<p>Use <code>lib.parse</code> in place of <code>JSON.parse</code>.</p>
-		<p>This library only parses, so there is no equivalent to <code>JSON.stringify</code></p>
-
-		<h3>JSON5</h3>
-		<p>Homepage: <a href="https://github.com/json5/json5">https://github.com/json5/json5</a></p>
-		<p>JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.</p>
-		<p>In place of <code>JSON5.parse</code>, use <code>lib.parse</code> as follows:</p>
-		<pre><code>const JSON5opts = {
-	syntaxUnquotedKeys: true,
-	syntaxTrailingComma: true,
-	syntaxSingleQuote: true,
-	syntaxEscapeLF: true,
-	syntaxHexadecimal: true,
-	syntaxBareDecimal: true,
-	syntaxInf: true,
-	syntaxNaN: true,
-	syntaxPlus: true,
-}
-const parsed = lib.parse(text, JSON5Opts);
+		<section>
+			<h2>Validating &amp; Parsing a Schema</h2>
+			<p>
+				<code>Schema</code> instances are created from a native object, and validated when they are created.
+			</p>
+			<pre><code>
+const schema = new lib.Schema({
+	type: 'array',
+	items: { type: 'string' },
+});
 </code></pre>
-		<p>If you need the reviver function, add a "reviver" property to the options.</p>
-		<p>This library only parses, so there is no equivalent to <code>JSON5.stringify</code>.</p>
+			<p>
+				If there are any "fatal" errors, that prevent it from validating an instance, these will be thrown as an Error.
+			</p>
+			<pre><code>
+// This will throw an Error
+new lib.Schema({
+	minLength: -1,
+});
+</code></pre>	
+			<p>
+				Additionally, all <code>$ref</code> references must be resolved at the time it is used. To get a list of unresolved references, read the <code>Schema#unknown</code> array:
+			</p>
+			<pre><code>
+console.log(schema.unknown.join('\n'));
+</code></pre>				
+		</section>
 
-		<h3>JSONStream</h3>
+		<section>
+			<h2>Migrating from other parsers</h2>
 
-		<h3>Clarinet.js</h3>
-		<p>Homepage: <a href="https://github.com/dscape/clarinet">https://github.com/dscape/clarinet</a></p>
-		<p>Clarinet is a SAX-like streaming parser for JSON.</p>
+			<h3>ECMAScript builtin JSON.parse</h3>
+			<p>Use <code>lib.parse</code> as a drop-in replacement for <code>JSON.parse</code>.</p>
+			<p>This library only parses, so there is no equivalent to <code>JSON.stringify</code>.</p>
 
-		<h3>Oboe.js</h3>
-		<p>Homepage: <a href="http://oboejs.com/" rel="nofollow">http://oboejs.com/</a></p>
-		<p>Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retrieval over the network, and an API to split a (potentially very large) document into subdocuments, for easier processing by the application.</p>
-		<p>This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use <code>fs.createReadStream</code>.</p>
+			<h3>JSON5</h3>
+			<p>Homepage: <a href="https://github.com/json5/json5">https://github.com/json5/json5</a></p>
+			<p>JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.</p>
+			<p>In place of <code>JSON5.parse</code>, use <code>lib.parse</code> as follows:</p>
+			<pre><code>const JSON5opts = {
+		syntaxUnquotedKeys: true,
+		syntaxTrailingComma: true,
+		syntaxSingleQuote: true,
+		syntaxEscapeLF: true,
+		syntaxHexadecimal: true,
+		syntaxBareDecimal: true,
+		syntaxInf: true,
+		syntaxNaN: true,
+		syntaxPlus: true,
+	}
+	const parsed = lib.parse(text, JSON5Opts);
+	</code></pre>
+			<p>If you need the reviver function, add a "reviver" property to the options.</p>
+			<p>This library only parses, so there is no equivalent to <code>JSON5.stringify</code>.</p>
+
+			<h3>JSONStream</h3>
+
+			<h3>Clarinet.js</h3>
+			<p>Homepage: <a href="https://github.com/dscape/clarinet">https://github.com/dscape/clarinet</a></p>
+			<p>Clarinet is a SAX-like streaming parser for JSON.</p>
+
+			<h3>Oboe.js</h3>
+			<p>Homepage: <a href="http://oboejs.com/" rel="nofollow">http://oboejs.com/</a></p>
+			<p>Oboe.js is a streaming parser for JSON, derived from Clarinet, that supports retrieval over the network, and an API to split a (potentially very large) document into subdocuments, for easier processing by the application.</p>
+			<p>This library does not perform any network or filesystem functions; get a readable stream, somehow, and pipe it into a . For example in Node.js, use <code>fs.createReadStream</code>.</p>
+		</section>
 
 	</main>
 	<footer>
