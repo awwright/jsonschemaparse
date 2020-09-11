@@ -144,6 +144,7 @@ describe('parse options', function(){
 		assert.throws(function(){
 			lib.parse('{"01234": true}', options);
 		}, function(err){
+			assert(err instanceof lib.ResourceLimitError);
 			assert.match(err.message, /String too long/);
 			return true;
 		});
@@ -157,6 +158,7 @@ describe('parse options', function(){
 		assert.throws(function(){
 			lib.parse('{"key": "long45"}', options);
 		}, function(err){
+			assert(err instanceof lib.ResourceLimitError);
 			assert.match(err.message, /String too long/);
 			return true;
 		});
@@ -171,6 +173,7 @@ describe('parse options', function(){
 		assert.throws(function(){
 			lib.parse(text, options);
 		}, function(err){
+			assert(err instanceof lib.ResourceLimitError);
 			// TODO this should be "Number too long"
 			assert.match(err.message, /too long/);
 			return true;
@@ -183,6 +186,10 @@ describe('parse options', function(){
 		assert.deepStrictEqual(lib.parse('{ "a": [0, 1, 2, 3] }', options), { "a": [0, 1, 2, 3] });
 		assert.throws(function(){
 			lib.parse('{ "a": [0, 1, 2, 3, 4] }', options);
+		}, function(err){
+			assert(err instanceof lib.ResourceLimitError);
+			assert.match(err.message, /Too many items in array/);
+			return true;
 		});
 	});
 	it('parse({maxProperties})', function(){
@@ -192,6 +199,10 @@ describe('parse options', function(){
 		assert.deepStrictEqual(lib.parse('[ { "a":1 } ]', options), [ { "a":1 } ]);
 		assert.throws(function(){
 			lib.parse('[ { "a":1, "b":2, "c":3 } ]', options);
+		}, function(err){
+			assert(err instanceof lib.ResourceLimitError);
+			assert.match(err.message, /Too many properties in object/);
+			return true;
 		});
 	});
 	it('parse({maxUniqueItems})');
@@ -211,6 +222,10 @@ describe('parse options', function(){
 		};
 		assert.throws(function(){
 			lib.parse(text, options);
+		}, function(err){
+			assert(err instanceof lib.ResourceLimitError);
+			assert.match(err.message, /Number too precise/);
+			return true;
 		});
 	});
 	it('parse({bigNumber:function})');
