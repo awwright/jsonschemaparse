@@ -13,10 +13,12 @@ describe('Annotation', function(){
 		});
 		assert.strictEqual(p.annotations.length, 2);
 		const title = p.annotations[0];
+		assert(title instanceof lib.Annotation);
 		assert.strictEqual(title.value, 'Some Title');
 		assert.strictEqual(title.position.line, 0);
 		assert.strictEqual(title.position.column, 0);
 		const desc = p.annotations[1];
+		assert(desc instanceof lib.Annotation);
 		assert.strictEqual(desc.value, 'A longer description of how the value works.');
 		assert.strictEqual(desc.position.line, 0);
 		assert.strictEqual(desc.position.column, 0);

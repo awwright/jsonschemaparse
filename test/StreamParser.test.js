@@ -127,12 +127,3 @@ describe('StreamParser methods', function(){
 		assert(p.errors.length===0);
 	});
 });
-
-describe('interface', function(){
-	it('SchemaRegistry', function(){
-		assert(lib.SchemaRegistry);
-	});
-	it('Schema', function(){
-		assert(lib.Schema);
-	});
-});

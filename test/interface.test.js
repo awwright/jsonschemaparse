@@ -19,6 +19,9 @@ describe('interface', function(){
 	it('ValidationError', function(){
 		assert(typeof lib.ValidationError === 'function');
 	});
+	it('Annotation', function(){
+		assert(typeof lib.Annotation === 'function');
+	});
 	it('SchemaRegistry', function(){
 		assert(typeof lib.SchemaRegistry === 'function');
 	});

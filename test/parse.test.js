@@ -4,9 +4,18 @@ const assert = require('assert');
 const lib = require('..');
 
 describe('parse(text)', function(){
-	it('parse valid', function(){
-		const ret = lib.parse('true');
-		assert.strictEqual(ret, true);
+	it('parse true', function(){
+		assert.strictEqual(lib.parse('true'), true);
+	});
+	it('parse false', function(){
+		assert.strictEqual(lib.parse('false'), false);
+	});
+	it('parse null', function(){
+		assert.strictEqual(lib.parse('null'), null);
+	});
+	it('parse escape characters', function(){
+		const ret = lib.parse('"\\"\\\\\\/\\b\\f\\t\\r\\n"');
+		assert.strictEqual(ret, "\"\\/\b\f\t\r\n");
 	});
 	it('parse invalid', function(){
 		assert.throws(function(){
