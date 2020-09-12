@@ -475,6 +475,21 @@ describe('Schema', function(){
 	});
 
 	// properties
+	it('Schema#subschemas, Schema#allSubschemas', function(){
+		var registry = new lib.Schema('http://example.com/schema.json', {
+			properties: {
+				"id": {
+					type: "array",
+					items: { type: "string", minimum: 0 },
+				},
+			},
+		});
+		assert.strictEqual(registry.subschemas.length, 1);
+		assert.strictEqual(registry.subschemas[0].type, 'array');
+		assert.strictEqual(registry.allSubschemas.length, 2);
+		assert.strictEqual(registry.allSubschemas[0].type, 'array');
+		assert.strictEqual(registry.allSubschemas[1].type, 'string');
+	});
 	it('Schema#unknown', function(){
 		var registry = new lib.Schema('http://example.com/schema.json', {
 			type: "string",

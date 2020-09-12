@@ -79,6 +79,8 @@ parser.on('end', function(){
 
 		<section>
 			<h2>Validating &amp; Parsing a Schema</h2>
+
+			<h3>Invalid keywords</h3>
 			<p>
 				<code>Schema</code> instances are created from a native object, and validated when they are created.
 			</p>
@@ -97,12 +99,58 @@ new lib.Schema({
 	minLength: -1,
 });
 </code></pre>	
+
+			<h3>Unknown keywords</h3>
+			<p>
+				Unknown keywords do not emit an error by default. If there are any keywords not known,
+			</p>
+			<p>
+				The <code>allUnknown</code> keyword not only looks at the current schema, but all subschemas (except through references).
+			</p>
+<pre><code>
+console.log(schema.unknown.join('\n'));
+console.log(schema.allUnknown.join('\n'));
+</code></pre>
+
+			<h3>Listing References</h3>
+			<p>
+				All <code>$ref</code> references are stored in the <code>references</code> property as an array.
+			</p>
+			<p>
+				The <code>allReferences</code> property is an array of references not just in the current schema, but all subschemas (except through references).
+			</p>
+<pre><code>
+console.log(schema.references.join('\n'));
+console.log(schema.allReferences.join('\n'));
+</code></pre>
+		</section>
+
+		<section>
+			<h3>Unresolved references</h3>
 			<p>
 				Additionally, all <code>$ref</code> references must be resolved at the time it is used. To get a list of unresolved references, read the <code>Schema#unknown</code> array:
 			</p>
+<pre><code>
+console.log(schema.registry.unresolvedReferences.join('\n'));
+</code></pre>
+		</section>
+
+		<section>
+			<h2>Reporting Validation Errors</h2>
+			<p>
+				When a JSON document is parsed using the <code>schema</code> option, it will validate the incoming JSON against the schema:
+			</p>
 			<pre><code>
-console.log(schema.unknown.join('\n'));
-</code></pre>				
+lib.parse(json, { schema });
+lib.parseInfo(json, { schema });
+new lib.StreamParser({ schema });
+</code></pre>
+			<p>
+				When using <code>lib.parse</code>, the validation error will be thrown.
+			</p>
+			<p>
+				When using the other forms, by default, validation error will be added to the <code>errors</code> array.
+			</p>
 		</section>
 
 		<section>
@@ -117,18 +165,18 @@ console.log(schema.unknown.join('\n'));
 			<p>JSON5 is a library that supports a superset of the JSON syntax, with a JSON.parse compatible API.</p>
 			<p>In place of <code>JSON5.parse</code>, use <code>lib.parse</code> as follows:</p>
 			<pre><code>const JSON5opts = {
-		syntaxUnquotedKeys: true,
-		syntaxTrailingComma: true,
-		syntaxSingleQuote: true,
-		syntaxEscapeLF: true,
-		syntaxHexadecimal: true,
-		syntaxBareDecimal: true,
-		syntaxInf: true,
-		syntaxNaN: true,
-		syntaxPlus: true,
-	}
-	const parsed = lib.parse(text, JSON5Opts);
-	</code></pre>
+	syntaxUnquotedKeys: true,
+	syntaxTrailingComma: true,
+	syntaxSingleQuote: true,
+	syntaxEscapeLF: true,
+	syntaxHexadecimal: true,
+	syntaxBareDecimal: true,
+	syntaxInf: true,
+	syntaxNaN: true,
+	syntaxPlus: true,
+}
+const parsed = lib.parse(text, JSON5Opts);
+</code></pre>
 			<p>If you need the reviver function, add a "reviver" property to the options.</p>
 			<p>This library only parses, so there is no equivalent to <code>JSON5.stringify</code>.</p>
 
