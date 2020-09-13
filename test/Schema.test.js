@@ -490,13 +490,32 @@ describe('Schema', function(){
 		assert.strictEqual(registry.allSubschemas[0].type, 'array');
 		assert.strictEqual(registry.allSubschemas[1].type, 'string');
 	});
-	it('Schema#unknown', function(){
+	it('Schema#references, Schema#allReferences', function(){
 		var registry = new lib.Schema('http://example.com/schema.json', {
-			type: "string",
-			foo: "baz",
+			$ref: "#root",
+			properties: {
+				"id": {
+					type: "array",
+					items: { $ref: "#item" },
+				},
+			},
+			$defs: {
+				"root": {
+					$anchor: "root",
+					minProperties: 1,
+				},
+				"items": {
+					$anchor: "items",
+					type: "string",
+					minimum: 0,
+				},
+			},
 		});
-		assert.strictEqual(registry.unknown.length, 1);
-		assert.strictEqual(registry.unknown[0], 'foo');
+		assert.strictEqual(registry.references.length, 1);
+		assert.strictEqual(registry.references[0], 'http://example.com/schema.json#root');
+		assert.strictEqual(registry.allReferences.length, 2);
+		assert.strictEqual(registry.allReferences[0], 'http://example.com/schema.json#root');
+		assert.strictEqual(registry.allReferences[1], 'http://example.com/schema.json#item');
 	});
 	it('Schema#unknown', function(){
 		var registry = new lib.Schema('http://example.com/schema.json', {
