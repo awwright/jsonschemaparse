@@ -464,6 +464,7 @@ describe('validate tests', function(){
 		const schema = new lib.Schema('http://example.com/schema', {
 			multipleOf: 2,
 		});
+		assert.strictEqual(lib.parse('-2', schema), -2);
 		assert.strictEqual(lib.parse('0', schema), 0);
 		assert.strictEqual(lib.parse('2', schema), 2);
 		assert.strictEqual(lib.parse('null', schema), null);
