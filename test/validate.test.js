@@ -617,6 +617,59 @@ describe('validate tests', function(){
 			// assert.match(err.message, /does not match one of the value/);
 			return true;
 		});
+		assert.throws(function(){
+			lib.parse('-1', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'minimum');
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			// TODO test for some message like `(because not(type=="string"))`
+			// assert.match(err.message, /does not match one of the value/);
+			return true;
+		});
+	});
+	it('if/then', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			if: { type: "string" },
+			then: { enum: [ "A", "B" ] },
+		});
+		assert.strictEqual(lib.parse('"A"', schema), "A");
+		assert.strictEqual(lib.parse('"B"', schema), "B");
+		assert.strictEqual(lib.parse('1', schema), 1);
+		assert.strictEqual(lib.parse('-1', schema), -1);
+		assert.throws(function(){
+			lib.parse('"C"', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'enum');
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			// TODO test for some message like `(because type=="string")`
+			// assert.match(err.message, /does not match one of the value/);
+			return true;
+		});
+	});
+	it('if/else', function(){
+		const schema = new lib.Schema('http://example.com/schema', {
+			if: { type: "string" },
+			else: { minimum: 0 },
+		});
+		assert.strictEqual(lib.parse('"A"', schema), "A");
+		assert.strictEqual(lib.parse('"B"', schema), "B");
+		assert.strictEqual(lib.parse('"C"', schema), "C");
+		assert.strictEqual(lib.parse('1', schema), 1);
+		assert.throws(function(){
+			lib.parse('-1', schema);
+		}, function(err){
+			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'minimum');
+			assert.strictEqual(err.position.line, 0);
+			assert.strictEqual(err.position.column, 0);
+			// TODO test for some message like `(because not(type=="string"))`
+			// assert.match(err.message, /does not match one of the value/);
+			return true;
+		});
 	});
 });
 
