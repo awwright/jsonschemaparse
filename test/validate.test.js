@@ -56,9 +56,9 @@ describe('validate tests', function(){
 			lib.parse('true', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'anyOf');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'anyOf');
 			return true;
 		});
 	});
@@ -75,9 +75,9 @@ describe('validate tests', function(){
 			lib.parse('true', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'oneOf');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'oneOf');
 			return true;
 		});
 	});
@@ -90,9 +90,9 @@ describe('validate tests', function(){
 			lib.parse('1', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'not');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'not');
 			return true;
 		});
 	});
@@ -106,10 +106,10 @@ describe('validate tests', function(){
 			lib.parse('[]', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /expected/);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -122,10 +122,10 @@ describe('validate tests', function(){
 			lib.parse('true', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /expected/);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -151,10 +151,10 @@ describe('validate tests', function(){
 			lib.parse('true', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /expected/);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -169,9 +169,9 @@ describe('validate tests', function(){
 			lib.parse('{"b":"foo"}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'required');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'required');
 			return true;
 		});
 	});
@@ -188,9 +188,9 @@ describe('validate tests', function(){
 			lib.parse('{"foo": 2}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 6);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -207,9 +207,9 @@ describe('validate tests', function(){
 			lib.parse('{"/foo": 2}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 7);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -223,9 +223,9 @@ describe('validate tests', function(){
 			lib.parse('{"foo": 2}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 6);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -239,9 +239,9 @@ describe('validate tests', function(){
 			lib.parse('{"foo": 2}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 6);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -255,9 +255,9 @@ describe('validate tests', function(){
 			lib.parse('{}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'minProperties');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'minProperties');
 			return true;
 		});
 	});
@@ -271,9 +271,9 @@ describe('validate tests', function(){
 			lib.parse('{"a":1, "b":2}', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'maxProperties');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'maxProperties');
 			return true;
 		});
 	});
@@ -289,9 +289,9 @@ describe('validate tests', function(){
 			lib.parse('[2, 2]', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'type');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 4);
-			assert.equal(err.keyword, 'type');
 			return true;
 		});
 	});
@@ -305,9 +305,9 @@ describe('validate tests', function(){
 			lib.parse('[]', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'minItems');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'minItems');
 			return true;
 		});
 	});
@@ -321,10 +321,10 @@ describe('validate tests', function(){
 			lib.parse('[1, 2]', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'maxItems');
 			assert.strictEqual(err.position.line, 0);
 			// FIXME this should be the item that went over
 			// assert.strictEqual(err.position.column, 0);
-			assert.equal(err.keyword, 'maxItems');
 			return true;
 		});
 	});
@@ -340,10 +340,10 @@ describe('validate tests', function(){
 			lib.parse('""', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'minLength');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /too short/);
-			assert.equal(err.keyword, 'minLength');
 			return true;
 		});
 	});
@@ -359,20 +359,20 @@ describe('validate tests', function(){
 			lib.parse('"12"', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'maxLength');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /too long/);
-			assert.equal(err.keyword, 'maxLength');
 			return true;
 		});
 		assert.throws(function(){
 			lib.parse('"🐉🐲"', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'maxLength');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /too long/);
-			assert.equal(err.keyword, 'maxLength');
 			return true;
 		});
 	});
@@ -386,8 +386,8 @@ describe('validate tests', function(){
 			lib.parse('"12"', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'pattern');
 			assert.strictEqual(err.position.line, 0);
-			assert.equal(err.keyword, 'pattern');
 			return true;
 		});
 	});
@@ -402,10 +402,10 @@ describe('validate tests', function(){
 			lib.parse('-1', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'minimum');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			// assert.match(err.message, /minimum/);
-			assert.equal(err.keyword, 'minimum');
 			return true;
 		});
 	});
@@ -419,10 +419,10 @@ describe('validate tests', function(){
 			lib.parse('0', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'exclusiveMinimum');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			// assert.match(err.message, /exclusiveMinimum/);
-			assert.equal(err.keyword, 'exclusiveMinimum');
 			return true;
 		});
 	});
@@ -436,10 +436,10 @@ describe('validate tests', function(){
 			lib.parse('1', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'maximum');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			// assert.match(err.message, /maximum/);
-			assert.equal(err.keyword, 'maximum');
 			return true;
 		});
 	});
@@ -453,10 +453,10 @@ describe('validate tests', function(){
 			lib.parse('0', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'exclusiveMaximum');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			// assert.match(err.message, /exclusiveMaximum/);
-			assert.equal(err.keyword, 'exclusiveMaximum');
 			return true;
 		});
 	});
@@ -471,10 +471,10 @@ describe('validate tests', function(){
 			lib.parse('1', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'multipleOf');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /not multiple of/);
-			assert.equal(err.keyword, 'multipleOf');
 			return true;
 		});
 	});
@@ -492,10 +492,10 @@ describe('validate tests', function(){
 			lib.parse('2', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'enum');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /does not match one of the enumerated values/);
-			assert.equal(err.keyword, 'enum');
 			return true;
 		});
 	});
@@ -508,10 +508,10 @@ describe('validate tests', function(){
 			lib.parse('{ "type": "B" }', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'const');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 8);
 			assert.match(err.message, /const/);
-			assert.equal(err.keyword, 'const');
 			return true;
 		});
 	});
@@ -524,10 +524,10 @@ describe('validate tests', function(){
 			lib.parse('[2]', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'const');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 1);
 			assert.match(err.message, /const/);
-			assert.equal(err.keyword, 'const');
 			return true;
 		});
 	});
@@ -540,10 +540,10 @@ describe('validate tests', function(){
 			lib.parse('null', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'const');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /string/);
-			assert.equal(err.keyword, 'const');
 			return true;
 		});
 	});
@@ -556,11 +556,11 @@ describe('validate tests', function(){
 			lib.parse('2', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'const');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /const/);
 			assert.match(err.message, /number/);
-			assert.equal(err.keyword, 'const');
 			return true;
 		});
 	});
@@ -573,10 +573,10 @@ describe('validate tests', function(){
 			lib.parse('false', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'const');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /const/);
-			assert.equal(err.keyword, 'const');
 			return true;
 		});
 	});
@@ -589,10 +589,10 @@ describe('validate tests', function(){
 			lib.parse('false', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'const');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			assert.match(err.message, /Expected null/);
-			assert.equal(err.keyword, 'const');
 			return true;
 		});
 	});
@@ -609,11 +609,11 @@ describe('validate tests', function(){
 			lib.parse('"C"', schema);
 		}, function(err){
 			assert(err instanceof lib.ValidationError);
+			assert.strictEqual(err.keyword, 'enum');
 			assert.strictEqual(err.position.line, 0);
 			assert.strictEqual(err.position.column, 0);
 			// TODO test for some message like `(because type=="string")`
 			// assert.match(err.message, /does not match one of the value/);
-			assert.equal(err.keyword, 'enum');
 			return true;
 		});
 	});
