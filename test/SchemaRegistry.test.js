@@ -14,18 +14,17 @@ describe('SchemaRegistry', function(){
 		const a2 = registry.import('http://localhost/a.json', {});
 		assert.strictEqual(a1, a2);
 	});
-	it('SchemaRegistry#seen', function(){
-		var registry = new SchemaRegistry;
-		registry.import('http://localhost/a.json', {
-			additionalProperties: { $ref: '#foo' },
-		});
-		assert(registry.seen.has('http://localhost/a.json#foo'));
-	});
 	it('SchemaRegistry#getUnresolved', function(){
 		var registry = new SchemaRegistry;
 		registry.import('http://localhost/a.json', {
-			additionalProperties: { $ref: '#foo' },
+			additionalProperties: { $ref: 'b.json' },
 		});
-		assert(registry.getUnresolved().indexOf('http://localhost/a.json#foo') >= 0);
+		assert(registry.getUnresolved().indexOf('http://localhost/b.json') >= 0);
+		assert(registry.seen.has('http://localhost/b.json'));
+		registry.import('http://localhost/b.json', {
+			type: 'string',
+		});
+		assert(registry.getUnresolved().indexOf('http://localhost/b.json') === -1);
+		assert(registry.seen.has('http://localhost/b.json'));
 	});
 });
