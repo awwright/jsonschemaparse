@@ -202,6 +202,23 @@ describe('Schema', function(){
 			return true;
 		});
 	});
+	it('new Schema() with invalid `additionalItems`', function(){
+		assert.throws(function(){
+			new lib.Schema('http://example.com/schema.json', {
+				items: [true],
+				additionalItems: null,
+			});
+		}, function(err){
+			assert(err instanceof Error);
+			assert.match(err.message, /additionalItems/);
+			assert.match(err.message, /schema/);
+			return true;
+		});
+		assert(new lib.Schema('http://example.com/schema.json', {
+			items: [true],
+			additionalItems: undefined,
+		}));
+	});
 	it('new Schema() with invalid `minItems`', function(){
 		assert.throws(function(){
 			new lib.Schema('http://example.com/schema.json', {
