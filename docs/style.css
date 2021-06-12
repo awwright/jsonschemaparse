@@ -7,10 +7,12 @@ textarea, input {
 }
 
 html, body {
-	max-width: 60em;
-	margin: 0 auto;
 	tab-size: 3;
 	-moz-tab-size: 3;
+}
+body {
+	max-width: 60em;
+	margin: 0 auto;
 }
 
 h2 {
@@ -83,6 +85,24 @@ footer::after {
 	clear: both;
 }
 
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+	body {
+		background: #222;
+		color: #DDD;
+	}
+	h2 {
+		border-bottom: 1px solid #585858;
+	}
+	a, :link {
+		color: #7b7beb;
+	}
+	header ul li a,
+	header ul li :link {
+		color: white;
+	}
+}
+
 /* main styles */
 
 pre {
@@ -105,19 +125,49 @@ textarea, input {
 }
 
 
-@media (prefers-color-scheme: dark) {
-	body {
-		background: #222;
-		color: #DDD;
-	}
-	h2 {
-		border-bottom: 1px solid #585858;
-	}
-	a, :link {
-		color: #7b7beb;
-	}
-	header ul li a,
-	header ul li :link {
-		color: white;
-	}
+
+/* Page theme selector */
+#theme-selector {
+	float: right;
+}
+#theme-selector > label {
+	display: table-cell;
+	background-color: #ddd;
+	padding: 5px 10px;
+	font-family: sans-serif, Arial;
+	font-size: 16px;
+	border: 2px outset #999;
+	border-radius: 4px;
+	white-space: pre;
+	min-width: 6em;
+	text-align: center;
+}
+#theme-selector > label input {
+	padding: 0;
+	margin: 0;
+	width: auto;
+}
+body.theme-1 #select-theme-1,
+body.theme-2 #select-theme-2,
+body.theme-3 #select-theme-3 {
+	background-color:#cfc;
+	border: 2px solid #333;
+}
+
+/* Overrides for split-page theme */
+
+body.theme-3 header,
+body.theme-3 footer {
+	display: none;
+}
+body.theme-3 {
+	max-width: none;
+	margin: 0;
+}
+body.theme-3 #schema,
+body.theme-3 #instance {
+	width: 50%;
+	height: 100%;
+	float: left;
+	border: solid 1px grey;
 }

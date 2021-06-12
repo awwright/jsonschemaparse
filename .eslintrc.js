@@ -1,3 +1,4 @@
+"use strict";
 module.exports = {
 	"env": {
 		"node": true,
@@ -17,5 +18,5 @@ module.exports = {
 		"semi": [ "error", "always" ],
 		"comma-dangle": [ "error", "always-multiline" ],
 		"no-console": [ "error" ],
-	}
+	},
 };

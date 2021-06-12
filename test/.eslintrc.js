@@ -1,3 +1,4 @@
+"use strict";
 module.exports = {
 	"env": {
 		"mocha": true,
@@ -19,5 +20,5 @@ module.exports = {
 		"no-console": [ "warn" ],
 		// "no-mixed-spaces-and-tabs": "off",
 		"array-bracket-newline": ["error", "consistent"],
-	}
+	},
 };

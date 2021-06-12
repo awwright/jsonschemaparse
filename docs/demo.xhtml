@@ -8,6 +8,7 @@
 	<link type="text/css" rel="stylesheet" href="lint.css" />
 	<link rel="prev" href="api.xhtml"/>
 	<script type="application/ecmascript" src="app.bundle.js"></script>
+	<script type="application/ecmascript" src="lint.js"></script>
 </head>
 <body class="pagewidth">
 	<div class="site-header">
@@ -27,10 +28,16 @@
 	</div>
 	<main class="demo">
 
+		<form id="theme-selector">
+			<label id="select-theme-1"><input type="radio" name="theme" value="theme-1" />Fixed</label>
+			<label id="select-theme-3"><input type="radio" name="theme" value="theme-3" />Split</label>
+		</form>
 		<h2>Demo/Playground</h2>
 
-		<h3>Schema</h3>
-		<p><textarea id="code-schema">{
+		<section id="schema">
+
+			<h3>Schema</h3>
+			<textarea id="code-schema">{
 	"type": "array",
 	"items": {
 		"type": "object",
@@ -42,30 +49,33 @@
 		}
 	}
 }
-</textarea></p>
+</textarea>
+	</section>
+	<section id="instance">
 		
 		<h3>Instance</h3>
-		<p><textarea id="code-instance">[
+		<textarea id="code-instance">[
 	{
-	"_id": "post 1",
-	"author": "Bob",
-	"content": "...",
-	"page_views": "5"
+		"_id": "post 1",
+		"author": "Bob",
+		"content": "...",
+		"page_views": "5"
 	},
 	{
-	"_id": "post 2",
-	"author": "Bob",
-	"content": "...",
-	"page_views": 9
+		"_id": "post 2",
+		"author": "Bob",
+		"content": "...",
+		"page_views": 9
 	},
 	{
-	"_id": "post 3",
-	"author": "Bob",
-	"content": "...",
-	"page_views": 8
+		"_id": "post 3",
+		"author": "Bob",
+		"content": "...",
+		"page_views": 8
 	}
 ]
-</textarea></p>
+</textarea>
+		</section>
 
 <script type="application/ecmascript">
 	var editor_schema = CodeMirror.fromTextArea(document.getElementById("code-schema"), {
